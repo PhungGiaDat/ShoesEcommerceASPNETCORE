@@ -1,4 +1,4 @@
-﻿namespace ShoesEcommerce.Models.Cart
+﻿namespace ShoesEcommerce.Models.Carts
 {
     public class Cart
     {

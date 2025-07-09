@@ -1,4 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc.Infrastructure;
+using ShoesEcommerce.Models.Interactions;
+using ShoesEcommerce.Models.Orders;
+using ShoesEcommerce.Models.Products;
+using ShoesEcommerce.Models.Carts;
 
 namespace ShoesEcommerce.Models.Accounts
 {

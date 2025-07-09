@@ -7,13 +7,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Data\" />
     <Folder Include="Middlewares\" />
     <Folder Include="DTO\" />
-    <Folder Include="Models\Interactions\" />
-    <Folder Include="Models\Departments\" />
-    <Folder Include="Models\Stock\" />
-    <Folder Include="Models\Orders\" />
     <Folder Include="Repositories\" />
     <Folder Include="Services\Interfaces\" />
     <Folder Include="Services\Implementations\" />

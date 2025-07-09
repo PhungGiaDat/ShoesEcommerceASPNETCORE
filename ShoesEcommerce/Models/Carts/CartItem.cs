@@ -1,4 +1,7 @@
-﻿namespace ShoesEcommerce.Models.Cart
+﻿using ShoesEcommerce.Models.Products;
+
+
+namespace ShoesEcommerce.Models.Carts
 {
     public class CartItem
     {

@@ -1,4 +1,7 @@
-﻿namespace ShoesEcommerce.Models.Accounts
+﻿using ShoesEcommerce.Models.Departments;
+using ShoesEcommerce.Models.Interactions;
+
+namespace ShoesEcommerce.Models.Accounts
 {
     public class Staff
     {
