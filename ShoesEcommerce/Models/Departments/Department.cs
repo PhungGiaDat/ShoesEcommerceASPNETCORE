@@ -1,8 +1,10 @@
-﻿namespace ShoesEcommerce.Models.Accounts
+﻿using ShoesEcommerce.Models.Accounts;
+
+namespace ShoesEcommerce.Models.Departments
 {
+
     public class Department
     {
-        
         public int Id { get; set; }
         public string Name { get; set; }
 
