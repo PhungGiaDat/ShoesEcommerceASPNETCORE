@@ -17,7 +17,7 @@ namespace ShoesEcommerce.Models.Accounts
 
         public DepartmentEntity? Department { get; set; }
 
-        public ICollection<RoleStaff> RoleStaffs { get; set; }
+        public ICollection<UserRole> Roles { get; set; }
         public ICollection<QA> QAs { get; set; }
     }
 }

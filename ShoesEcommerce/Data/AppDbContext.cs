@@ -20,7 +20,6 @@ namespace ShoesEcommerce.Data
         public DbSet<Staff> Staffs { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Permission> Permissions { get; set; }
-        public DbSet<RoleStaff> RoleStaffs { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
 
         // Departments
@@ -74,35 +73,59 @@ namespace ShoesEcommerce.Data
 
         private void ConfigureAccounts(ModelBuilder modelBuilder)
         {
-            // Role - Staff (N-N)
-            modelBuilder.Entity<RoleStaff>()
-                .HasKey(rs => new { rs.StaffId, rs.RoleId });
 
-            modelBuilder.Entity<RoleStaff>()
-                .HasOne(rs => rs.Staff)
-                .WithMany(s => s.RoleStaffs)
-                .HasForeignKey(rs => rs.StaffId);
+            // =========================
+            // 🔐 Customer (User từ Firebase)
+            // =========================
+            modelBuilder.Entity<Customer>()
+                .Property(c => c.FirebaseUid)
+                .HasColumnName("FirebaseUid")
+                .IsRequired();
 
-            modelBuilder.Entity<RoleStaff>()
-                .HasOne(rs => rs.Role)
-                .WithMany(r => r.RoleStaffs)
-                .HasForeignKey(rs => rs.RoleId);
+            modelBuilder.Entity<Customer>()
+                .HasIndex(c => c.FirebaseUid)
+                .IsUnique(); // Đảm bảo mỗi Customer có FirebaseUid duy nhất
 
-            // Role - Permission (N-N)
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Role)
+                .WithMany()
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Staff)
+                .WithMany()
+                .HasForeignKey(ur => ur.StaffId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<UserRole>()
+                .HasOne(ur => ur.Customer)
+                .WithMany()
+                .HasForeignKey(ur => ur.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
+            // =========================
+            // 🧩 Role - Permission (N-N)
+            // =========================
             modelBuilder.Entity<RolePermission>()
                 .HasKey(rp => new { rp.RoleId, rp.PermissionId });
 
             modelBuilder.Entity<RolePermission>()
                 .HasOne(rp => rp.Role)
                 .WithMany(r => r.RolePermissions)
-                .HasForeignKey(rp => rp.RoleId);
+                .HasForeignKey(rp => rp.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<RolePermission>()
                 .HasOne(rp => rp.Permission)
                 .WithMany(p => p.RolePermissions)
-                .HasForeignKey(rp => rp.PermissionId);
+                .HasForeignKey(rp => rp.PermissionId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // Department - Staff (1-N)
+            // =========================
+            // 🏢 Department - Staff (1-N)
+            // =========================
             modelBuilder.Entity<Staff>()
                 .HasOne(s => s.Department)
                 .WithMany(d => d.Staffs)

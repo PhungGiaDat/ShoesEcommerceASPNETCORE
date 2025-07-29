@@ -1,7 +1,17 @@
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromSeconds(30); // Set session timeout
+    options.Cookie.HttpOnly = true; // Make the session cookie HTTP only
+    options.Cookie.IsEssential = true; // Make the session cookie essential
+});
 
 var app = builder.Build();
 
@@ -13,6 +23,18 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Initialize Firebase Admin SDK load file firebase-adminsdk.json
+FirebaseApp.Create(new AppOptions()
+{
+    Credential = GoogleCredential.FromFile("wwwroot/credentials/shoes-ecommerce-fd0cb-firebase-adminsdk-fbsvc-b9bf519edf.json"),
+});
+
+
+//Add Sessions 
+
+
+
+app.UseSession(); // Enable session middleware
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
