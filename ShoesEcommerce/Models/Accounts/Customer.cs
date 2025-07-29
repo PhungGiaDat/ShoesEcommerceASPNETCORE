@@ -12,7 +12,8 @@ namespace ShoesEcommerce.Models.Accounts
         
         public int Id { get; set; }
 
-        public string FisebaseUid { get; set; }
+        [Required]
+        public string FirebaseUid { get; set; }
 
         [Required]
         [MaxLength(50)]
@@ -52,5 +53,7 @@ namespace ShoesEcommerce.Models.Accounts
         public ICollection<Comment> Comments { get; set; }
         public ICollection<QA> QAs { get; set; }
         public ICollection<Favorite> Favorites { get; set; }
+
+        public ICollection<UserRole> Roles { get; set; }
     }
 }

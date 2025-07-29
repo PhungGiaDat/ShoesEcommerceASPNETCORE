@@ -1,0 +1,141 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+    ViewData["Title"] = "Doanh thu thuần tuần này";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <button class="btn btn-outline-secondary mb-3">Bán hàng</button>
+</div>
+
+<!-- Revenue Card -->
+<div class="revenue-card">
+    <h3 class="revenue-header">Kết quả doanh thu Tháng 01/2025</h3>
+    
+    <!-- Revenue Statistics -->
+    <div class="revenue-stats">
+        <div class="revenue-item">
+            <div class="revenue-value">1</div>
+            <div class="revenue-label">hoá đơn</div>
+        </div>
+        <div class="revenue-item">
+            <div class="revenue-value">0</div>
+            <div class="revenue-label">phiếu</div>
+        </div>
+    </div>
+    
+    <!-- Revenue Summary -->
+    <div class="revenue-summary">
+        <div class="summary-item">
+            <div class="summary-value">$199</div>
+            <div class="summary-label">Doanh thu</div>
+        </div>
+        <div class="summary-item">
+            <div class="summary-value">0</div>
+            <div class="summary-label">Trả hàng</div>
+        </div>
+    </div>
+    
+    <!-- Financial Summary -->
+    <div class="financial-summary">
+        <div class="financial-box">
+            <div class="financial-title">Tiền vốn</div>
+            <div class="financial-amount">$60.000</div>
+        </div>
+        <div class="financial-box">
+            <div class="financial-title">Tiền lời</div>
+            <div class="financial-amount loss">-$59.801</div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Container -->
+<div class="chart-container">
+    <canvas id="revenueChart" class="chart-canvas"></canvas>
+</div>
+
+@section Scripts {
+<script>
+    // Revenue Chart
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: [200, 100, 160, 90, 170, 180, 60, 90, 110, 150, 170, 170],
+                    borderColor: '#4a90e2',
+                    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#4a90e2',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#4a90e2',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 250,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666',
+                            stepSize: 50
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverBackgroundColor: '#4a90e2'
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+
+        // Responsive chart resize
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    });
+</script>
+}

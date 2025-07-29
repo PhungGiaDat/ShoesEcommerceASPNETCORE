@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ShoesEcommerce.Data;
 
@@ -11,9 +12,11 @@ using ShoesEcommerce.Data;
 namespace ShoesEcommerce.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250721065952_Add-FirebaseUid")]
+    partial class AddFirebaseUid
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -55,7 +58,7 @@ namespace ShoesEcommerce.Migrations
 
                     b.Property<string>("FirebaseUid")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)")
+                        .HasColumnType("nvarchar(max)")
                         .HasColumnName("FirebaseUid");
 
                     b.Property<string>("FirstName")
@@ -87,9 +90,6 @@ namespace ShoesEcommerce.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CartId");
-
-                    b.HasIndex("FirebaseUid")
-                        .IsUnique();
 
                     b.ToTable("Customers");
                 });
@@ -123,9 +123,6 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("UserType")
-                        .HasColumnType("int");
-
                     b.HasKey("Id");
 
                     b.ToTable("Roles");
@@ -144,6 +141,21 @@ namespace ShoesEcommerce.Migrations
                     b.HasIndex("PermissionId");
 
                     b.ToTable("RolePermissions");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Accounts.RoleStaff", b =>
+                {
+                    b.Property<int>("StaffId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RoleId")
+                        .HasColumnType("int");
+
+                    b.HasKey("StaffId", "RoleId");
+
+                    b.HasIndex("RoleId");
+
+                    b.ToTable("RoleStaffs");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Accounts.Staff", b =>
@@ -182,44 +194,6 @@ namespace ShoesEcommerce.Migrations
                     b.HasIndex("DepartmentId");
 
                     b.ToTable("Staffs");
-                });
-
-            modelBuilder.Entity("ShoesEcommerce.Models.Accounts.UserRole", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("CustomerId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("CustomerId1")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RoleId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("StaffId")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("StaffId1")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("CustomerId");
-
-                    b.HasIndex("CustomerId1");
-
-                    b.HasIndex("RoleId");
-
-                    b.HasIndex("StaffId");
-
-                    b.HasIndex("StaffId1");
-
-                    b.ToTable("UserRole");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Carts.Cart", b =>
@@ -784,18 +758,37 @@ namespace ShoesEcommerce.Migrations
                     b.HasOne("ShoesEcommerce.Models.Accounts.Permission", "Permission")
                         .WithMany("RolePermissions")
                         .HasForeignKey("PermissionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ShoesEcommerce.Models.Accounts.Role", "Role")
                         .WithMany("RolePermissions")
                         .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Permission");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Accounts.RoleStaff", b =>
+                {
+                    b.HasOne("ShoesEcommerce.Models.Accounts.Role", "Role")
+                        .WithMany("RoleStaffs")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShoesEcommerce.Models.Accounts.Staff", "Staff")
+                        .WithMany("RoleStaffs")
+                        .HasForeignKey("StaffId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("Staff");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Accounts.Staff", b =>
@@ -807,39 +800,6 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired();
 
                     b.Navigation("Department");
-                });
-
-            modelBuilder.Entity("ShoesEcommerce.Models.Accounts.UserRole", b =>
-                {
-                    b.HasOne("ShoesEcommerce.Models.Accounts.Customer", "Customer")
-                        .WithMany()
-                        .HasForeignKey("CustomerId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ShoesEcommerce.Models.Accounts.Customer", null)
-                        .WithMany("Roles")
-                        .HasForeignKey("CustomerId1");
-
-                    b.HasOne("ShoesEcommerce.Models.Accounts.Role", "Role")
-                        .WithMany()
-                        .HasForeignKey("RoleId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ShoesEcommerce.Models.Accounts.Staff", "Staff")
-                        .WithMany()
-                        .HasForeignKey("StaffId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("ShoesEcommerce.Models.Accounts.Staff", null)
-                        .WithMany("Roles")
-                        .HasForeignKey("StaffId1");
-
-                    b.Navigation("Customer");
-
-                    b.Navigation("Role");
-
-                    b.Navigation("Staff");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Carts.CartItem", b =>
@@ -1084,8 +1044,6 @@ namespace ShoesEcommerce.Migrations
 
                     b.Navigation("QAs");
 
-                    b.Navigation("Roles");
-
                     b.Navigation("ShippingAddresses");
                 });
 
@@ -1097,13 +1055,15 @@ namespace ShoesEcommerce.Migrations
             modelBuilder.Entity("ShoesEcommerce.Models.Accounts.Role", b =>
                 {
                     b.Navigation("RolePermissions");
+
+                    b.Navigation("RoleStaffs");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Accounts.Staff", b =>
                 {
                     b.Navigation("QAs");
 
-                    b.Navigation("Roles");
+                    b.Navigation("RoleStaffs");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Carts.Cart", b =>
