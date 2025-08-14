@@ -1,0 +1,556 @@
+@model ShoesEcommerce.ViewModels.Product.ProductListViewModel
+@{
+    ViewData["Title"] = "Qu?n lý S?n ph?m";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="product-management">
+    <!-- Page Header -->
+    <div class="page-header bg-gradient-primary text-white rounded-3 mb-4 p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="page-title mb-2">
+                    <i class="fas fa-shopping-bag me-2"></i>
+                    Qu?n lý S?n ph?m
+                </h2>
+                <p class="page-subtitle mb-0 opacity-75">Qu?n lý s?n ph?m, danh m?c và th??ng hi?u</p>
+            </div>
+            <div class="page-actions">
+                <a asp-action="Create" class="btn btn-light btn-lg shadow-sm">
+                    <i class="fas fa-plus me-2"></i>
+                    Thêm s?n ph?m
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions Cards -->
+    <div class="row mb-4">
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 quick-action-card bg-primary text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-tags fa-2x mb-3"></i>
+                    <h5 class="card-title">Danh m?c</h5>
+                    <p class="card-text">Qu?n lý danh m?c s?n ph?m</p>
+                    <a asp-action="Categories" class="btn btn-light btn-sm stretched-link">
+                        Xem danh m?c
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 quick-action-card bg-success text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-award fa-2x mb-3"></i>
+                    <h5 class="card-title">Th??ng hi?u</h5>
+                    <p class="card-text">Qu?n lý th??ng hi?u</p>
+                    <a asp-action="Brands" class="btn btn-light btn-sm stretched-link">
+                        Xem th??ng hi?u
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 quick-action-card bg-info text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-palette fa-2x mb-3"></i>
+                    <h5 class="card-title">Phiên b?n</h5>
+                    <p class="card-text">Qu?n lý màu s?c & kích th??c</p>
+                    <div class="btn btn-light btn-sm disabled">
+                        Ch?n s?n ph?m
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100 quick-action-card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-chart-line fa-2x mb-3"></i>
+                    <h5 class="card-title">Th?ng kê</h5>
+                    <p class="card-text">Báo cáo s?n ph?m</p>
+                    <div class="btn btn-light btn-sm disabled">
+                        S?p ra m?t
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Filters and Search -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-filter me-2 text-primary"></i>
+                B? l?c tìm ki?m
+            </h5>
+        </div>
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-lg-4 col-md-6">
+                    <label for="searchTerm" class="form-label fw-semibold">
+                        <i class="fas fa-search me-1"></i>Tìm ki?m
+                    </label>
+                    <input type="text" class="form-control form-control-lg" id="searchTerm" name="searchTerm" 
+                           value="@(Model?.SearchTerm ?? "")" placeholder="Tên s?n ph?m, mô t?...">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="categoryId" class="form-label fw-semibold">
+                        <i class="fas fa-tags me-1"></i>Danh m?c
+                    </label>
+                    <select class="form-select form-select-lg" id="categoryId" name="categoryId">
+                        <option value="">T?t c? danh m?c</option>
+                        @if (ViewBag.Categories is SelectList categories)
+                        {
+                            @foreach (var item in categories)
+                            {
+                                <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label for="brandId" class="form-label fw-semibold">
+                        <i class="fas fa-award me-1"></i>Th??ng hi?u
+                    </label>
+                    <select class="form-select form-select-lg" id="brandId" name="brandId">
+                        <option value="">T?t c? th??ng hi?u</option>
+                        @if (ViewBag.Brands is SelectList brands)
+                        {
+                            @foreach (var item in brands)
+                            {
+                                <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                            }
+                        }
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label for="pageSize" class="form-label fw-semibold">Hi?n th?</label>
+                    <select class="form-select form-select-lg" name="pageSize">
+                        <option value="10" selected="@((Model?.PageSize ?? 10) == 10)">10</option>
+                        <option value="25" selected="@((Model?.PageSize ?? 10) == 25)">25</option>
+                        <option value="50" selected="@((Model?.PageSize ?? 10) == 50)">50</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="submit" class="btn btn-primary btn-lg px-4">
+                            <i class="fas fa-search me-2"></i>
+                            Tìm ki?m
+                        </button>
+                        <a asp-action="Index" class="btn btn-outline-secondary btn-lg px-4">
+                            <i class="fas fa-refresh me-2"></i>
+                            Xóa b? l?c
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Products List -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-shopping-bag me-2 text-primary"></i>
+                    Danh sách s?n ph?m (@(Model?.TotalCount ?? 0))
+                </h5>
+                <div class="card-tools d-flex gap-2">
+                    <button class="btn btn-outline-primary" onclick="exportToExcel()">
+                        <i class="fas fa-download me-1"></i>
+                        Xu?t Excel
+                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-cog me-1"></i>
+                            Thao tác
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#" onclick="bulkDelete()">
+                                <i class="fas fa-trash me-2"></i>Xóa nhi?u
+                            </a></li>
+                            <li><a class="dropdown-item" href="#" onclick="bulkExport()">
+                                <i class="fas fa-file-export me-2"></i>Xu?t ?ã ch?n
+                            </a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            @if (Model?.Products != null && Model.Products.Any())
+            {
+                <!-- Desktop Table View -->
+                <div class="table-responsive d-none d-lg-block">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th width="40">
+                                    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>S?n ph?m</th>
+                                <th>Danh m?c</th>
+                                <th>Th??ng hi?u</th>
+                                <th>Giá</th>
+                                <th>Phiên b?n</th>
+                                <th>Tr?ng thái</th>
+                                <th class="text-center" width="150">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var product in Model.Products)
+                            {
+                                <tr>
+                                    <td>
+                                        <input type="checkbox" class="form-check-input product-checkbox" value="@product.Id">
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar me-3">
+                                                <div class="avatar-initial bg-light border rounded text-primary">
+                                                    <i class="fas fa-shopping-bag"></i>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h6 class="mb-1 fw-semibold">@product.Name</h6>
+                                                <small class="text-muted">
+                                                    @(product.Description.Length > 50 ? product.Description.Substring(0, 50) + "..." : product.Description)
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-primary-subtle text-primary">@product.CategoryName</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary-subtle text-secondary">@product.BrandName</span>
+                                    </td>
+                                    <td>
+                                        <span class="fw-bold text-success">@product.Price.ToString("N0") VN?</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info-subtle text-info">@product.VariantCount phiên b?n</span>
+                                    </td>
+                                    <td>
+                                        @if (product.IsActive)
+                                        {
+                                            <span class="badge bg-success">Ho?t ??ng</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">T?m d?ng</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="btn-group" role="group">
+                                            <a asp-action="Details" asp-route-id="@product.Id" 
+                                               class="btn btn-sm btn-outline-primary" title="Xem chi ti?t">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a asp-action="Variants" asp-route-id="@product.Id" 
+                                               class="btn btn-sm btn-outline-info" title="Phiên b?n">
+                                                <i class="fas fa-palette"></i>
+                                            </a>
+                                            <a asp-action="Edit" asp-route-id="@product.Id" 
+                                               class="btn btn-sm btn-outline-warning" title="Ch?nh s?a">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a asp-action="Delete" asp-route-id="@product.Id" 
+                                               class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                <i class="fas fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Card View -->
+                <div class="d-lg-none">
+                    @foreach (var product in Model.Products)
+                    {
+                        <div class="card border-0 border-bottom rounded-0 mb-0">
+                            <div class="card-body py-3">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div class="d-flex align-items-center">
+                                        <input type="checkbox" class="form-check-input me-2 product-checkbox" value="@product.Id">
+                                        <div>
+                                            <h6 class="mb-1 fw-semibold">@product.Name</h6>
+                                            <div class="d-flex gap-1 mb-2">
+                                                <span class="badge bg-primary-subtle text-primary small">@product.CategoryName</span>
+                                                <span class="badge bg-secondary-subtle text-secondary small">@product.BrandName</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                            <i class="fas fa-ellipsis-v"></i>
+                                        </button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" asp-action="Details" asp-route-id="@product.Id">
+                                                <i class="fas fa-eye me-2"></i>Xem chi ti?t
+                                            </a></li>
+                                            <li><a class="dropdown-item" asp-action="Variants" asp-route-id="@product.Id">
+                                                <i class="fas fa-palette me-2"></i>Phiên b?n
+                                            </a></li>
+                                            <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@product.Id">
+                                                <i class="fas fa-edit me-2"></i>Ch?nh s?a
+                                            </a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li><a class="dropdown-item text-danger" asp-action="Delete" asp-route-id="@product.Id">
+                                                <i class="fas fa-trash me-2"></i>Xóa
+                                            </a></li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="row text-sm">
+                                    <div class="col-6">
+                                        <strong class="text-success">@product.Price.ToString("N0") VN?</strong>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <span class="badge bg-info-subtle text-info">@product.VariantCount phiên b?n</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Pagination -->
+                @if ((Model?.TotalPages ?? 0) > 1)
+                {
+                    <div class="card-footer bg-white border-0">
+                        <nav aria-label="Product pagination">
+                            <ul class="pagination justify-content-center mb-3">
+                                <!-- Previous -->
+                                <li class="page-item @((Model?.CurrentPage ?? 1) <= 1 ? "disabled" : "")">
+                                    <a class="page-link" 
+                                       asp-action="Index" 
+                                       asp-route-page="@((Model?.CurrentPage ?? 1) - 1)"
+                                       asp-route-searchTerm="@(Model?.SearchTerm)"
+                                       asp-route-categoryId="@(Model?.CategoryId)"
+                                       asp-route-brandId="@(Model?.BrandId)"
+                                       asp-route-pageSize="@(Model?.PageSize)">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+
+                                <!-- Page Numbers -->
+                                @{
+                                    int currentPage = Model?.CurrentPage ?? 1;
+                                    int totalPages = Model?.TotalPages ?? 1;
+                                    int startPage = Math.Max(1, currentPage - 2);
+                                    int endPage = Math.Min(totalPages, currentPage + 2);
+                                }
+
+                                @for (int i = startPage; i <= endPage; i++)
+                                {
+                                    <li class="page-item @(i == currentPage ? "active" : "")">
+                                        <a class="page-link" 
+                                           asp-action="Index" 
+                                           asp-route-page="@i"
+                                           asp-route-searchTerm="@(Model?.SearchTerm)"
+                                           asp-route-categoryId="@(Model?.CategoryId)"
+                                           asp-route-brandId="@(Model?.BrandId)"
+                                           asp-route-pageSize="@(Model?.PageSize)">
+                                            @i
+                                        </a>
+                                    </li>
+                                }
+
+                                <!-- Next -->
+                                <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
+                                    <a class="page-link" 
+                                       asp-action="Index" 
+                                       asp-route-page="@(currentPage + 1)"
+                                       asp-route-searchTerm="@(Model?.SearchTerm)"
+                                       asp-route-categoryId="@(Model?.CategoryId)"
+                                       asp-route-brandId="@(Model?.BrandId)"
+                                       asp-route-pageSize="@(Model?.PageSize)">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            </ul>
+                        </nav>
+                        <div class="text-center">
+                            <small class="text-muted">
+                                Hi?n th? @(((Model?.CurrentPage ?? 1) - 1) * (Model?.PageSize ?? 10) + 1) - 
+                                @(Math.Min((Model?.CurrentPage ?? 1) * (Model?.PageSize ?? 10), (Model?.TotalCount ?? 0))) 
+                                c?a @(Model?.TotalCount ?? 0) s?n ph?m
+                            </small>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <div class="empty-state">
+                        <i class="fas fa-shopping-bag fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Ch?a có s?n ph?m nào</h4>
+                        <p class="text-muted mb-4">
+                            @if (!string.IsNullOrEmpty(Model?.SearchTerm) || (Model?.CategoryId).HasValue || (Model?.BrandId).HasValue)
+                            {
+                                <span>Không tìm th?y s?n ph?m phù h?p v?i b? l?c.</span>
+                            }
+                            else
+                            {
+                                <span>Hãy thêm s?n ph?m ??u tiên ?? b?t ??u kinh doanh.</span>
+                            }
+                        </p>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a asp-action="Create" class="btn btn-primary btn-lg">
+                                <i class="fas fa-plus me-2"></i>
+                                Thêm s?n ph?m ??u tiên
+                            </a>
+                            @if (!string.IsNullOrEmpty(Model?.SearchTerm) || (Model?.CategoryId).HasValue || (Model?.BrandId).HasValue)
+                            {
+                                <a asp-action="Index" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-refresh me-2"></i>
+                                    Xóa b? l?c
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .quick-action-card {
+            transition: transform 0.2s ease-in-out;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .quick-action-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .quick-action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: rgba(255,255,255,0.3);
+        }
+        
+        .avatar-initial {
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        
+        .empty-state i {
+            opacity: 0.3;
+        }
+        
+        .table th {
+            font-weight: 600;
+            border-bottom: 2px solid #dee2e6;
+        }
+        
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        
+        .btn-group .btn {
+            border: 1px solid #dee2e6;
+        }
+        
+        .badge {
+            font-size: 0.75em;
+        }
+        
+        @@media (max-width: 768px) {
+            .page-header .page-actions {
+                margin-top: 1rem;
+            }
+            
+            .quick-action-card {
+                margin-bottom: 1rem;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.product-checkbox');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = selectAll.checked;
+            });
+        }
+
+        function exportToExcel() {
+            // Export functionality can be implemented here
+            alert('Tính n?ng xu?t Excel s? ???c phát tri?n trong t??ng lai');
+        }
+
+        function bulkDelete() {
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert('Vui lòng ch?n ít nh?t m?t s?n ph?m ?? xóa');
+                return;
+            }
+            if (confirm(`B?n có ch?c ch?n mu?n xóa ${checkedBoxes.length} s?n ph?m ?ã ch?n?`)) {
+                // Implement bulk delete functionality
+                alert('Tính n?ng xóa nhi?u s? ???c phát tri?n trong t??ng lai');
+            }
+        }
+
+        function bulkExport() {
+            const checkedBoxes = document.querySelectorAll('.product-checkbox:checked');
+            if (checkedBoxes.length === 0) {
+                alert('Vui lòng ch?n ít nh?t m?t s?n ph?m ?? xu?t');
+                return;
+            }
+            // Implement bulk export functionality
+            alert('Tính n?ng xu?t ?ã ch?n s? ???c phát tri?n trong t??ng lai');
+        }
+
+        // Auto-submit form on filter changes
+        document.getElementById('categoryId').addEventListener('change', function() {
+            this.form.submit();
+        });
+
+        document.getElementById('brandId').addEventListener('change', function() {
+            this.form.submit();
+        });
+    </script>
+}

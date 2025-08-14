@@ -1,10 +1,45 @@
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.EntityFrameworkCore;
+using ShoesEcommerce.Data;
+using ShoesEcommerce.Repositories;
+using ShoesEcommerce.Repositories.Interfaces;
+using ShoesEcommerce.Services;
+using ShoesEcommerce.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Configure Razor view engine to look for Admin views
+builder.Services.Configure<RazorViewEngineOptions>(options =>
+{
+    // Clear default view locations
+    options.ViewLocationFormats.Clear();
+    
+    // Add custom view location formats
+    options.ViewLocationFormats.Add("/Views/{1}/{0}.cshtml");
+    options.ViewLocationFormats.Add("/Views/Shared/{0}.cshtml");
+    options.ViewLocationFormats.Add("/Views/Admin/{1}/{0}.cshtml");
+    options.ViewLocationFormats.Add("/Views/Admin/Shared/{0}.cshtml");
+});
+
+// Add Entity Framework
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register Repositories
+builder.Services.AddScoped<IStaffRepository, StaffRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+
+// Register Services
+builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+
+// Register other services
+builder.Services.AddScoped<FirebaseUserSyncService>();
 
 builder.Services.AddSession(options =>
 {
@@ -29,11 +64,7 @@ FirebaseApp.Create(new AppOptions()
     Credential = GoogleCredential.FromFile("wwwroot/credentials/shoes-ecommerce-fd0cb-firebase-adminsdk-fbsvc-b9bf519edf.json"),
 });
 
-
 //Add Sessions 
-
-
-
 app.UseSession(); // Enable session middleware
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -41,6 +72,12 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "admin",
+    pattern: "Admin/{controller=Admin}/{action=Index}/{id?}",
+    defaults: new { controller = "Admin" },
+    constraints: new { controller = @"^(Admin|Product|Staff|Customer|Order|Stock)$" });
 
 app.MapControllerRoute(
     name: "default",
