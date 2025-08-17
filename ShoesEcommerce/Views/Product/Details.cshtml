@@ -1,0 +1,61 @@
+﻿@model ShoesEcommerce.Models.Products.Product
+
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <!-- Hình ảnh sản phẩm -->
+        <div class="col-md-6">
+            <img src="@Model.ImageUrl" alt="@Model.Name" class="img-fluid rounded shadow-sm" />
+        </div>
+
+        <!-- Thông tin sản phẩm -->
+        <div class="col-md-6">
+            <h2>@Model.Name</h2>
+            <p class="text-muted">@Model.Price.ToString("N0") VNĐ</p>
+            <p>@Model.Description</p>
+
+            <p><strong>Thương hiệu:</strong> @Model.Brand?.Name</p>
+            <p><strong>Danh mục:</strong> @Model.Category?.Name</p>
+
+            <!-- Danh sách biến thể sản phẩm -->
+            @if (Model.Variants != null && Model.Variants.Any())
+            {
+                <h5>Chọn biến thể</h5>
+                <ul>
+                    @foreach (var variant in Model.Variants)
+                    {
+                        <li>Màu: @variant.Color - Size: @variant.Size</li>
+                    }
+                </ul>
+            }
+
+            <!-- Nút thêm vào giỏ -->
+            <a href="@Url.Action("AddToCart", "Cart", new { id = Model.Id })" class="btn btn-primary">
+                Thêm vào giỏ
+            </a>
+        </div>
+    </div>
+
+    <hr />
+
+    <!-- Phần bình luận -->
+    <div class="mt-4">
+        <h4>Bình luận</h4>
+        @if (Model.Comments != null && Model.Comments.Any())
+        {
+            <ul class="list-group">
+                @foreach (var cmt in Model.Comments)
+                {
+                    <li class="list-group-item">@cmt.Content</li>
+                }
+            </ul>
+        }
+        else
+        {
+            <p class="text-muted">Chưa có bình luận nào.</p>
+        }
+    </div>
+</div>
