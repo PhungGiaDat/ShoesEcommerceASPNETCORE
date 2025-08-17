@@ -1,0 +1,55 @@
+﻿@model ShoesEcommerce.Models.Orders.Order
+
+@{
+    ViewData["Title"] = "Đặt hàng thành công (COD)";
+}
+
+<div class="alert alert-success mt-4">
+    <h3>🎉 Đặt hàng thành công!</h3>
+    <p>Cảm ơn bạn đã mua hàng. Đơn hàng của bạn sẽ được xử lý và giao sớm nhất.</p>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <strong>Thông tin đơn hàng</strong>
+    </div>
+    <div class="card-body">
+        <p><strong>Mã đơn hàng:</strong> #@Model.Id</p>
+        <p><strong>Ngày đặt:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+        <p><strong>Tổng tiền:</strong> <span class="text-danger">@Model.TotalAmount.ToString("C0")</span></p>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <strong>Sản phẩm</strong>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>Sản phẩm</th>
+                    <th>Số lượng</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.OrderDetails)
+                {
+                    <tr>
+                        <td>@item.ProductVariant.Product.Name</td>
+                        <td>@item.Quantity</td>
+                        <td>@item.UnitPrice.ToString("C0")</td>
+                        <td>@(item.Quantity* item.UnitPrice).ToString("C0")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a href="/" class="btn btn-primary">⬅️ Tiếp tục mua sắm</a>
+    <a href="/Orders/Details/@Model.Id" class="btn btn-outline-secondary">📄 Xem chi tiết đơn hàng</a>
+</div>

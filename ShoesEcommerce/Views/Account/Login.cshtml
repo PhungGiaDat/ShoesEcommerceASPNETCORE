@@ -1,0 +1,215 @@
+@{
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<style>
+    /* Light (mặc định) */
+    :root {
+        --bg-color: #f4f6f8;
+        --text-color: #222;
+        --card-bg: #fff;
+        --label-color: #555;
+        --input-bg: #fff;
+        --input-border: #ccc;
+        --error-bg: #f8d7da;
+        --error-text: #721c24;
+        --btn-bg: #007bff;
+        --btn-hover: #0056b3;
+        --code-bg: #eee;
+        --code-text: #000;
+    }
+
+    /* Dark (khi html có data-theme="dark") */
+    [data-theme="dark"] {
+        --bg-color: #121212;
+        --text-color: #f1f1f1;
+        --card-bg: #1e1e1e;
+        --label-color: #ccc;
+        --input-bg: #2b2b2b;
+        --input-border: #444;
+        --error-bg: #5f2120;
+        --error-text: #f8d7da;
+        --btn-bg: #4a90e2;
+        --btn-hover: #357abd;
+        --code-bg: #333;
+        --code-text: #fff;
+    }
+
+    /* Hiệu ứng chuyển mượt khi đổi theme */
+    * {
+        transition: background-color .25s ease, color .25s ease, border-color .25s ease;
+    }
+
+    body {
+        font-family: Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        margin: 0;
+    }
+
+    .login-wrapper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 80vh;
+    }
+
+    .login-card {
+        background-color: var(--card-bg);
+        padding: 2rem;
+        border-radius: 8px;
+        width: 100%;
+        max-width: 380px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        position: relative;
+    }
+
+        .login-card h2 {
+            text-align: center;
+            margin-bottom: 1.5rem;
+            font-weight: bold;
+        }
+
+    .theme-toggle {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        background-color: var(--btn-bg);
+        color: white;
+        border: none;
+    }
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+        .form-group label {
+            font-weight: 500;
+            display: block;
+            margin-bottom: 0.3rem;
+            color: var(--label-color);
+        }
+
+    .form-control {
+        width: 100%;
+        padding: 0.6rem 0.8rem;
+        border-radius: 4px;
+        border: 1px solid var(--input-border);
+        background-color: var(--input-bg);
+        color: var(--text-color);
+        font-size: 1rem;
+        outline: none;
+    }
+
+        .form-control:focus {
+            border-color: var(--btn-bg);
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+
+    .btn-submit {
+        width: 100%;
+        padding: 0.6rem;
+        background-color: var(--btn-bg);
+        border: none;
+        color: white;
+        border-radius: 4px;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+        .btn-submit:hover {
+            background-color: var(--btn-hover);
+        }
+
+    .error-box {
+        background-color: var(--error-bg);
+        color: var(--error-text);
+        padding: 0.5rem;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        font-size: 0.9rem;
+    }
+
+    .test-info {
+        margin-top: 1rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--label-color);
+    }
+
+        .test-info code {
+            background-color: var(--code-bg);
+            color: var(--code-text);
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+        }
+</style>
+
+<div class="login-wrapper">
+    <div class="login-card">
+        <button class="theme-toggle" id="themeBtn" type="button" onclick="toggleTheme()">🌙/☀️</button>
+
+        <h2>Đăng nhập</h2>
+
+        <form asp-action="Login" method="post">
+            @Html.AntiForgeryToken()
+
+            <!-- Giữ ReturnUrl -->
+            <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
+
+            <div class="form-group">
+                <label for="username">Tên đăng nhập</label>
+                <input type="text" id="username" name="username" class="form-control" placeholder="Nhập tên đăng nhập" required />
+            </div>
+
+            <div class="form-group">
+                <label for="password">Mật khẩu</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Nhập mật khẩu" required />
+            </div>
+
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="error-box">
+                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                    {
+                        <div>@error.ErrorMessage</div>
+                    }
+                </div>
+            }
+
+            <button type="submit" class="btn-submit">Đăng nhập</button>
+        </form>
+
+    </div>
+</div>
+
+<script>
+    // Thiết lập theme theo localStorage, nếu chưa có thì theo hệ điều hành
+    (function initTheme() {
+        const saved = localStorage.getItem("theme");
+        if (saved === "dark" || saved === "light") {
+            document.documentElement.setAttribute("data-theme", saved);
+        } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+            document.documentElement.setAttribute("data-theme", "dark");
+        } // else: để mặc định light
+        updateToggleLabel();
+    })();
+
+    function toggleTheme() {
+        const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+        const next = cur === "dark" ? "light" : "dark";
+        document.documentElement.setAttribute("data-theme", next);
+        localStorage.setItem("theme", next);
+        updateToggleLabel();
+    }
+
+    function updateToggleLabel() {
+        const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+        const btn = document.getElementById("themeBtn");
+        if (btn) btn.textContent = isDark ? "☀️ Light" : "🌙 Dark";
+    }
+</script>

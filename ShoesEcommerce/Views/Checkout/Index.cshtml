@@ -1,0 +1,110 @@
+﻿@model ShoesEcommerce.Models.Carts.Cart
+@using ShoesEcommerce.Models.Orders
+
+@{
+    ViewData["Title"] = "Thanh toán";
+    var addresses = ViewBag.Addresses as List<ShippingAddress>;
+}
+
+<h2 class="mb-4">Thanh toán đơn hàng</h2>
+
+@if (Model == null || !Model.CartItems.Any())
+{
+    <div class="alert alert-warning">
+        Giỏ hàng của bạn đang trống.
+    </div>
+}
+else
+{
+    <form asp-action="PlaceOrder" method="post">
+        @Html.AntiForgeryToken()
+
+        <!-- Giỏ hàng -->
+        <div class="card mb-4">
+            <div class="card-header"><strong>Giỏ hàng</strong></div>
+            <div class="card-body p-0">
+                <table class="table table-striped mb-0">
+                    <thead>
+                        <tr>
+                            <th>Sản phẩm</th>
+                            <th>Số lượng</th>
+                            <th>Giá</th>
+                            <th>Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.CartItems)
+                        {
+                            <tr>
+                                <td>@item.ProductVariant.Product.Name</td>
+                                <td>@item.Quantity</td>
+                                <td>@item.ProductVariant.Product.Price.ToString("C0")</td>
+                                <td>@(item.Quantity* item.ProductVariant.Product.Price).ToString("C0")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer text-end">
+                <h5 class="mb-0">
+                    Tổng cộng:
+                    <span class="text-danger">
+                        @Model.CartItems.Sum(x => x.Quantity * x.ProductVariant.Product.Price).ToString("C0")
+                    </span>
+                </h5>
+            </div>
+        </div>
+
+        <!-- Địa chỉ giao hàng -->
+        <div class="card mb-4">
+            <div class="card-header"><strong>Địa chỉ giao hàng</strong></div>
+            <div class="card-body">
+                @if (addresses != null && addresses.Any())
+                {
+                    <div class="mb-3">
+                        <label for="shippingAddressId" class="form-label">Chọn địa chỉ</label>
+                        <select name="shippingAddressId" id="shippingAddressId" class="form-select" required>
+                            <option value="">-- Vui lòng chọn địa chỉ --</option>
+                            @foreach (var addr in addresses)
+                            {
+                                <option value="@addr.Id">
+                                    @addr.District, @addr.City
+                                </option>
+                            }
+                        </select>
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        Bạn chưa có địa chỉ giao hàng.
+                        <a href="/ShippingAddress/Create">Thêm địa chỉ mới</a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Phương thức thanh toán -->
+        <div class="card mb-4">
+            <div class="card-header"><strong>Phương thức thanh toán</strong></div>
+            <div class="card-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="paymentMethod" value="VNPay" id="pmVnpay" checked>
+                    <label class="form-check-label" for="pmVnpay">
+                        Thanh toán qua VNPay
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="paymentMethod" value="COD" id="pmCod">
+                    <label class="form-check-label" for="pmCod">
+                        Thanh toán khi nhận hàng (COD)
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success btn-lg w-100">
+            Đặt hàng ngay
+        </button>
+    </form>
+}

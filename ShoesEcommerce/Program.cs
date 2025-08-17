@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+using ShoesEcommerce.Data;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Mvc.Razor;
@@ -33,14 +35,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Register Repositories
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
-builder.Services.AddScoped<IStockRepository, StockRepository>();
 
 // Register Services
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IProductService, ProductService>();
-builder.Services.AddScoped<IFileUploadService, FileUploadService>();
-builder.Services.AddScoped<IStockService, StockService>();
-
 
 // Register other services
 builder.Services.AddScoped<FirebaseUserSyncService>();
@@ -51,6 +49,15 @@ builder.Services.AddSession(options =>
     options.Cookie.HttpOnly = true; // Make the session cookie HTTP only
     options.Cookie.IsEssential = true; // Make the session cookie essential
 });
+
+// Authentication - Cookie scheme
+builder.Services
+    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Account/Login";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+    });
 
 var app = builder.Build();
 
@@ -94,6 +101,7 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(

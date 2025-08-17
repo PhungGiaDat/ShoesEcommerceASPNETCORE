@@ -166,6 +166,12 @@ namespace ShoesEcommerce.Data
                 .HasOne(od => od.ProductVariant)
                 .WithMany(pv => pv.OrderDetails)
                 .HasForeignKey(od => od.ProductVariantId);
+
+            // Configure ShippingAddress-Customer relationship
+            modelBuilder.Entity<ShippingAddress>()
+                .HasOne(sa => sa.Customer)
+                .WithMany(c => c.ShippingAddresses)
+                .HasForeignKey(sa => sa.CustomerId);
         }
 
         private void ConfigureProducts(ModelBuilder modelBuilder)
@@ -188,6 +194,12 @@ namespace ShoesEcommerce.Data
 
         private void ConfigureCarts(ModelBuilder modelBuilder)
         {
+            // Configure Cart-Customer relationship
+            modelBuilder.Entity<Cart>()
+                .HasOne(c => c.Customer)
+                .WithOne(c => c.Cart)
+                .HasForeignKey<Customer>(c => c.CartId);
+
             modelBuilder.Entity<CartItem>()
                 .HasOne(ci => ci.Cart)
                 .WithMany(c => c.CartItems)

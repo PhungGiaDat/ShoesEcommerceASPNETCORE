@@ -1,0 +1,137 @@
+﻿@model List<ShoesEcommerce.Models.ViewModels.OrderViewModel>
+
+@{
+    ViewData["Title"] = "Đơn hàng của tôi";
+}
+
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2 class="mb-4">
+                <i class="fas fa-shopping-bag me-2"></i>
+                Đơn hàng của tôi
+            </h2>
+
+            @if (TempData["SuccessMessage"] != null)
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fas fa-check-circle me-2"></i>
+                    @TempData["SuccessMessage"]
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            }
+
+            @if (Model == null || !Model.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-shopping-bag fa-3x text-muted mb-3"></i>
+                    <h4 class="text-muted">Bạn chưa có đơn hàng nào</h4>
+                    <p class="text-muted">Hãy mua sắm và tạo đơn hàng đầu tiên của bạn!</p>
+                    <a href="@Url.Action("Index", "Product")" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Mua sắm ngay
+                    </a>
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    @foreach (var order in Model)
+                    {
+                        <div class="col-12 mb-4">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-light">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6">
+                                            <h6 class="mb-0">
+                                                <strong>Đơn hàng: @order.OrderNumber</strong>
+                                            </h6>
+                                            <small class="text-muted">
+                                                <i class="fas fa-calendar me-1"></i>
+                                                @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                            </small>
+                                        </div>
+                                        <div class="col-md-6 text-md-end">
+                                            <span class="badge bg-primary me-2">@order.Status</span>
+                                            <span class="badge @(order.PaymentStatus == "Paid" ? "bg-success" : "bg-warning")">
+                                                @order.PaymentStatus
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="row">
+                                                @foreach (var detail in order.OrderDetails.Take(3))
+                                                {
+                                                    <div class="col-md-4 mb-3">
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="@detail.ProductVariant.ImageUrl" 
+                                                                 alt="@detail.ProductVariant.Name" 
+                                                                 class="img-thumbnail me-2" 
+                                                                 style="width: 50px; height: 50px; object-fit: cover;">
+                                                            <div>
+                                                                <h6 class="mb-1">@detail.ProductVariant.Name</h6>
+                                                                <small class="text-muted">
+                                                                    @detail.ProductVariant.Color - @detail.ProductVariant.Size
+                                                                </small>
+                                                                <br>
+                                                                <small class="text-muted">
+                                                                    SL: @detail.Quantity x @detail.UnitPrice.ToString("N0")đ
+                                                                </small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                }
+                                                @if (order.OrderDetails.Count > 3)
+                                                {
+                                                    <div class="col-md-4 mb-3">
+                                                        <div class="text-center py-3">
+                                                            <i class="fas fa-ellipsis-h fa-2x text-muted"></i>
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                Và @(order.OrderDetails.Count - 3) sản phẩm khác
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-md-end">
+                                            <div class="mb-2">
+                                                <strong class="text-primary fs-5">
+                                                    @order.TotalAmount.ToString("N0")đ
+                                                </strong>
+                                            </div>
+                                            <div class="mb-3">
+                                                <small class="text-muted">
+                                                    <i class="fas fa-map-marker-alt me-1"></i>
+                                                    @order.ShippingAddress.City, @order.ShippingAddress.District
+                                                </small>
+                                            </div>
+                                            <a href="@Url.Action("Details", "Order", new { id = order.Id })" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-eye me-1"></i>
+                                                Chi tiết
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Auto-hide alerts after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut('slow');
+        }, 5000);
+    </script>
+}

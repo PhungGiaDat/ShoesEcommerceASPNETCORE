@@ -47,6 +47,8 @@ namespace ShoesEcommerce.Models.Accounts
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
+        // Add CartId to match database schema
+        public int? CartId { get; set; }
         public Cart Cart { get; set; }
         public ICollection<Order> Orders { get; set; }
         public ICollection<ShippingAddress> ShippingAddresses { get; set; }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ShoesEcommerce.Data;
 
@@ -11,9 +12,11 @@ using ShoesEcommerce.Data;
 namespace ShoesEcommerce.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250815074454_UpdateCartRelationships")]
+    partial class UpdateCartRelationships
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -175,7 +178,7 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("PhoneNumber")
+                    b.Property<string>("PhnoneNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -206,6 +209,9 @@ namespace ShoesEcommerce.Migrations
                     b.Property<int?>("StaffId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("StaffId1")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CustomerId");
@@ -216,7 +222,9 @@ namespace ShoesEcommerce.Migrations
 
                     b.HasIndex("StaffId");
 
-                    b.ToTable("UserRoles");
+                    b.HasIndex("StaffId1");
+
+                    b.ToTable("UserRole");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Carts.Cart", b =>
@@ -592,6 +600,10 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -651,13 +663,6 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
-
                     b.Property<int>("ProductId")
                         .HasColumnType("int");
 
@@ -680,10 +685,6 @@ namespace ShoesEcommerce.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ContactInfo")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -701,26 +702,15 @@ namespace ShoesEcommerce.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AvailableQuantity")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("LastUpdated")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("LastUpdatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<int>("ProductVariantId")
                         .HasColumnType("int");
 
-                    b.Property<int>("ReservedQuantity")
+                    b.Property<int>("Quantity")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ProductVariantId")
-                        .IsUnique();
+                    b.HasIndex("ProductVariantId");
 
                     b.ToTable("Stocks");
                 });
@@ -733,35 +723,17 @@ namespace ShoesEcommerce.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("BatchNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime>("EntryDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsProcessed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Notes")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ProductVariantId")
                         .HasColumnType("int");
 
-                    b.Property<int>("QuantityReceived")
+                    b.Property<int>("Quantity")
                         .HasColumnType("int");
-
-                    b.Property<string>("ReceivedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("SupplierId")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("UnitCost")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -780,41 +752,14 @@ namespace ShoesEcommerce.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("AvailableQuantityAfter")
-                        .HasColumnType("int");
-
-                    b.Property<int>("AvailableQuantityBefore")
-                        .HasColumnType("int");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Notes")
+                    b.Property<string>("Note")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("ProductVariantId")
                         .HasColumnType("int");
 
-                    b.Property<int>("QuantityChange")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Reason")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("ReferenceId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ReferenceType")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("ReservedQuantityAfter")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ReservedQuantityBefore")
+                    b.Property<int>("Quantity")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("TransactionDate")
@@ -888,9 +833,13 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired();
 
                     b.HasOne("ShoesEcommerce.Models.Accounts.Staff", "Staff")
-                        .WithMany("Roles")
+                        .WithMany()
                         .HasForeignKey("StaffId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ShoesEcommerce.Models.Accounts.Staff", null)
+                        .WithMany("Roles")
+                        .HasForeignKey("StaffId1");
 
                     b.Navigation("Customer");
 
@@ -1093,8 +1042,8 @@ namespace ShoesEcommerce.Migrations
             modelBuilder.Entity("ShoesEcommerce.Models.Stocks.Stock", b =>
                 {
                     b.HasOne("ShoesEcommerce.Models.Products.ProductVariant", "ProductVariant")
-                        .WithOne("CurrentStock")
-                        .HasForeignKey("ShoesEcommerce.Models.Stocks.Stock", "ProductVariantId")
+                        .WithMany("Stocks")
+                        .HasForeignKey("ProductVariantId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -1221,13 +1170,13 @@ namespace ShoesEcommerce.Migrations
                 {
                     b.Navigation("CartItems");
 
-                    b.Navigation("CurrentStock");
-
                     b.Navigation("OrderDetails");
 
                     b.Navigation("StockEntries");
 
                     b.Navigation("StockTransactions");
+
+                    b.Navigation("Stocks");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Products.Supplier", b =>
