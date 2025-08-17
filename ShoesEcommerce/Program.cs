@@ -39,6 +39,9 @@ builder.Services.AddScoped<IProductRepository, ProductRepository>();
 // Register Services
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+builder.Services.AddScoped<IStockService, StockService>();
+
 
 // Register other services
 builder.Services.AddScoped<FirebaseUserSyncService>();
