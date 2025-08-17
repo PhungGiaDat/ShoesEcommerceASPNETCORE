@@ -37,6 +37,9 @@ namespace ShoesEcommerce.Services.Interfaces
         // Suppliers
         Task<IEnumerable<SupplierInfo>> GetAllSuppliersAsync();
         Task<Supplier?> GetSupplierByIdAsync(int id);
+        Task<SupplierInfo> CreateSupplierAsync(CreateSupplierViewModel model);
+        Task<bool> UpdateSupplierAsync(int id, EditSupplierViewModel model);
+        Task<bool> DeleteSupplierAsync(int id);
 
         // Dropdown Data
         Task<IEnumerable<Category>> GetCategoriesForDropdownAsync();

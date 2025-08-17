@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace ShoesEcommerce.ViewModels.Product
 {
@@ -20,7 +20,7 @@ namespace ShoesEcommerce.ViewModels.Product
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public decimal Price { get; set; }
+        public decimal Price { get; set; } // This will be calculated from variants
         public string CategoryName { get; set; } = string.Empty;
         public string BrandName { get; set; } = string.Empty;
         public int VariantCount { get; set; }
@@ -31,21 +31,17 @@ namespace ShoesEcommerce.ViewModels.Product
 
     public class CreateProductViewModel
     {
-        [Required(ErrorMessage = "T�n s?n ph?m l� b?t bu?c")]
-        [StringLength(200, ErrorMessage = "T�n s?n ph?m kh�ng ???c qu� 200 k� t?")]
+        [Required(ErrorMessage = "Tên s?n ph?m là b?t bu?c")]
+        [StringLength(200, ErrorMessage = "Tên s?n ph?m không ???c quá 200 ký t?")]
         public string Name { get; set; } = string.Empty;
 
-        [StringLength(1000, ErrorMessage = "M� t? kh�ng ???c qu� 1000 k� t?")]
+        [StringLength(1000, ErrorMessage = "Mô t? không ???c quá 1000 ký t?")]
         public string Description { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Gi� l� b?t bu?c")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Gi� ph?i l?n h?n 0")]
-        public decimal Price { get; set; }
-
-        [Required(ErrorMessage = "Danh m?c l� b?t bu?c")]
+        [Required(ErrorMessage = "Danh m?c là b?t bu?c")]
         public int CategoryId { get; set; }
 
-        [Required(ErrorMessage = "Th??ng hi?u l� b?t bu?c")]
+        [Required(ErrorMessage = "Th??ng hi?u là b?t bu?c")]
         public int BrandId { get; set; }
 
         public bool IsActive { get; set; } = true;
@@ -55,21 +51,17 @@ namespace ShoesEcommerce.ViewModels.Product
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "T�n s?n ph?m l� b?t bu?c")]
-        [StringLength(200, ErrorMessage = "T�n s?n ph?m kh�ng ???c qu� 200 k� t?")]
+        [Required(ErrorMessage = "Tên s?n ph?m là b?t bu?c")]
+        [StringLength(200, ErrorMessage = "Tên s?n ph?m không ???c quá 200 ký t?")]
         public string Name { get; set; } = string.Empty;
 
-        [StringLength(1000, ErrorMessage = "M� t? kh�ng ???c qu� 1000 k� t?")]
+        [StringLength(1000, ErrorMessage = "Mô t? không ???c quá 1000 ký t?")]
         public string Description { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Gi� l� b?t bu?c")]
-        [Range(0.01, double.MaxValue, ErrorMessage = "Gi� ph?i l?n h?n 0")]
-        public decimal Price { get; set; }
-
-        [Required(ErrorMessage = "Danh m?c l� b?t bu?c")]
+        [Required(ErrorMessage = "Danh m?c là b?t bu?c")]
         public int CategoryId { get; set; }
 
-        [Required(ErrorMessage = "Th??ng hi?u l� b?t bu?c")]
+        [Required(ErrorMessage = "Th??ng hi?u là b?t bu?c")]
         public int BrandId { get; set; }
 
         public bool IsActive { get; set; }
@@ -83,21 +75,41 @@ namespace ShoesEcommerce.ViewModels.Product
         public string ProductName { get; set; } = string.Empty;
         public string Color { get; set; } = string.Empty;
         public string Size { get; set; } = string.Empty;
-        public int StockQuantity { get; set; }
+        public string ImageUrl { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        
+        // ? RENAMED: Maps to AvailableQuantity from Stock entity
+        public int StockQuantity { get; set; } // For display purposes, maps to AvailableQuantity
     }
 
     public class CreateProductVariantViewModel
     {
         public int ProductId { get; set; }
 
-        [Required(ErrorMessage = "M�u s?c l� b?t bu?c")]
-        [StringLength(50, ErrorMessage = "M�u s?c kh�ng ???c qu� 50 k� t?")]
+        [Required(ErrorMessage = "Màu sắc là bắt buộc")]
+        [StringLength(50, ErrorMessage = "Màu sắc không được quá 50 ký tự")]
         public string Color { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "K�ch th??c l� b?t bu?c")]
-        [StringLength(20, ErrorMessage = "K�ch th??c kh�ng ???c qu� 20 k� t?")]
+        [Required(ErrorMessage = "Kích thước là bắt buộc")]
+        [StringLength(20, ErrorMessage = "Kích thước không được quá 20 ký tự")]
         public string Size { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Giá là bắt buộc")]
+        [Range(1, double.MaxValue, ErrorMessage = "Giá phải lớn hơn 0 VNĐ")]
+        public decimal Price { get; set; }
+
+        [StringLength(500, ErrorMessage = "URL hình ảnh không được quá 500 ký tự")]
+        public string? ImageUrl { get; set; } = string.Empty;
+
+        [Range(0, int.MaxValue, ErrorMessage = "Số lượng tồn kho phải không âm")]
+        public int InitialStockQuantity { get; set; }
+
+        // File upload properties
+        [Display(Name = "Hình ảnh phiên bản")]
+        public IFormFile? ImageFile { get; set; }
+
+        [Display(Name = "Sử dụng URL thay vì tải lên")]
+        public bool UseImageUrl { get; set; } = false;
     }
 
     public class EditProductVariantViewModel
@@ -105,13 +117,33 @@ namespace ShoesEcommerce.ViewModels.Product
         public int Id { get; set; }
         public int ProductId { get; set; }
 
-        [Required(ErrorMessage = "M�u s?c l� b?t bu?c")]
-        [StringLength(50, ErrorMessage = "M�u s?c kh�ng ???c qu� 50 k� t?")]
+        [Required(ErrorMessage = "Màu s?c là b?t bu?c")]
+        [StringLength(50, ErrorMessage = "Màu s?c không ???c quá 50 ký t?")]
         public string Color { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "K�ch th??c l� b?t bu?c")]
-        [StringLength(20, ErrorMessage = "K�ch th??c kh�ng ???c qu� 20 k� t?")]
+        [Required(ErrorMessage = "Kích th??c là b?t bu?c")]
+        [StringLength(20, ErrorMessage = "K kích th??c không ???c quá 20 ký t?")]
         public string Size { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Giá là b?t bu?c")]
+        [Range(1, double.MaxValue, ErrorMessage = "Giá ph?i l?n h?n 0 VN?")]
+        public decimal Price { get; set; }
+
+        [StringLength(500, ErrorMessage = "URL hình ?nh không ???c quá 500 ký t?")]
+        public string ImageUrl { get; set; } = string.Empty;
+
+        // File upload properties for editing
+        [Display(Name = "Hình ?nh m?i")]
+        public IFormFile? ImageFile { get; set; }
+
+        [Display(Name = "S? d?ng URL thay vì t?i lên")]
+        public bool UseImageUrl { get; set; } = false;
+
+        [Display(Name = "Gi? hình ?nh hi?n t?i")]
+        public bool KeepCurrentImage { get; set; } = true;
+
+        // Current image info for display
+        public string? CurrentImageUrl { get; set; }
     }
 
     // Category ViewModels
@@ -124,30 +156,24 @@ namespace ShoesEcommerce.ViewModels.Product
 
     public class CreateCategoryViewModel
     {
-        [Required(ErrorMessage = "T�n danh m?c l� b?t bu?c")]
-        [StringLength(100, ErrorMessage = "T�n danh m?c kh�ng ???c qu� 100 k� t?")]
+        [Required(ErrorMessage = "Tên danh m?c là b?t bu?c")]
+        [StringLength(100, ErrorMessage = "Tên danh m?c không ???c quá 100 ký t?")]
         public string Name { get; set; } = string.Empty;
 
-        [StringLength(500, ErrorMessage = "M� t? kh�ng ???c qu� 500 k� t?")]
+        [StringLength(500, ErrorMessage = "Mô t? không ???c quá 500 ký t?")]
         public string Description { get; set; } = string.Empty;
-
-        [StringLength(200, ErrorMessage = "URL h�nh ?nh kh�ng ???c qu� 200 k� t?")]
-        public string ImageUrl { get; set; } = string.Empty;
     }
 
     public class EditCategoryViewModel
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "T�n danh m?c l� b?t bu?c")]
-        [StringLength(100, ErrorMessage = "T�n danh m?c kh�ng ???c qu� 100 k� t?")]
+        [Required(ErrorMessage = "Tên danh m?c là b?t bu?c")]
+        [StringLength(100, ErrorMessage = "Tên danh m?c không ???c quá 100 ký t?")]
         public string Name { get; set; } = string.Empty;
 
-        [StringLength(500, ErrorMessage = "M� t? kh�ng ???c qu� 500 k� t?")]
+        [StringLength(500, ErrorMessage = "Mô t? không ???c quá 500 ký t?")]
         public string Description { get; set; } = string.Empty;
-
-        [StringLength(200, ErrorMessage = "URL h�nh ?nh kh�ng ???c qu� 200 k� t?")]
-        public string ImageUrl { get; set; } = string.Empty;
     }
 
     // Brand ViewModels
@@ -160,8 +186,8 @@ namespace ShoesEcommerce.ViewModels.Product
 
     public class CreateBrandViewModel
     {
-        [Required(ErrorMessage = "T�n th??ng hi?u l� b?t bu?c")]
-        [StringLength(100, ErrorMessage = "T�n th??ng hi?u kh�ng ???c qu� 100 k� t?")]
+        [Required(ErrorMessage = "Tên th??ng hi?u là b?t bu?c")]
+        [StringLength(100, ErrorMessage = "Tên th??ng hi?u không ???c quá 100 ký t?")]
         public string Name { get; set; } = string.Empty;
     }
 
@@ -169,8 +195,8 @@ namespace ShoesEcommerce.ViewModels.Product
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "T�n th??ng hi?u l� b?t bu?c")]
-        [StringLength(100, ErrorMessage = "T�n th??ng hi?u kh�ng ???c qu� 100 k� t?")]
+        [Required(ErrorMessage = "Tên th??ng hi?u là b?t bu?c")]
+        [StringLength(100, ErrorMessage = "Tên th??ng hi?u không ???c quá 100 ký t?")]
         public string Name { get; set; } = string.Empty;
     }
 
@@ -179,6 +205,29 @@ namespace ShoesEcommerce.ViewModels.Product
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public string ContactInfo { get; set; } = string.Empty;
+        public int StockEntryCount { get; set; } = 0;
+    }
+
+    public class CreateSupplierViewModel
+    {
+        [Required(ErrorMessage = "Tên nhà cung cấp là bắt buộc")]
+        [StringLength(100, ErrorMessage = "Tên nhà cung cấp không được quá 100 ký tự")]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(200, ErrorMessage = "Thông tin liên hệ không được quá 200 ký tự")]
+        public string ContactInfo { get; set; } = string.Empty;
+    }
+
+    public class EditSupplierViewModel
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Tên nhà cung cấp là bắt buộc")]
+        [StringLength(100, ErrorMessage = "Tên nhà cung cấp không được quá 100 ký tự")]
+        public string Name { get; set; } = string.Empty;
+
+        [StringLength(200, ErrorMessage = "Thông tin liên hệ không được quá 200 ký tự")]
         public string ContactInfo { get; set; } = string.Empty;
     }
 }

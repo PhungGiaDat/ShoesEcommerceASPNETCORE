@@ -69,6 +69,7 @@ namespace ShoesEcommerce.Repositories
         {
             return await _context.ProductVariants
                 .Include(v => v.Product)
+                .Include(v => v.CurrentStock) // ? INCLUDE STOCK DATA
                 .Where(v => v.ProductId == productId)
                 .ToListAsync();
         }
@@ -80,6 +81,7 @@ namespace ShoesEcommerce.Repositories
                     .ThenInclude(p => p.Category)
                 .Include(v => v.Product)
                     .ThenInclude(p => p.Brand)
+                .Include(v => v.CurrentStock) // ? INCLUDE STOCK DATA
                 .FirstOrDefaultAsync(v => v.Id == id);
         }
 
@@ -203,6 +205,31 @@ namespace ShoesEcommerce.Repositories
             return await _context.Suppliers
                 .Include(s => s.StockEntries)
                 .FirstOrDefaultAsync(s => s.Id == id);
+        }
+
+        public async Task<Supplier> CreateSupplierAsync(Supplier supplier)
+        {
+            _context.Suppliers.Add(supplier);
+            await _context.SaveChangesAsync();
+            return supplier;
+        }
+
+        public async Task<Supplier> UpdateSupplierAsync(Supplier supplier)
+        {
+            _context.Entry(supplier).State = EntityState.Modified;
+            await _context.SaveChangesAsync();
+            return supplier;
+        }
+
+        public async Task<bool> DeleteSupplierAsync(int id)
+        {
+            var supplier = await _context.Suppliers.FindAsync(id);
+            if (supplier == null)
+                return false;
+
+            _context.Suppliers.Remove(supplier);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         // Advanced Queries

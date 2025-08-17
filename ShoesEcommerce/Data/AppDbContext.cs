@@ -201,11 +201,19 @@ namespace ShoesEcommerce.Data
 
         private void ConfigureStocks(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Stock>()
-                .HasOne(s => s.ProductVariant)
-                .WithMany(pv => pv.Stocks)
-                .HasForeignKey(s => s.ProductVariantId);
+            // ✅ ONE-TO-ONE: ProductVariant to Stock
+            modelBuilder.Entity<ProductVariant>()
+                .HasOne(pv => pv.CurrentStock)
+                .WithOne(s => s.ProductVariant)
+                .HasForeignKey<Stock>(s => s.ProductVariantId)
+                .OnDelete(DeleteBehavior.Cascade);
 
+            // ✅ UNIQUE CONSTRAINT: One Stock record per ProductVariant
+            modelBuilder.Entity<Stock>()
+                .HasIndex(s => s.ProductVariantId)
+                .IsUnique();
+
+            // ✅ ONE-TO-MANY: ProductVariant to StockEntries
             modelBuilder.Entity<StockEntry>()
                 .HasOne(se => se.ProductVariant)
                 .WithMany(pv => pv.StockEntries)
@@ -216,10 +224,16 @@ namespace ShoesEcommerce.Data
                 .WithMany(s => s.StockEntries)
                 .HasForeignKey(se => se.SupplierId);
 
+            // ✅ ONE-TO-MANY: ProductVariant to StockTransactions
             modelBuilder.Entity<StockTransaction>()
                 .HasOne(st => st.ProductVariant)
                 .WithMany(pv => pv.StockTransactions)
                 .HasForeignKey(st => st.ProductVariantId);
+
+            // ✅ ENUM CONFIGURATION
+            modelBuilder.Entity<StockTransaction>()
+                .Property(st => st.Type)
+                .HasConversion<string>();
         }
 
         private void ConfigureInteractions(ModelBuilder modelBuilder)

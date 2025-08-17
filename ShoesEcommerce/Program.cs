@@ -33,10 +33,14 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Register Repositories
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IStockRepository, StockRepository>();
 
 // Register Services
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+builder.Services.AddScoped<IStockService, StockService>();
+
 
 // Register other services
 builder.Services.AddScoped<FirebaseUserSyncService>();
@@ -49,6 +53,25 @@ builder.Services.AddSession(options =>
 });
 
 var app = builder.Build();
+
+// Seed database data on startup
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    try
+    {
+        // Ensure database is created and up to date
+        await context.Database.MigrateAsync();
+        
+        // Seed suppliers and other data
+        await DataSeeder.SeedAllDataAsync(context);
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "An error occurred while seeding the database");
+    }
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

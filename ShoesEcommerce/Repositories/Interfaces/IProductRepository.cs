@@ -36,6 +36,9 @@ namespace ShoesEcommerce.Repositories.Interfaces
         // Suppliers
         Task<IEnumerable<Supplier>> GetAllSuppliersAsync();
         Task<Supplier?> GetSupplierByIdAsync(int id);
+        Task<Supplier> CreateSupplierAsync(Supplier supplier);
+        Task<Supplier> UpdateSupplierAsync(Supplier supplier);
+        Task<bool> DeleteSupplierAsync(int id);
 
         // Advanced Queries
         Task<IEnumerable<Product>> SearchProductsAsync(string searchTerm);

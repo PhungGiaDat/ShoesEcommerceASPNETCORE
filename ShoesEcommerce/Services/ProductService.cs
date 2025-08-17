@@ -8,11 +8,15 @@ namespace ShoesEcommerce.Services
     public class ProductService : IProductService
     {
         private readonly IProductRepository _productRepository;
+        private readonly IFileUploadService _fileUploadService;
+        private readonly IStockService _stockService;
         private readonly ILogger<ProductService> _logger;
 
-        public ProductService(IProductRepository productRepository, ILogger<ProductService> logger)
+        public ProductService(IProductRepository productRepository, IFileUploadService fileUploadService, IStockService stockService, ILogger<ProductService> logger)
         {
             _productRepository = productRepository;
+            _fileUploadService = fileUploadService;
+            _stockService = stockService;
             _logger = logger;
         }
 
@@ -31,7 +35,7 @@ namespace ShoesEcommerce.Services
                     Id = p.Id,
                     Name = p.Name ?? string.Empty,
                     Description = p.Description ?? string.Empty,
-                    Price = p.Price,
+                    Price = p.Variants?.Any() == true ? p.Variants.Min(v => v.Price) : 0, // Get minimum price from variants
                     CategoryName = p.Category?.Name ?? "N/A",
                     BrandName = p.Brand?.Name ?? "N/A",
                     VariantCount = p.Variants?.Count ?? 0,
@@ -93,7 +97,6 @@ namespace ShoesEcommerce.Services
                 {
                     Name = model.Name,
                     Description = model.Description,
-                    Price = model.Price,
                     CategoryId = model.CategoryId,
                     BrandId = model.BrandId
                 };
@@ -109,7 +112,7 @@ namespace ShoesEcommerce.Services
                     Id = createdProduct.Id,
                     Name = createdProduct.Name,
                     Description = createdProduct.Description,
-                    Price = createdProduct.Price,
+                    Price = 0, // No price until variants are added
                     CategoryName = category?.Name ?? "N/A",
                     BrandName = brand?.Name ?? "N/A",
                     VariantCount = 0,
@@ -138,7 +141,6 @@ namespace ShoesEcommerce.Services
 
                 existingProduct.Name = model.Name;
                 existingProduct.Description = model.Description;
-                existingProduct.Price = model.Price;
                 existingProduct.CategoryId = model.CategoryId;
                 existingProduct.BrandId = model.BrandId;
 
@@ -194,8 +196,9 @@ namespace ShoesEcommerce.Services
                     ProductName = v.Product?.Name ?? "N/A",
                     Color = v.Color ?? string.Empty,
                     Size = v.Size ?? string.Empty,
-                    StockQuantity = 0, // Will be calculated from Stock table later
-                    Price = v.Product?.Price ?? 0
+                    ImageUrl = v.ImageUrl ?? string.Empty,
+                    Price = v.Price,
+                    StockQuantity = v.AvailableQuantity // ? USE COMPUTED PROPERTY
                 });
             }
             catch (Exception ex)
@@ -222,14 +225,92 @@ namespace ShoesEcommerce.Services
         {
             try
             {
+                _logger.LogInformation("Creating product variant for Product {ProductId}: {Color} - {Size}", 
+                    model.ProductId, model.Color, model.Size);
+
+                // Handle image upload - simplified logic
+                string imageUrl = string.Empty;
+                
+                if (model.ImageFile != null && model.ImageFile.Length > 0)
+                {
+                    _logger.LogInformation("Processing image file: {FileName}, Size: {FileSize} bytes", 
+                        model.ImageFile.FileName, model.ImageFile.Length);
+                    
+                    try
+                    {
+                        // Upload file and get URL
+                        imageUrl = await _fileUploadService.UploadProductVariantImageAsync(
+                            model.ImageFile, 
+                            model.ProductId, 
+                            model.Color, 
+                            model.Size);
+                        
+                        _logger.LogInformation("Image uploaded successfully: {ImageUrl}", imageUrl);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Failed to upload image file");
+                        // Continue without image - don't fail the variant creation
+                        imageUrl = string.Empty;
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("No image file provided for product variant");
+                }
+
                 var variant = new ProductVariant
                 {
                     ProductId = model.ProductId,
                     Color = model.Color,
-                    Size = model.Size
+                    Size = model.Size,
+                    Price = model.Price,
+                    ImageUrl = imageUrl ?? string.Empty // Ensure never null
                 };
 
+                _logger.LogInformation("Creating product variant entity with ImageUrl: '{ImageUrl}'", variant.ImageUrl);
                 var createdVariant = await _productRepository.CreateProductVariantAsync(variant);
+                
+                _logger.LogInformation("Product variant created successfully with ID: {VariantId}", createdVariant.Id);
+                
+                // Create initial stock if quantity is provided
+                if (model.InitialStockQuantity > 0)
+                {
+                    _logger.LogInformation("Creating initial stock of {Quantity} for variant {VariantId}", 
+                        model.InitialStockQuantity, createdVariant.Id);
+                    
+                    try
+                    {
+                        // Use AdjustStockAsync instead which doesn't require a supplier
+                        var stockCreated = await _stockService.AdjustStockAsync(
+                            createdVariant.Id, 
+                            model.InitialStockQuantity, 
+                            "Initial stock when creating product variant",
+                            "System"
+                        );
+                        
+                        if (stockCreated)
+                        {
+                            _logger.LogInformation("Initial stock created successfully for variant {VariantId}", createdVariant.Id);
+                        }
+                        else
+                        {
+                            _logger.LogWarning("Failed to create initial stock for variant {VariantId}", createdVariant.Id);
+                            // Don't fail the variant creation if stock creation fails, just log it
+                        }
+                    }
+                    catch (Exception stockEx)
+                    {
+                        _logger.LogError(stockEx, "Exception occurred while creating initial stock for variant {VariantId}", createdVariant.Id);
+                        // Don't throw here - variant creation succeeded, stock creation is secondary
+                    }
+                }
+                else
+                {
+                    _logger.LogInformation("No initial stock quantity specified for variant {VariantId}", createdVariant.Id);
+                }
+                
+                // Get product info for return value
                 var product = await _productRepository.GetProductByIdAsync(model.ProductId);
 
                 return new ProductVariantInfo
@@ -239,14 +320,15 @@ namespace ShoesEcommerce.Services
                     ProductName = product?.Name ?? "N/A",
                     Color = createdVariant.Color,
                     Size = createdVariant.Size,
-                    StockQuantity = 0,
-                    Price = product?.Price ?? 0
+                    ImageUrl = createdVariant.ImageUrl,
+                    Price = createdVariant.Price,
+                    StockQuantity = model.InitialStockQuantity // Use initial value for display
                 };
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while creating product variant");
-                throw new InvalidOperationException("Unable to create product variant", ex);
+                _logger.LogError(ex, "Error occurred while creating product variant for Product {ProductId}", model.ProductId);
+                throw;
             }
         }
 
@@ -258,8 +340,50 @@ namespace ShoesEcommerce.Services
                 if (existingVariant == null)
                     return false;
 
+                // Handle image update
+                string imageUrl = existingVariant.ImageUrl;
+                
+                if (model.ImageFile != null && !model.UseImageUrl)
+                {
+                    // Delete old image if it exists and is a local file
+                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl) && existingVariant.ImageUrl.StartsWith("/"))
+                    {
+                        await _fileUploadService.DeleteImageAsync(existingVariant.ImageUrl);
+                    }
+                    
+                    // Upload new file
+                    imageUrl = await _fileUploadService.UploadProductVariantImageAsync(
+                        model.ImageFile, 
+                        model.ProductId, 
+                        model.Color, 
+                        model.Size);
+                }
+                else if (model.UseImageUrl && !string.IsNullOrEmpty(model.ImageUrl))
+                {
+                    // Delete old image if switching to URL
+                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl) && existingVariant.ImageUrl.StartsWith("/"))
+                    {
+                        await _fileUploadService.DeleteImageAsync(existingVariant.ImageUrl);
+                    }
+                    
+                    // Use provided URL
+                    imageUrl = model.ImageUrl;
+                }
+                else if (!model.KeepCurrentImage)
+                {
+                    // Remove image
+                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl) && existingVariant.ImageUrl.StartsWith("/"))
+                    {
+                        await _fileUploadService.DeleteImageAsync(existingVariant.ImageUrl);
+                    }
+                    imageUrl = string.Empty;
+                }
+
                 existingVariant.Color = model.Color;
                 existingVariant.Size = model.Size;
+                existingVariant.Price = model.Price;
+                existingVariant.ImageUrl = imageUrl;
+                // ? REMOVED: StockQuantity assignment - stock managed separately
 
                 await _productRepository.UpdateProductVariantAsync(existingVariant);
                 return true;
@@ -275,7 +399,18 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                return await _productRepository.DeleteProductVariantAsync(id);
+                // Get variant to delete associated image
+                var variant = await _productRepository.GetProductVariantByIdAsync(id);
+                
+                var result = await _productRepository.DeleteProductVariantAsync(id);
+                
+                // Delete associated image if it's a local file
+                if (result && variant != null && !string.IsNullOrEmpty(variant.ImageUrl) && variant.ImageUrl.StartsWith("/"))
+                {
+                    await _fileUploadService.DeleteImageAsync(variant.ImageUrl);
+                }
+                
+                return result;
             }
             catch (Exception ex)
             {
@@ -324,8 +459,7 @@ namespace ShoesEcommerce.Services
                 var category = new Category
                 {
                     Name = model.Name,
-                    Description = model.Description ?? string.Empty,
-                    ImageUrl = model.ImageUrl ?? string.Empty
+                    Description = model.Description ?? string.Empty
                 };
 
                 var createdCategory = await _productRepository.CreateCategoryAsync(category);
@@ -354,7 +488,6 @@ namespace ShoesEcommerce.Services
 
                 existingCategory.Name = model.Name;
                 existingCategory.Description = model.Description ?? string.Empty;
-                existingCategory.ImageUrl = model.ImageUrl ?? string.Empty;
 
                 await _productRepository.UpdateCategoryAsync(existingCategory);
                 return true;
@@ -500,6 +633,67 @@ namespace ShoesEcommerce.Services
             {
                 _logger.LogError(ex, "Error occurred while getting supplier by ID: {SupplierId}", id);
                 return null;
+            }
+        }
+
+        public async Task<SupplierInfo> CreateSupplierAsync(CreateSupplierViewModel model)
+        {
+            try
+            {
+                var supplier = new Supplier
+                {
+                    Name = model.Name,
+                    ContactInfo = model.ContactInfo
+                };
+
+                var createdSupplier = await _productRepository.CreateSupplierAsync(supplier);
+
+                return new SupplierInfo
+                {
+                    Id = createdSupplier.Id,
+                    Name = createdSupplier.Name,
+                    ContactInfo = createdSupplier.ContactInfo,
+                    StockEntryCount = 0
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while creating supplier");
+                throw new InvalidOperationException("Unable to create supplier", ex);
+            }
+        }
+
+        public async Task<bool> UpdateSupplierAsync(int id, EditSupplierViewModel model)
+        {
+            try
+            {
+                var existingSupplier = await _productRepository.GetSupplierByIdAsync(id);
+                if (existingSupplier == null)
+                    return false;
+
+                existingSupplier.Name = model.Name;
+                existingSupplier.ContactInfo = model.ContactInfo;
+
+                await _productRepository.UpdateSupplierAsync(existingSupplier);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while updating supplier with ID: {SupplierId}", id);
+                return false;
+            }
+        }
+
+        public async Task<bool> DeleteSupplierAsync(int id)
+        {
+            try
+            {
+                return await _productRepository.DeleteSupplierAsync(id);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while deleting supplier with ID: {SupplierId}", id);
+                return false;
             }
         }
 

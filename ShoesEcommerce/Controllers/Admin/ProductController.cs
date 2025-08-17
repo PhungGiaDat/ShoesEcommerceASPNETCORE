@@ -8,18 +8,20 @@ namespace ShoesEcommerce.Controllers.Admin
     public class ProductController : Controller
     {
         private readonly IProductService _productService;
+        private readonly IStockService _stockService;
         private readonly ILogger<ProductController> _logger;
 
-        public ProductController(IProductService productService, ILogger<ProductController> logger)
+        public ProductController(IProductService productService, IStockService stockService, ILogger<ProductController> logger)
         {
             _productService = productService;
+            _stockService = stockService;
             _logger = logger;
         }
 
         // GET: Admin/Product
         public async Task<IActionResult> Index(string searchTerm, int? categoryId, int? brandId, int page = 1, int pageSize = 10)
         {
-            ViewData["Title"] = "Qu?n lý S?n ph?m";
+            ViewData["Title"] = "Quản lý Sản phẩm";
 
             try
             {
@@ -37,7 +39,7 @@ namespace ShoesEcommerce.Controllers.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading product index page");
-                TempData["ErrorMessage"] = "Có l?i x?y ra khi t?i danh sách s?n ph?m: " + ex.Message;
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách sản phẩm: " + ex.Message;
                 
                 var emptyViewModel = new ProductListViewModel();
                 ViewBag.Categories = new SelectList(new List<object>(), "Id", "Name");
@@ -49,14 +51,14 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/Details/5
         public async Task<IActionResult> Details(int id)
         {
-            ViewData["Title"] = "Chi ti?t S?n ph?m";
+            ViewData["Title"] = "Chi tiết Sản phẩm";
 
             try
             {
                 var product = await _productService.GetProductByIdAsync(id);
                 if (product == null)
                 {
-                    TempData["ErrorMessage"] = "Không tìm th?y s?n ph?m!";
+                    TempData["ErrorMessage"] = "Không tìm thấy sản phẩm!";
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -68,7 +70,7 @@ namespace ShoesEcommerce.Controllers.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading product details for ID: {ProductId}", id);
-                TempData["ErrorMessage"] = "Có l?i x?y ra khi t?i thông tin s?n ph?m: " + ex.Message;
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải thông tin sản phẩm: " + ex.Message;
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -76,7 +78,7 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/Create
         public async Task<IActionResult> Create()
         {
-            ViewData["Title"] = "Thêm S?n ph?m m?i";
+            ViewData["Title"] = "Thêm Sản phẩm mới";
 
             try
             {
@@ -91,7 +93,7 @@ namespace ShoesEcommerce.Controllers.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading product create page");
-                TempData["ErrorMessage"] = "Có l?i x?y ra khi t?i form thêm s?n ph?m: " + ex.Message;
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải form thêm sản phẩm: " + ex.Message;
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -101,20 +103,20 @@ namespace ShoesEcommerce.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(CreateProductViewModel model)
         {
-            ViewData["Title"] = "Thêm S?n ph?m m?i";
+            ViewData["Title"] = "Thêm Sản phẩm mới";
 
             if (ModelState.IsValid)
             {
                 try
                 {
                     var createdProduct = await _productService.CreateProductAsync(model);
-                    TempData["SuccessMessage"] = "Thêm s?n ph?m thành công!";
+                    TempData["SuccessMessage"] = "Thêm sản phẩm thành công!";
                     return RedirectToAction(nameof(Details), new { id = createdProduct.Id });
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error creating product");
-                    ModelState.AddModelError("", "Có l?i x?y ra khi thêm s?n ph?m: " + ex.Message);
+                    ModelState.AddModelError("", "Có lỗi xảy ra khi thêm sản phẩm: " + ex.Message);
                 }
             }
 
@@ -130,7 +132,7 @@ namespace ShoesEcommerce.Controllers.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading dropdowns for create form");
-                ModelState.AddModelError("", "Không th? t?i danh sách: " + ex.Message);
+                ModelState.AddModelError("", "Không thể tải danh sách: " + ex.Message);
                 ViewBag.Categories = new SelectList(new List<object>(), "Id", "Name");
                 ViewBag.Brands = new SelectList(new List<object>(), "Id", "Name");
             }
@@ -141,14 +143,14 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/Edit/5
         public async Task<IActionResult> Edit(int id)
         {
-            ViewData["Title"] = "Ch?nh s?a S?n ph?m";
+            ViewData["Title"] = "Chỉnh sửa Sản phẩm";
 
             try
             {
                 var product = await _productService.GetProductByIdAsync(id);
                 if (product == null)
                 {
-                    TempData["ErrorMessage"] = "Không tìm th?y s?n ph?m!";
+                    TempData["ErrorMessage"] = "Không tìm thấy sản phẩm!";
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -157,7 +159,6 @@ namespace ShoesEcommerce.Controllers.Admin
                     Id = product.Id,
                     Name = product.Name,
                     Description = product.Description,
-                    Price = product.Price,
                     CategoryId = product.CategoryId,
                     BrandId = product.BrandId
                 };
@@ -173,7 +174,7 @@ namespace ShoesEcommerce.Controllers.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading product edit page for ID: {ProductId}", id);
-                TempData["ErrorMessage"] = "Có l?i x?y ra khi t?i form ch?nh s?a: " + ex.Message;
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải form chỉnh sửa: " + ex.Message;
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -183,11 +184,11 @@ namespace ShoesEcommerce.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, EditProductViewModel model)
         {
-            ViewData["Title"] = "Ch?nh s?a S?n ph?m";
+            ViewData["Title"] = "Chỉnh sửa Sản phẩm";
 
             if (id != model.Id)
             {
-                TempData["ErrorMessage"] = "ID không h?p l?!";
+                TempData["ErrorMessage"] = "ID không hợp lệ!";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -198,18 +199,18 @@ namespace ShoesEcommerce.Controllers.Admin
                     var result = await _productService.UpdateProductAsync(id, model);
                     if (result)
                     {
-                        TempData["SuccessMessage"] = "C?p nh?t s?n ph?m thành công!";
+                        TempData["SuccessMessage"] = "Cập nhật sản phẩm thành công!";
                         return RedirectToAction(nameof(Details), new { id });
                     }
                     else
                     {
-                        ModelState.AddModelError("", "Không th? c?p nh?t s?n ph?m. Vui lòng th? l?i.");
+                        ModelState.AddModelError("", "Không thể cập nhật sản phẩm. Vui lòng thử lại.");
                     }
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error updating product with ID: {ProductId}", id);
-                    ModelState.AddModelError("", "Có l?i x?y ra khi c?p nh?t s?n ph?m: " + ex.Message);
+                    ModelState.AddModelError("", "Có lỗi xảy ra khi cập nhật sản phẩm: " + ex.Message);
                 }
             }
 
@@ -235,14 +236,14 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/Delete/5
         public async Task<IActionResult> Delete(int id)
         {
-            ViewData["Title"] = "Xóa S?n ph?m";
+            ViewData["Title"] = "Xóa Sản phẩm";
 
             try
             {
                 var product = await _productService.GetProductByIdAsync(id);
                 if (product == null)
                 {
-                    TempData["ErrorMessage"] = "Không tìm th?y s?n ph?m!";
+                    TempData["ErrorMessage"] = "Không tìm thấy sản phẩm!";
                     return RedirectToAction(nameof(Index));
                 }
 
@@ -251,7 +252,7 @@ namespace ShoesEcommerce.Controllers.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading product delete page for ID: {ProductId}", id);
-                TempData["ErrorMessage"] = "Có l?i x?y ra: " + ex.Message;
+                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
                 return RedirectToAction(nameof(Index));
             }
         }
@@ -266,17 +267,17 @@ namespace ShoesEcommerce.Controllers.Admin
                 var result = await _productService.DeleteProductAsync(id);
                 if (result)
                 {
-                    TempData["SuccessMessage"] = "Xóa s?n ph?m thành công!";
+                    TempData["SuccessMessage"] = "Xóa sản phẩm thành công!";
                 }
                 else
                 {
-                    TempData["ErrorMessage"] = "Không th? xóa s?n ph?m. Vui lòng th? l?i.";
+                    TempData["ErrorMessage"] = "Không thể xóa sản phẩm. Vui lòng thử lại.";
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error deleting product with ID: {ProductId}", id);
-                TempData["ErrorMessage"] = "Có l?i x?y ra khi xóa s?n ph?m: " + ex.Message;
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa sản phẩm: " + ex.Message;
             }
 
             return RedirectToAction(nameof(Index));
@@ -287,7 +288,7 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/Categories
         public async Task<IActionResult> Categories()
         {
-            ViewData["Title"] = "Qu?n lý Danh m?c";
+            ViewData["Title"] = "Quản lý Danh mục";
 
             try
             {
@@ -297,7 +298,7 @@ namespace ShoesEcommerce.Controllers.Admin
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading categories page");
-                TempData["ErrorMessage"] = "Có l?i x?y ra khi t?i danh sách danh m?c: " + ex.Message;
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách danh mục: " + ex.Message;
                 return View(new List<CategoryInfo>());
             }
         }
@@ -305,7 +306,7 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/CreateCategory
         public IActionResult CreateCategory()
         {
-            ViewData["Title"] = "Thêm Danh m?c m?i";
+            ViewData["Title"] = "Thêm Danh mục mới";
             return View(new CreateCategoryViewModel());
         }
 
@@ -314,20 +315,20 @@ namespace ShoesEcommerce.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateCategory(CreateCategoryViewModel model)
         {
-            ViewData["Title"] = "Thêm Danh m?c m?i";
+            ViewData["Title"] = "Thêm Danh mục mới";
 
             if (ModelState.IsValid)
             {
                 try
                 {
                     var createdCategory = await _productService.CreateCategoryAsync(model);
-                    TempData["SuccessMessage"] = "Thêm danh m?c thành công!";
+                    TempData["SuccessMessage"] = "Thêm danh mục thành công!";
                     return RedirectToAction(nameof(Categories));
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error creating category");
-                    ModelState.AddModelError("", "Có l?i x?y ra khi thêm danh m?c: " + ex.Message);
+                    ModelState.AddModelError("", "Có lỗi xảy ra khi thêm danh mục: " + ex.Message);
                 }
             }
 
@@ -339,7 +340,7 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/Brands
         public async Task<IActionResult> Brands()
         {
-            ViewData["Title"] = "Qu?n lý Th??ng hi?u";
+            ViewData["Title"] = "Quản lý Thương hiệu";
 
             try
             {
@@ -357,7 +358,7 @@ namespace ShoesEcommerce.Controllers.Admin
         // GET: Admin/Product/CreateBrand
         public IActionResult CreateBrand()
         {
-            ViewData["Title"] = "Thêm Th??ng hi?u m?i";
+            ViewData["Title"] = "Thêm Thương hiệu mới";
             return View(new CreateBrandViewModel());
         }
 
@@ -366,115 +367,167 @@ namespace ShoesEcommerce.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateBrand(CreateBrandViewModel model)
         {
-            ViewData["Title"] = "Thêm Th??ng hi?u m?i";
+            ViewData["Title"] = "Thêm Thương hiệu mới";
 
             if (ModelState.IsValid)
             {
                 try
                 {
                     var createdBrand = await _productService.CreateBrandAsync(model);
-                    TempData["SuccessMessage"] = "Thêm th??ng hi?u thành công!";
+                    TempData["SuccessMessage"] = "Thêm thương hiệu thành công!";
                     return RedirectToAction(nameof(Brands));
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "Error creating brand");
-                    ModelState.AddModelError("", "Có l?i x?y ra khi thêm th??ng hi?u: " + ex.Message);
+                    ModelState.AddModelError("", "Có lỗi xảy ra khi thêm thương hiệu: " + ex.Message);
                 }
             }
 
             return View(model);
         }
 
-        // === PRODUCT VARIANTS ===
-
-        // GET: Admin/Product/Variants/5
-        public async Task<IActionResult> Variants(int id)
+        // ===== SUPPLIER MANAGEMENT =====
+        [HttpGet]
+        public async Task<IActionResult> Suppliers()
         {
-            ViewData["Title"] = "Phiên b?n S?n ph?m";
-
+            ViewData["Title"] = "Quản lý Nhà cung cấp";
+            
             try
             {
-                var product = await _productService.GetProductByIdAsync(id);
-                if (product == null)
-                {
-                    TempData["ErrorMessage"] = "Không tìm th?y s?n ph?m!";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var variants = await _productService.GetProductVariantsAsync(id);
-                ViewBag.Product = product;
-                
-                return View(variants);
+                var suppliers = await _productService.GetAllSuppliersAsync();
+                return View(suppliers);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading product variants for product ID: {ProductId}", id);
-                TempData["ErrorMessage"] = "Có l?i x?y ra: " + ex.Message;
-                return RedirectToAction(nameof(Index));
+                _logger.LogError(ex, "Error loading suppliers");
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách nhà cung cấp";
+                return View(new List<SupplierInfo>());
             }
         }
 
-        // GET: Admin/Product/CreateVariant/5
-        public async Task<IActionResult> CreateVariant(int productId)
+        [HttpGet]
+        public IActionResult CreateSupplier()
         {
-            ViewData["Title"] = "Thêm Phiên b?n m?i";
-
-            try
-            {
-                var product = await _productService.GetProductByIdAsync(productId);
-                if (product == null)
-                {
-                    TempData["ErrorMessage"] = "Không tìm th?y s?n ph?m!";
-                    return RedirectToAction(nameof(Index));
-                }
-
-                ViewBag.Product = product;
-                return View(new CreateProductVariantViewModel { ProductId = productId });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading create variant page for product ID: {ProductId}", productId);
-                TempData["ErrorMessage"] = "Có l?i x?y ra: " + ex.Message;
-                return RedirectToAction(nameof(Index));
-            }
+            ViewData["Title"] = "Thêm Nhà cung cấp mới";
+            return View(new CreateSupplierViewModel());
         }
 
-        // POST: Admin/Product/CreateVariant
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> CreateVariant(CreateProductVariantViewModel model)
+        public async Task<IActionResult> CreateSupplier(CreateSupplierViewModel model)
         {
-            ViewData["Title"] = "Thêm Phiên b?n m?i";
-
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                try
-                {
-                    var createdVariant = await _productService.CreateProductVariantAsync(model);
-                    TempData["SuccessMessage"] = "Thêm phiên b?n s?n ph?m thành công!";
-                    return RedirectToAction(nameof(Variants), new { id = model.ProductId });
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Error creating product variant");
-                    ModelState.AddModelError("", "Có l?i x?y ra khi thêm phiên b?n: " + ex.Message);
-                }
+                return View(model);
             }
 
-            // Reload product info if validation fails
             try
             {
-                var product = await _productService.GetProductByIdAsync(model.ProductId);
-                ViewBag.Product = product;
+                var supplier = await _productService.CreateSupplierAsync(model);
+                TempData["SuccessMessage"] = $"Nhà cung cấp '{supplier.Name}' đã được tạo thành công";
+                return RedirectToAction(nameof(Suppliers));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading product info for create variant form");
-                ModelState.AddModelError("", "Không th? t?i thông tin s?n ph?m: " + ex.Message);
+                _logger.LogError(ex, "Error creating supplier: {Name}", model.Name);
+                ModelState.AddModelError("", "Có lỗi xảy ra khi tạo nhà cung cấp: " + ex.Message);
+                return View(model);
+            }
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditSupplier(int id)
+        {
+            ViewData["Title"] = "Chỉnh sửa Nhà cung cấp";
+            
+            try
+            {
+                var supplier = await _productService.GetSupplierByIdAsync(id);
+                if (supplier == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy nhà cung cấp";
+                    return RedirectToAction(nameof(Suppliers));
+                }
+
+                var model = new EditSupplierViewModel
+                {
+                    Id = supplier.Id,
+                    Name = supplier.Name,
+                    ContactInfo = supplier.ContactInfo
+                };
+
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading supplier for edit: {Id}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải thông tin nhà cung cấp";
+                return RedirectToAction(nameof(Suppliers));
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditSupplier(int id, EditSupplierViewModel model)
+        {
+            if (id != model.Id)
+            {
+                return BadRequest();
             }
 
-            return View(model);
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                var success = await _productService.UpdateSupplierAsync(id, model);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Cập nhật nhà cung cấp thành công";
+                    return RedirectToAction(nameof(Suppliers));
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Không thể cập nhật nhà cung cấp");
+                    return View(model);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating supplier: {Id}", id);
+                ModelState.AddModelError("", "Có lỗi xảy ra khi cập nhật nhà cung cấp: " + ex.Message);
+                return View(model);
+            }
         }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteSupplier(int id)
+        {
+            try
+            {
+                var success = await _productService.DeleteSupplierAsync(id);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Xóa nhà cung cấp thành công";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Không thể xóa nhà cung cấp";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting supplier: {Id}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa nhà cung cấp: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Suppliers));
+        }
+
+        // ===== HELPER METHODS =====
     }
 }
