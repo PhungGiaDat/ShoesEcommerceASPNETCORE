@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ShoesEcommerce.Data;
 
@@ -11,9 +12,11 @@ using ShoesEcommerce.Data;
 namespace ShoesEcommerce.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250810161233_RemovePriceImageFromProductAndCategory")]
+    partial class RemovePriceImageFromProductAndCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -35,7 +38,7 @@ namespace ShoesEcommerce.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int?>("CartId")
+                    b.Property<int>("CartId")
                         .HasColumnType("int");
 
                     b.Property<string>("City")
@@ -86,9 +89,7 @@ namespace ShoesEcommerce.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CartId")
-                        .IsUnique()
-                        .HasFilter("[CartId] IS NOT NULL");
+                    b.HasIndex("CartId");
 
                     b.HasIndex("FirebaseUid")
                         .IsUnique();
@@ -236,6 +237,10 @@ namespace ShoesEcommerce.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
@@ -619,16 +624,9 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -781,8 +779,10 @@ namespace ShoesEcommerce.Migrations
             modelBuilder.Entity("ShoesEcommerce.Models.Accounts.Customer", b =>
                 {
                     b.HasOne("ShoesEcommerce.Models.Carts.Cart", "Cart")
-                        .WithOne("Customer")
-                        .HasForeignKey("ShoesEcommerce.Models.Accounts.Customer", "CartId");
+                        .WithMany()
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Cart");
                 });
@@ -1113,8 +1113,6 @@ namespace ShoesEcommerce.Migrations
             modelBuilder.Entity("ShoesEcommerce.Models.Carts.Cart", b =>
                 {
                     b.Navigation("CartItems");
-
-                    b.Navigation("Customer");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Departments.Department", b =>

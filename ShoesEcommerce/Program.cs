@@ -2,19 +2,18 @@ using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
+using Microsoft.AspNetCore.Mvc.Razor;
+using Microsoft.EntityFrameworkCore;
+using ShoesEcommerce.Data;
+using ShoesEcommerce.Repositories;
+using ShoesEcommerce.Repositories.Interfaces;
 using ShoesEcommerce.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using ShoesEcommerce.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-// Add Order Service
-builder.Services.AddScoped<IOrderService, OrderService>();
 
 builder.Services.AddSession(options =>
 {
@@ -48,11 +47,7 @@ FirebaseApp.Create(new AppOptions()
     Credential = GoogleCredential.FromFile("wwwroot/credentials/shoes-ecommerce-fd0cb-firebase-adminsdk-fbsvc-b9bf519edf.json"),
 });
 
-
 //Add Sessions 
-
-
-
 app.UseSession(); // Enable session middleware
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -61,6 +56,12 @@ app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllerRoute(
+    name: "admin",
+    pattern: "Admin/{controller=Admin}/{action=Index}/{id?}",
+    defaults: new { controller = "Admin" },
+    constraints: new { controller = @"^(Admin|Product|Staff|Customer|Order|Stock)$" });
 
 app.MapControllerRoute(
     name: "default",

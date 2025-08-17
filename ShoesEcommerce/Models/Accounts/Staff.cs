@@ -6,18 +6,21 @@ namespace ShoesEcommerce.Models.Accounts
     public class Staff
     {
         public int Id { get; set; }
-        public string FirebaseUid { get; set; }
+        public string FirebaseUid { get; set; } = string.Empty;
 
-        public string Email { get; set; }
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string PhnoneNumber { get; set; }
+        public string Email { get; set; } = string.Empty;
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty; // Fixed typo
 
         public int DepartmentId { get; set; }
 
+        // Navigation Properties
         public DepartmentEntity? Department { get; set; }
+        public ICollection<UserRole> Roles { get; set; } = new List<UserRole>();
+        public ICollection<QA> QAs { get; set; } = new List<QA>();
 
-        public ICollection<UserRole> Roles { get; set; }
-        public ICollection<QA> QAs { get; set; }
+        // Helper Properties
+        public string FullName => $"{FirstName} {LastName}".Trim();
     }
 }

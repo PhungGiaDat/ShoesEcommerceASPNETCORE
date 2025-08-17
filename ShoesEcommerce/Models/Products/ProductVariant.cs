@@ -12,7 +12,10 @@ namespace ShoesEcommerce.Models.Products
         public Product Product { get; set; }
 
         public string Color { get; set;  }
-        public string Size { get; set; } 
+        public string Size { get; set; }
+        public string ImageUrl { get; set; } = string.Empty;  // ✅ MOVED HERE
+        public decimal Price { get; set; }
+        public int StockQuantity { get; set; }
 
         public ICollection<Stock> Stocks { get; set; }
         public ICollection<CartItem> CartItems { get; set; }

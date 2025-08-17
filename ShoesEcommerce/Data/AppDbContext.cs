@@ -21,10 +21,10 @@ namespace ShoesEcommerce.Data
         public DbSet<Role> Roles { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<RolePermission> RolePermissions { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
 
         // Departments
         public DbSet<DepartmentEntity> Departments { get; set; }
-
 
         // Products
         public DbSet<Product> Products { get; set; }
@@ -94,7 +94,7 @@ namespace ShoesEcommerce.Data
 
             modelBuilder.Entity<UserRole>()
                 .HasOne(ur => ur.Staff)
-                .WithMany()
+                .WithMany(s => s.Roles)
                 .HasForeignKey(ur => ur.StaffId)
                 .OnDelete(DeleteBehavior.Restrict);
 
