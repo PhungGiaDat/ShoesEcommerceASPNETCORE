@@ -1,9 +1,12 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
 
 namespace ShoesEcommerce.Controllers.Admin
 {
+    [Area("Admin")]
+    [Authorize(Roles = "Admin,Staff")] // Require Admin or Staff role
     public class AdminController : Controller
     {
         private readonly AppDbContext _context;
@@ -53,7 +56,7 @@ namespace ShoesEcommerce.Controllers.Admin
         // Redirect to StaffController for staff management
         public IActionResult Staff()
         {
-            return RedirectToAction("Index", "Staff");
+            return RedirectToAction("Index", "Staff", new { area = "Admin" });
         }
 
         public IActionResult Customer()

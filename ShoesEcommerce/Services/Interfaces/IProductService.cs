@@ -13,6 +13,11 @@ namespace ShoesEcommerce.Services.Interfaces
         Task<bool> DeleteProductAsync(int id);
         Task<bool> ProductExistsAsync(int id);
 
+        // ? NEW: Product Variant List Methods - Display variants instead of products
+        Task<ProductVariantListViewModel> GetProductVariantsListAsync(string searchTerm, int? categoryId, int? brandId, int page, int pageSize);
+        Task<IEnumerable<ProductVariantDisplayInfo>> GetFeaturedProductVariantsAsync(int count = 8);
+        Task<IEnumerable<ProductVariantDisplayInfo>> GetDiscountedProductVariantsAsync(int page = 1, int pageSize = 12);
+
         // Product Variants
         Task<IEnumerable<ProductVariantInfo>> GetProductVariantsAsync(int productId);
         Task<ProductVariant?> GetProductVariantByIdAsync(int id);

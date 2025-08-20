@@ -1,6 +1,7 @@
 ﻿using ShoesEcommerce.Models.Carts;
 using ShoesEcommerce.Models.Orders;
 using ShoesEcommerce.Models.Stocks;
+using ShoesEcommerce.Models.Promotions;
 
 namespace ShoesEcommerce.Models.Products
 {
@@ -11,13 +12,10 @@ namespace ShoesEcommerce.Models.Products
         public int ProductId { get; set; }
         public Product Product { get; set; }
 
-        public string Color { get; set; }
-        public string Size { get; set; }
+        public string Color { get; set; } = string.Empty;
+        public string Size { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
         public decimal Price { get; set; }
-
-        // ❌ REMOVE: Redundant field
-        // public int StockQuantity { get; set; }
 
         // ✅ RELATIONSHIPS: One-to-One with Stock, One-to-Many with others
         public Stock? CurrentStock { get; set; }  // Navigation property
@@ -36,5 +34,12 @@ namespace ShoesEcommerce.Models.Products
         public bool IsLowStock => AvailableQuantity > 0 && AvailableQuantity <= 10;
         public bool IsOutOfStock => AvailableQuantity <= 0;
         public bool HasPendingStock => ReservedQuantity > 0;
+
+        // ✅ DISCOUNT PROPERTIES: Now properly implemented
+        public Discount? GetActiveDiscount() => Product?.GetActiveDiscount();
+        public bool HasActiveDiscount => GetActiveDiscount() != null;
+        public decimal DiscountedPrice => Product?.CalculateDiscountedPrice(Price) ?? Price;
+        public decimal DiscountAmount => Product?.CalculateDiscountAmount(Price) ?? 0;
+        public decimal DiscountPercentage => Price > 0 && DiscountAmount > 0 ? (DiscountAmount / Price) * 100 : 0;
     }
 }

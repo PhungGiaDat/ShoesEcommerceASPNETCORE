@@ -1,4 +1,5 @@
-using ShoesEcommerce.Models.Products;
+﻿using ShoesEcommerce.Models.Products;
+using ShoesEcommerce.Models.Promotions;
 
 namespace ShoesEcommerce.Repositories.Interfaces
 {
@@ -46,5 +47,18 @@ namespace ShoesEcommerce.Repositories.Interfaces
         Task<IEnumerable<Product>> GetProductsByBrandAsync(int brandId);
         Task<IEnumerable<Product>> GetPaginatedProductsAsync(int pageNumber, int pageSize, string searchTerm = "", int? categoryId = null, int? brandId = null);
         Task<int> GetTotalProductCountAsync(string searchTerm = "", int? categoryId = null, int? brandId = null);
+
+        // ✅ NEW: Product Variant List Queries - for displaying variants directly
+        Task<IEnumerable<ProductVariant>> GetPaginatedProductVariantsAsync(int pageNumber, int pageSize, string searchTerm = "", int? categoryId = null, int? brandId = null);
+        Task<int> GetTotalProductVariantCountAsync(string searchTerm = "", int? categoryId = null, int? brandId = null);
+        Task<IEnumerable<ProductVariant>> GetFeaturedProductVariantsAsync(int count = 8);
+        Task<IEnumerable<ProductVariant>> GetDiscountedProductVariantsAsync(int page = 1, int pageSize = 12);
+
+        // ✅ ADD: Discount-specific repository methods
+        Task<IEnumerable<Product>> GetProductsWithDiscountsAsync(int page, int pageSize);
+        Task<Product?> GetProductWithActiveDiscountAsync(int productId);
+        Task<IEnumerable<Product>> GetFeaturedDiscountProductsAsync(int count = 10);
+        Task<Discount?> GetActiveDiscountForProductAsync(int productId);
+        Task<IEnumerable<Discount>> GetFeaturedDiscountsAsync();
     }
 }

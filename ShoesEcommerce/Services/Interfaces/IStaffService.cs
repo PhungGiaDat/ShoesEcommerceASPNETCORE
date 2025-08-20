@@ -1,4 +1,5 @@
 using ShoesEcommerce.Models.Accounts;
+using ShoesEcommerce.ViewModels.Account;
 using ShoesEcommerce.ViewModels.Staff;
 using DepartmentEntity = ShoesEcommerce.Models.Departments.Department;
 
@@ -6,10 +7,13 @@ namespace ShoesEcommerce.Services.Interfaces
 {
     public interface IStaffService
     {
+        // Authentication
+        Task<StaffLoginResult> LoginStaffAsync(StaffLoginViewModel model);
+        Task<bool> ValidateStaffAsync(string email, string password);
+        
         // Staff Management
         Task<StaffListViewModel> GetStaffsAsync(string searchTerm, int? departmentId, int page, int pageSize);
         Task<Staff?> GetStaffByIdAsync(int id);
-        Task<Staff?> GetStaffByFirebaseUidAsync(string firebaseUid);
         Task<StaffInfo> CreateStaffAsync(CreateStaffViewModel model);
         Task<bool> UpdateStaffAsync(int id, EditStaffViewModel model);
         Task<bool> DeleteStaffAsync(int id);
@@ -34,5 +38,15 @@ namespace ShoesEcommerce.Services.Interfaces
         Task<bool> ValidateStaffDataAsync(CreateStaffViewModel model);
         Task<bool> ValidateStaffUpdateAsync(int id, EditStaffViewModel model);
         Task<bool> CanDeleteStaffAsync(int id);
+    }
+
+    // Staff Login Result
+    public class StaffLoginResult
+    {
+        public bool Success { get; set; }
+        public Staff? Staff { get; set; }
+        public string ErrorMessage { get; set; } = string.Empty;
+        public bool RequiresTwoFactor { get; set; } = false;
+        public bool IsLockedOut { get; set; } = false;
     }
 }

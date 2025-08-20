@@ -1,7 +1,7 @@
 using ShoesEcommerce.Models.Orders;
 using ShoesEcommerce.Models.ViewModels;
 
-namespace ShoesEcommerce.Services
+namespace ShoesEcommerce.Services.Interfaces
 {
     public interface IOrderService
     {

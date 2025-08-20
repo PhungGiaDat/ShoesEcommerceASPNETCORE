@@ -5,10 +5,12 @@ namespace ShoesEcommerce.Repositories.Interfaces
 {
     public interface IStaffRepository
     {
+        // Authentication
+        Task<Staff?> ValidateStaffAsync(string email, string password);
+        
         // CRUD Operations
         Task<IEnumerable<Staff>> GetAllStaffsAsync();
         Task<Staff?> GetStaffByIdAsync(int id);
-        Task<Staff?> GetStaffByFirebaseUidAsync(string firebaseUid);
         Task<Staff> CreateStaffAsync(Staff staff);
         Task<Staff> UpdateStaffAsync(Staff staff);
         Task<bool> DeleteStaffAsync(int id);

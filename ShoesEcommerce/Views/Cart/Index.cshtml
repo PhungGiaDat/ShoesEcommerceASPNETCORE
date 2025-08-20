@@ -26,7 +26,7 @@
                 <tbody>
                     @foreach (var item in Model)
                     {
-                        var price = item.ProductVariant?.Product?.Price ?? 0;
+                        var price = item.ProductVariant?.Price ?? 0; // ✅ FIXED: Use ProductVariant.Price
                         var quantity = item.Quantity > 0 ? item.Quantity : 1;
                         <tr>
                             <td>@(item.ProductVariant?.Product?.Name ?? "Không có tên")</td>

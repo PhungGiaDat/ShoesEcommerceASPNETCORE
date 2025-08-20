@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using ShoesEcommerce.ViewModels.Promotion;
+using System.ComponentModel.DataAnnotations;
 
 namespace ShoesEcommerce.ViewModels.Product
 {
@@ -6,13 +7,18 @@ namespace ShoesEcommerce.ViewModels.Product
     public class ProductListViewModel
     {
         public IEnumerable<ProductInfo> Products { get; set; } = new List<ProductInfo>();
-        public string SearchTerm { get; set; } = string.Empty;
-        public int? CategoryId { get; set; }
-        public int? BrandId { get; set; }
+        public IEnumerable<FeaturedDiscountViewModel> FeaturedDiscounts { get; set; } = new List<FeaturedDiscountViewModel>(); // ✅ ADD
         public int CurrentPage { get; set; }
         public int TotalPages { get; set; }
-        public int PageSize { get; set; }
-        public int TotalCount { get; set; }
+        public int TotalItems { get; set; }
+        public string? SearchTerm { get; set; }
+        public int? CategoryId { get; set; } // ✅ ADD: Match existing usage
+        public int? BrandId { get; set; } // ✅ ADD: Match existing usage
+        public int? CategoryFilter { get; set; }
+        public int? BrandFilter { get; set; }
+        public int PageSize { get; set; } = 10; // ✅ ADD: Match existing usage
+        public int TotalCount { get; set; } // ✅ ADD: Match existing usage
+        public bool ShowDiscountsOnly { get; set; } = false; // ✅ ADD: Filter for discounted products
     }
 
     public class ProductInfo
@@ -20,13 +26,25 @@ namespace ShoesEcommerce.ViewModels.Product
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        public decimal Price { get; set; } // This will be calculated from variants
         public string CategoryName { get; set; } = string.Empty;
         public string BrandName { get; set; } = string.Empty;
+        public decimal MinPrice { get; set; }
+        public decimal MaxPrice { get; set; }
+        public decimal Price { get; set; } // ✅ ADD: Match existing usage (will use MinPrice)
+        public string ImageUrl { get; set; } = string.Empty;
         public int VariantCount { get; set; }
-        public int TotalStock { get; set; }
-        public DateTime CreatedDate { get; set; }
-        public bool IsActive { get; set; }
+        public bool IsInStock { get; set; }
+        public int TotalStock { get; set; } // ✅ ADD: Match existing usage
+        public DateTime CreatedDate { get; set; } = DateTime.Now; // ✅ ADD: Match existing usage
+        public bool IsActive { get; set; } = true; // ✅ ADD: Match existing usage
+
+        // ✅ DISCOUNT PROPERTIES
+        public bool HasActiveDiscount { get; set; }
+        public string? DiscountName { get; set; }
+        public decimal? DiscountPercentage { get; set; }
+        public decimal? DiscountAmount { get; set; }
+        public decimal DiscountedMinPrice { get; set; }
+        public decimal DiscountedMaxPrice { get; set; }
     }
 
     public class CreateProductViewModel

@@ -12,50 +12,53 @@ namespace ShoesEcommerce.Models.Accounts
         
         public int Id { get; set; }
 
-        [Required]
-        public string FirebaseUid { get; set; }
 
         [Required]
         [MaxLength(50)]
-        public string FirstName { get; set; }
+        public string FirstName { get; set; } = string.Empty;
 
         [Required]
         [MaxLength(50)]
-        public string LastName { get; set; }
-
-        public string Email { get; set; }
+        public string LastName { get; set; } = string.Empty;
 
         [Required]
-        [RegularExpression(@"^\+?\d{10,15}$", ErrorMessage = "Phone number must be 10-15 digits and may start with +")]
-        public string PhoneNumber { get; set; }
+        [EmailAddress]
+        public string Email { get; set; } = string.Empty;
+
+        [Required]
+        public string PasswordHash { get; set; } = string.Empty;
+
+        [Required]
+        [RegularExpression(@"^(0[3|5|7|8|9])[0-9]{8}$", ErrorMessage = "Vietnamese phone number must be 10 digits starting with 03, 05, 07, 08, or 09")]
+        public string PhoneNumber { get; set; } = string.Empty;
 
         [Required]
         [DataType(DataType.Date)]
         public DateTime DateOfBirth { get; set; }
 
         [Url]
-        public string ImageUrl { get; set; }
+        public string? ImageUrl { get; set; }
 
         [MaxLength(100)]    
-        public string Address { get; set; }
-        [MaxLength(50)]
-        public string City { get; set; }
-        [MaxLength(50)]
-        public string State { get; set; }
+        public string? Address { get; set; }
         
+        [MaxLength(50)]
+        public string? City { get; set; }
+        
+        [MaxLength(50)]
+        public string? State { get; set; }
+        
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
-        public DateTime UpdatedAt { get; set; } = DateTime.Now;
-
-        // Add CartId to match database schema
+        // Navigation properties
         public int? CartId { get; set; }
-        public Cart Cart { get; set; }
-        public ICollection<Order> Orders { get; set; }
-        public ICollection<ShippingAddress> ShippingAddresses { get; set; }
-        public ICollection<Comment> Comments { get; set; }
-        public ICollection<QA> QAs { get; set; }
-        public ICollection<Favorite> Favorites { get; set; }
-
-        public ICollection<UserRole> Roles { get; set; }
+        public Cart? Cart { get; set; }
+        public ICollection<Order>? Orders { get; set; }
+        public ICollection<ShippingAddress>? ShippingAddresses { get; set; }
+        public ICollection<Comment>? Comments { get; set; }
+        public ICollection<QA>? QAs { get; set; }
+        public ICollection<Favorite>? Favorites { get; set; }
+        public ICollection<UserRole>? Roles { get; set; }
     }
 }

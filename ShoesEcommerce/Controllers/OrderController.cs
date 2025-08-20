@@ -1,8 +1,8 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
-using ShoesEcommerce.Services;
 using ShoesEcommerce.Models.ViewModels;
 using System.Security.Claims;
+using ShoesEcommerce.Services.Interfaces;
 
 namespace ShoesEcommerce.Controllers
 {

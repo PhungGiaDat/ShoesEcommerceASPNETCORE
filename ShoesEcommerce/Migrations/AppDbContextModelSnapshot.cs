@@ -31,7 +31,6 @@ namespace ShoesEcommerce.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Address")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -39,7 +38,6 @@ namespace ShoesEcommerce.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("City")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -53,18 +51,12 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("FirebaseUid")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)")
-                        .HasColumnName("FirebaseUid");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("ImageUrl")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
@@ -72,12 +64,15 @@ namespace ShoesEcommerce.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("State")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -89,9 +84,6 @@ namespace ShoesEcommerce.Migrations
                     b.HasIndex("CartId")
                         .IsUnique()
                         .HasFilter("[CartId] IS NOT NULL");
-
-                    b.HasIndex("FirebaseUid")
-                        .IsUnique();
 
                     b.ToTable("Customers");
                 });
@@ -163,15 +155,15 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("FirebaseUid")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -619,16 +611,9 @@ namespace ShoesEcommerce.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("ImageUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("Price")
-                        .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
 
@@ -691,6 +676,169 @@ namespace ShoesEcommerce.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Suppliers");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.Discount", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("CurrentUsageCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal?>("FixedValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsFeatured")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("MaxUsageCount")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("MaxUsagePerCustomer")
+                        .HasColumnType("int");
+
+                    b.Property<decimal?>("MaximumDiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal?>("MinimumOrderValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<decimal?>("PercentageValue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Scope")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code")
+                        .IsUnique();
+
+                    b.ToTable("Discounts");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.DiscountCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("DiscountId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("DiscountId", "CategoryId")
+                        .IsUnique();
+
+                    b.ToTable("DiscountCategories");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.DiscountProduct", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("DiscountId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("DiscountId", "ProductId")
+                        .IsUnique();
+
+                    b.ToTable("DiscountProducts");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.DiscountUsage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CustomerEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("DiscountAmount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("DiscountId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("UsedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DiscountId");
+
+                    b.ToTable("DiscountUsages");
                 });
 
             modelBuilder.Entity("ShoesEcommerce.Models.Stocks.Stock", b =>
@@ -1090,6 +1238,55 @@ namespace ShoesEcommerce.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.DiscountCategory", b =>
+                {
+                    b.HasOne("ShoesEcommerce.Models.Products.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShoesEcommerce.Models.Promotions.Discount", "Discount")
+                        .WithMany("DiscountCategories")
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Discount");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.DiscountProduct", b =>
+                {
+                    b.HasOne("ShoesEcommerce.Models.Promotions.Discount", "Discount")
+                        .WithMany("DiscountProducts")
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ShoesEcommerce.Models.Products.Product", "Product")
+                        .WithMany("DiscountProducts")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Discount");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.DiscountUsage", b =>
+                {
+                    b.HasOne("ShoesEcommerce.Models.Promotions.Discount", "Discount")
+                        .WithMany("DiscountUsages")
+                        .HasForeignKey("DiscountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Discount");
+                });
+
             modelBuilder.Entity("ShoesEcommerce.Models.Stocks.Stock", b =>
                 {
                     b.HasOne("ShoesEcommerce.Models.Products.ProductVariant", "ProductVariant")
@@ -1210,6 +1407,8 @@ namespace ShoesEcommerce.Migrations
                 {
                     b.Navigation("Comments");
 
+                    b.Navigation("DiscountProducts");
+
                     b.Navigation("Favorites");
 
                     b.Navigation("QAs");
@@ -1233,6 +1432,15 @@ namespace ShoesEcommerce.Migrations
             modelBuilder.Entity("ShoesEcommerce.Models.Products.Supplier", b =>
                 {
                     b.Navigation("StockEntries");
+                });
+
+            modelBuilder.Entity("ShoesEcommerce.Models.Promotions.Discount", b =>
+                {
+                    b.Navigation("DiscountCategories");
+
+                    b.Navigation("DiscountProducts");
+
+                    b.Navigation("DiscountUsages");
                 });
 #pragma warning restore 612, 618
         }

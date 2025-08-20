@@ -5,6 +5,7 @@ using ShoesEcommerce.ViewModels.Product;
 
 namespace ShoesEcommerce.Controllers.Admin
 {
+    [Area("Admin")]
     public class ProductController : Controller
     {
         private readonly IProductService _productService;

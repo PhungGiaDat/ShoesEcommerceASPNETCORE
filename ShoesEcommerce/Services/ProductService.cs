@@ -35,13 +35,19 @@ namespace ShoesEcommerce.Services
                     Id = p.Id,
                     Name = p.Name ?? string.Empty,
                     Description = p.Description ?? string.Empty,
-                    Price = p.Variants?.Any() == true ? p.Variants.Min(v => v.Price) : 0, // Get minimum price from variants
+                    MinPrice = p.Variants?.Any() == true ? p.Variants.Min(v => v.Price) : 0,
+                    MaxPrice = p.Variants?.Any() == true ? p.Variants.Max(v => v.Price) : 0,
+                    Price = p.Variants?.Any() == true ? p.Variants.Min(v => v.Price) : 0, // Set Price = MinPrice for backward compatibility
                     CategoryName = p.Category?.Name ?? "N/A",
                     BrandName = p.Brand?.Name ?? "N/A",
                     VariantCount = p.Variants?.Count ?? 0,
-                    TotalStock = 0, // Will be calculated from Stock table later
+                    // ? FIX: Calculate stock information from variants
+                    TotalStock = p.Variants?.Sum(v => v.AvailableQuantity) ?? 0,
+                    IsInStock = p.Variants?.Any(v => v.AvailableQuantity > 0) ?? false,
                     CreatedDate = DateTime.Now, // Add this field to your model if needed
-                    IsActive = true // Add this field to your model if needed
+                    IsActive = true, // Add this field to your model if needed
+                    // ? FIX: Set ImageUrl to first variant's image or use SVG placeholder
+                    ImageUrl = p.Variants?.FirstOrDefault(v => !string.IsNullOrEmpty(v.ImageUrl))?.ImageUrl ?? "/images/no-image.svg"
                 }).ToList();
 
                 return new ProductListViewModel
@@ -53,7 +59,8 @@ namespace ShoesEcommerce.Services
                     CurrentPage = page,
                     TotalPages = totalPages,
                     PageSize = pageSize,
-                    TotalCount = totalCount
+                    TotalCount = totalCount,
+                    TotalItems = totalCount
                 };
             }
             catch (Exception ex)
@@ -68,7 +75,8 @@ namespace ShoesEcommerce.Services
                     CurrentPage = page,
                     TotalPages = 0,
                     PageSize = pageSize,
-                    TotalCount = 0
+                    TotalCount = 0,
+                    TotalItems = 0
                 };
             }
         }
@@ -112,6 +120,8 @@ namespace ShoesEcommerce.Services
                     Id = createdProduct.Id,
                     Name = createdProduct.Name,
                     Description = createdProduct.Description,
+                    MinPrice = 0, // No price until variants are added
+                    MaxPrice = 0,
                     Price = 0, // No price until variants are added
                     CategoryName = category?.Name ?? "N/A",
                     BrandName = brand?.Name ?? "N/A",
@@ -818,6 +828,134 @@ namespace ShoesEcommerce.Services
             {
                 _logger.LogError(ex, "Error occurred while checking if product can be deleted: {ProductId}", id);
                 return false;
+            }
+        }
+
+        // ? NEW: Product Variant List Methods - Display variants instead of products
+        public async Task<ProductVariantListViewModel> GetProductVariantsListAsync(string searchTerm, int? categoryId, int? brandId, int page, int pageSize)
+        {
+            try
+            {
+                var variants = await _productRepository.GetPaginatedProductVariantsAsync(page, pageSize, searchTerm, categoryId, brandId);
+                var totalCount = await _productRepository.GetTotalProductVariantCountAsync(searchTerm, categoryId, brandId);
+                var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+
+                var variantInfos = variants.Select(v => new ProductVariantDisplayInfo
+                {
+                    Id = v.Id,
+                    ProductId = v.ProductId,
+                    ProductName = v.Product?.Name ?? "N/A",
+                    ProductDescription = v.Product?.Description ?? string.Empty,
+                    CategoryName = v.Product?.Category?.Name ?? "N/A",
+                    BrandName = v.Product?.Brand?.Name ?? "N/A",
+                    Color = v.Color ?? string.Empty,
+                    Size = v.Size ?? string.Empty,
+                    ImageUrl = !string.IsNullOrEmpty(v.ImageUrl) ? v.ImageUrl : "/images/no-image.svg",
+                    Price = v.Price,
+                    StockQuantity = v.AvailableQuantity,
+                    HasActiveDiscount = v.HasActiveDiscount,
+                    DiscountName = v.GetActiveDiscount()?.Name,
+                    DiscountPercentage = v.DiscountPercentage,
+                    DiscountAmount = v.DiscountAmount,
+                    DiscountedPrice = v.DiscountedPrice,
+                    CreatedDate = DateTime.Now
+                }).ToList();
+
+                return new ProductVariantListViewModel
+                {
+                    ProductVariants = variantInfos,
+                    SearchTerm = searchTerm ?? string.Empty,
+                    CategoryId = categoryId,
+                    BrandId = brandId,
+                    CurrentPage = page,
+                    TotalPages = totalPages,
+                    PageSize = pageSize,
+                    TotalItems = totalCount
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting product variants list");
+                return new ProductVariantListViewModel
+                {
+                    ProductVariants = new List<ProductVariantDisplayInfo>(),
+                    SearchTerm = searchTerm ?? string.Empty,
+                    CategoryId = categoryId,
+                    BrandId = brandId,
+                    CurrentPage = page,
+                    TotalPages = 0,
+                    PageSize = pageSize,
+                    TotalItems = 0
+                };
+            }
+        }
+
+        public async Task<IEnumerable<ProductVariantDisplayInfo>> GetFeaturedProductVariantsAsync(int count = 8)
+        {
+            try
+            {
+                // Get variants with stock, ordered by creation date (newest first)
+                var variants = await _productRepository.GetFeaturedProductVariantsAsync(count);
+
+                return variants.Select(v => new ProductVariantDisplayInfo
+                {
+                    Id = v.Id,
+                    ProductId = v.ProductId,
+                    ProductName = v.Product?.Name ?? "N/A",
+                    ProductDescription = v.Product?.Description ?? string.Empty,
+                    CategoryName = v.Product?.Category?.Name ?? "N/A",
+                    BrandName = v.Product?.Brand?.Name ?? "N/A",
+                    Color = v.Color ?? string.Empty,
+                    Size = v.Size ?? string.Empty,
+                    ImageUrl = !string.IsNullOrEmpty(v.ImageUrl) ? v.ImageUrl : "/images/no-image.svg",
+                    Price = v.Price,
+                    StockQuantity = v.AvailableQuantity,
+                    HasActiveDiscount = v.HasActiveDiscount,
+                    DiscountName = v.GetActiveDiscount()?.Name,
+                    DiscountPercentage = v.DiscountPercentage,
+                    DiscountAmount = v.DiscountAmount,
+                    DiscountedPrice = v.DiscountedPrice,
+                    CreatedDate = DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting featured product variants");
+                return new List<ProductVariantDisplayInfo>();
+            }
+        }
+
+        public async Task<IEnumerable<ProductVariantDisplayInfo>> GetDiscountedProductVariantsAsync(int page = 1, int pageSize = 12)
+        {
+            try
+            {
+                var variants = await _productRepository.GetDiscountedProductVariantsAsync(page, pageSize);
+
+                return variants.Select(v => new ProductVariantDisplayInfo
+                {
+                    Id = v.Id,
+                    ProductId = v.ProductId,
+                    ProductName = v.Product?.Name ?? "N/A",
+                    ProductDescription = v.Product?.Description ?? string.Empty,
+                    CategoryName = v.Product?.Category?.Name ?? "N/A",
+                    BrandName = v.Product?.Brand?.Name ?? "N/A",
+                    Color = v.Color ?? string.Empty,
+                    Size = v.Size ?? string.Empty,
+                    ImageUrl = !string.IsNullOrEmpty(v.ImageUrl) ? v.ImageUrl : "/images/no-image.svg",
+                    Price = v.Price,
+                    StockQuantity = v.AvailableQuantity,
+                    HasActiveDiscount = v.HasActiveDiscount,
+                    DiscountName = v.GetActiveDiscount()?.Name,
+                    DiscountPercentage = v.DiscountPercentage,
+                    DiscountAmount = v.DiscountAmount,
+                    DiscountedPrice = v.DiscountedPrice,
+                    CreatedDate = DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred while getting discounted product variants");
+                return new List<ProductVariantDisplayInfo>();
             }
         }
     }

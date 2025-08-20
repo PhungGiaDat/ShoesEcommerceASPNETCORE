@@ -1,6 +1,9 @@
+using Microsoft.EntityFrameworkCore;
+using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Accounts;
 using ShoesEcommerce.Repositories.Interfaces;
 using ShoesEcommerce.Services.Interfaces;
+using ShoesEcommerce.ViewModels.Account;
 using ShoesEcommerce.ViewModels.Staff;
 using DepartmentEntity = ShoesEcommerce.Models.Departments.Department;
 
@@ -9,11 +12,16 @@ namespace ShoesEcommerce.Services
     public class StaffService : IStaffService
     {
         private readonly IStaffRepository _staffRepository;
+        private readonly AppDbContext _context;
         private readonly ILogger<StaffService> _logger;
 
-        public StaffService(IStaffRepository staffRepository, ILogger<StaffService> logger)
+        public StaffService(
+            IStaffRepository staffRepository,
+            AppDbContext context,
+            ILogger<StaffService> logger)
         {
             _staffRepository = staffRepository;
+            _context = context;
             _logger = logger;
         }
 
@@ -26,11 +34,6 @@ namespace ShoesEcommerce.Services
         public async Task<Staff?> GetStaffByIdAsync(int id)
         {
             return await _staffRepository.GetStaffByIdAsync(id);
-        }
-
-        public async Task<Staff?> GetStaffByFirebaseUidAsync(string firebaseUid)
-        {
-            return await _staffRepository.GetStaffByFirebaseUidAsync(firebaseUid);
         }
 
         public async Task<StaffInfo> CreateStaffAsync(CreateStaffViewModel model)
@@ -111,6 +114,56 @@ namespace ShoesEcommerce.Services
         public async Task<bool> CanDeleteStaffAsync(int id)
         {
             return true; // Basic check
+        }
+
+        // Authentication Methods
+        public async Task<StaffLoginResult> LoginStaffAsync(StaffLoginViewModel model)
+        {
+            var result = new StaffLoginResult();
+
+            try
+            {
+                // Validate staff credentials
+                var staff = await _staffRepository.ValidateStaffAsync(model.Email, model.Password);
+                if (staff == null)
+                {
+                    result.ErrorMessage = "Email ho?c m?t kh?u không ?úng";
+                    return result;
+                }
+
+                // Load staff with roles
+                var fullStaff = await _context.Staffs
+                    .Include(s => s.Roles)
+                        .ThenInclude(ur => ur.Role)
+                    .Include(s => s.Department)
+                    .FirstOrDefaultAsync(s => s.Id == staff.Id);
+
+                result.Success = true;
+                result.Staff = fullStaff;
+
+                _logger.LogInformation("Staff logged in successfully: {Email}", model.Email);
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error logging in staff: {Email}", model.Email);
+                result.ErrorMessage = "Có l?i x?y ra trong quá trình ??ng nh?p";
+                return result;
+            }
+        }
+
+        public async Task<bool> ValidateStaffAsync(string email, string password)
+        {
+            try
+            {
+                var staff = await _staffRepository.ValidateStaffAsync(email, password);
+                return staff != null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating staff: {Email}", email);
+                return false;
+            }
         }
     }
 }

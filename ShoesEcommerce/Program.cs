@@ -1,120 +1,257 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
+using ShoesEcommerce.Services.Interfaces;
+using ShoesEcommerce.Services;
+using ShoesEcommerce.Repositories.Interfaces;
+using ShoesEcommerce.Repositories;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using ShoesEcommerce.Middleware;
+using ShoesEcommerce.ModelBinders;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
-using Microsoft.AspNetCore.Mvc.Razor;
-using Microsoft.EntityFrameworkCore;
-using ShoesEcommerce.Data;
-using ShoesEcommerce.Repositories;
-using ShoesEcommerce.Repositories.Interfaces;
-using ShoesEcommerce.Services;
-using ShoesEcommerce.Services.Interfaces;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
-builder.Services.AddControllersWithViews();
+// Enhanced logging configuration
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
 
-// Configure Razor view engine to look for Admin views
-builder.Services.Configure<RazorViewEngineOptions>(options =>
+// Add file logging in production
+if (!builder.Environment.IsDevelopment())
 {
-    // Clear default view locations
-    options.ViewLocationFormats.Clear();
+    builder.Logging.AddEventLog();
     
-    // Add custom view location formats
-    options.ViewLocationFormats.Add("/Views/{1}/{0}.cshtml");
-    options.ViewLocationFormats.Add("/Views/Shared/{0}.cshtml");
-    options.ViewLocationFormats.Add("/Views/Admin/{1}/{0}.cshtml");
-    options.ViewLocationFormats.Add("/Views/Admin/Shared/{0}.cshtml");
+    // Add file logging (requires additional NuGet package like Serilog or NLog)
+    // builder.Host.UseSerilog((context, configuration) => {
+    //     configuration.WriteTo.File("logs/shoescommerce-.txt", rollingInterval: RollingInterval.Day);
+    // });
+}
+
+// Configure detailed logging for specific components
+builder.Services.Configure<LoggerFilterOptions>(options =>
+{
+    // Set minimum log levels for different categories
+    options.MinLevel = builder.Environment.IsDevelopment() ? LogLevel.Debug : LogLevel.Information;
+    
+    // Reduce noise from Entity Framework in production
+    options.AddFilter("Microsoft.EntityFrameworkCore", builder.Environment.IsDevelopment() ? LogLevel.Information : LogLevel.Warning);
+    options.AddFilter("Microsoft.AspNetCore", LogLevel.Warning);
+    options.AddFilter("System.Net.Http.HttpClient", LogLevel.Warning);
 });
 
-// Add Entity Framework
+// 🕐 ADD: Configure DateTime Culture and Localization for proper date handling
+builder.Services.Configure<RequestLocalizationOptions>(options =>
+{
+    var supportedCultures = new[]
+    {
+        new CultureInfo("en-US"), // Primary culture for consistent date parsing
+        new CultureInfo("vi-VN")  // Vietnamese culture for display
+    };
+
+    options.DefaultRequestCulture = new RequestCulture("en-US");
+    options.SupportedCultures = supportedCultures;
+    options.SupportedUICultures = supportedCultures;
+    
+    // Set date format providers to handle HTML5 date inputs consistently
+    options.RequestCultureProviders.Clear();
+    options.RequestCultureProviders.Add(new QueryStringRequestCultureProvider());
+    options.RequestCultureProviders.Add(new CookieRequestCultureProvider());
+    options.RequestCultureProviders.Add(new AcceptLanguageHeaderRequestCultureProvider());
+});
+
+// Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    
+    // Enable detailed errors in development
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.EnableDetailedErrors();
+    }
+});
 
-// Register Repositories
-builder.Services.AddScoped<IStaffRepository, StaffRepository>();
+// Register repositories
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
+builder.Services.AddScoped<IStockRepository, StockRepository>();
+builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 
-// Register Services
-builder.Services.AddScoped<IStaffService, StaffService>();
-builder.Services.AddScoped<IProductService, ProductService>();
+// Register services
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<ICustomerService, CustomerService>();
+builder.Services.AddScoped<ICustomerRegistrationService, CustomerRegistrationService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProductService, ProductService>();
+builder.Services.AddScoped<IDiscountService, DiscountService>();
+builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IStockService, StockService>();
 
+// Register HttpContextAccessor for services
+builder.Services.AddHttpContextAccessor();
 
-// Register other services
-builder.Services.AddScoped<FirebaseUserSyncService>();
-
+// Configure session
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromSeconds(30); // Set session timeout
-    options.Cookie.HttpOnly = true; // Make the session cookie HTTP only
-    options.Cookie.IsEssential = true; // Make the session cookie essential
+    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.Cookie.HttpOnly = true;
+    options.Cookie.IsEssential = true;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
-// Authentication - Cookie scheme
-builder.Services
-    .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+// Configure authentication
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
         options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromHours(24);
+        options.SlidingExpiration = true;
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.SameSite = SameSiteMode.Lax;
     });
 
-var app = builder.Build();
-
-// Seed database data on startup
-using (var scope = app.Services.CreateScope())
+// 🕐 ADD: Configure MVC with custom DateTime model binding
+builder.Services.AddControllersWithViews(options =>
 {
-    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    // Add custom DateTime model binder for proper HTML5 date input handling
+    options.ModelBinderProviders.Insert(0, new DateTimeModelBinderProvider());
+    
+    // Add global exception filter in production
+    if (!builder.Environment.IsDevelopment())
+    {
+        // options.Filters.Add<GlobalExceptionFilter>();
+    }
+})
+.ConfigureApiBehaviorOptions(options =>
+{
+    // Configure DateTime parsing behavior
+    options.SuppressModelStateInvalidFilter = false;
+});
+
+var app = builder.Build();
+var logger = app.Services.GetRequiredService<ILogger<Program>>();
+
+try
+{
+    logger.LogInformation("ShoesEcommerce application starting up...");
+
+    // Seed database with initial data
     try
     {
-        // Ensure database is created and up to date
-        await context.Database.MigrateAsync();
+        using var scope = app.Services.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
         
-        // Seed suppliers and other data
+        // Ensure database is created and up to date
+        await context.Database.EnsureCreatedAsync();
+        
+        // Seed initial data using the correct method
         await DataSeeder.SeedAllDataAsync(context);
+        
+        logger.LogInformation("Database seeded successfully");
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "An error occurred while seeding the database");
+        // Don't rethrow - allow app to continue without seed data
     }
+
+    // Configure the HTTP request pipeline.
+    if (!app.Environment.IsDevelopment())
+    {
+        // Use custom error pages in production
+        app.UseExceptionHandler("/Error");
+        app.UseStatusCodePagesWithReExecute("/Error/{0}");
+        
+        // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+        app.UseHsts();
+        
+        logger.LogInformation("Production error handling configured");
+    }
+    else
+    {
+        app.UseDeveloperExceptionPage();
+        logger.LogInformation("Developer exception page enabled");
+    }
+
+    // Initialize Firebase Admin SDK load file firebase-adminsdk.json
+    try
+    {
+        FirebaseApp.Create(new AppOptions()
+        {
+            Credential = GoogleCredential.FromFile("wwwroot/credentials/shoes-ecommerce-fd0cb-firebase-adminsdk-fbsvc-b9bf519edf.json"),
+        });
+        logger.LogInformation("Firebase Admin SDK initialized successfully");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Failed to initialize Firebase Admin SDK");
+        // Continue without Firebase if initialization fails
+    }
+
+    //Add Sessions 
+    app.UseSession(); // Enable session middleware
+
+    // 🕐 ADD: Use request localization for consistent DateTime handling
+    app.UseRequestLocalization();
+
+    // Add enhanced error logging middleware early in the pipeline
+    app.UseErrorLogging();
+    
+    app.UseHttpsRedirection();
+    app.UseStaticFiles();
+
+    app.UseRouting();
+
+    app.UseAuthentication();
+    app.UseAuthorization();
+
+    // ✅ FIXED: Proper Area-based routing to resolve controller ambiguity
+    // Default route for regular controllers (no area) - MUST come first
+    app.MapControllerRoute(
+        name: "default",
+        pattern: "{controller=Home}/{action=Index}/{id?}");
+
+    // Route for Admin area - should come after default route
+    app.MapControllerRoute(
+        name: "admin",
+        pattern: "Admin/{controller=Admin}/{action=Index}/{id?}",
+        defaults: new { area = "Admin" });
+
+    // Custom error handling routes
+    app.MapControllerRoute(
+        name: "error",
+        pattern: "Error/{statusCode?}",
+        defaults: new { controller = "Error", action = "HandleErrorCode" });
+
+    logger.LogInformation("Routing configured successfully");
+
+    // Add health check endpoint for monitoring
+    app.MapGet("/health", () => 
+    {
+        logger.LogDebug("Health check endpoint accessed");
+        return Results.Ok(new { 
+            status = "healthy", 
+            timestamp = DateTime.UtcNow,
+            environment = app.Environment.EnvironmentName,
+            version = "1.0.0"
+        });
+    });
+
+    logger.LogInformation("ShoesEcommerce application started successfully");
+
+    app.Run();
 }
-
-// Configure the HTTP request pipeline.
-if (!app.Environment.IsDevelopment())
+catch (Exception ex)
 {
-    app.UseExceptionHandler("/Home/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
-    app.UseHsts();
+    logger.LogCritical(ex, "Application terminated unexpectedly during startup");
+    throw;
 }
-
-// Initialize Firebase Admin SDK load file firebase-adminsdk.json
-FirebaseApp.Create(new AppOptions()
-{
-    Credential = GoogleCredential.FromFile("wwwroot/credentials/shoes-ecommerce-fd0cb-firebase-adminsdk-fbsvc-b9bf519edf.json"),
-});
-
-//Add Sessions 
-app.UseSession(); // Enable session middleware
-app.UseHttpsRedirection();
-app.UseStaticFiles();
-
-app.UseRouting();
-
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapControllerRoute(
-    name: "admin",
-    pattern: "Admin/{controller=Admin}/{action=Index}/{id?}",
-    defaults: new { controller = "Admin" },
-    constraints: new { controller = @"^(Admin|Product|Staff|Customer|Order|Stock)$" });
-
-app.MapControllerRoute(
-    name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}");
-
-app.Run();

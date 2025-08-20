@@ -38,8 +38,8 @@ else
                             <tr>
                                 <td>@item.ProductVariant.Product.Name</td>
                                 <td>@item.Quantity</td>
-                                <td>@item.ProductVariant.Product.Price.ToString("C0")</td>
-                                <td>@(item.Quantity* item.ProductVariant.Product.Price).ToString("C0")</td>
+                                <td>@item.ProductVariant.Price.ToString("C0")</td>
+                                <td>@(item.Quantity* item.ProductVariant.Price).ToString("C0")</td>
                             </tr>
                         }
                     </tbody>
@@ -49,7 +49,7 @@ else
                 <h5 class="mb-0">
                     Tổng cộng:
                     <span class="text-danger">
-                        @Model.CartItems.Sum(x => x.Quantity * x.ProductVariant.Product.Price).ToString("C0")
+                        @Model.CartItems.Sum(x => x.Quantity * x.ProductVariant.Price).ToString("C0") @* ✅ FIXED: Use ProductVariant.Price *@
                     </span>
                 </h5>
             </div>

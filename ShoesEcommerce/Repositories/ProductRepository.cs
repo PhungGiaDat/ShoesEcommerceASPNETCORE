@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Products;
+using ShoesEcommerce.Models.Promotions;
 using ShoesEcommerce.Repositories.Interfaces;
 
 namespace ShoesEcommerce.Repositories
@@ -337,6 +338,201 @@ namespace ShoesEcommerce.Repositories
             }
 
             return await query.CountAsync();
+        }
+
+        // ? ADD: Discount-specific repository methods
+        public async Task<IEnumerable<Product>> GetProductsWithDiscountsAsync(int page, int pageSize)
+        {
+            return await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                .Include(p => p.DiscountProducts)
+                    .ThenInclude(dp => dp.Discount)
+                .Where(p => p.DiscountProducts.Any(dp => 
+                    dp.Discount.IsActive && 
+                    dp.Discount.StartDate <= DateTime.Now && 
+                    dp.Discount.EndDate >= DateTime.Now))
+                .OrderBy(p => p.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        public async Task<Product?> GetProductWithActiveDiscountAsync(int productId)
+        {
+            return await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                .Include(p => p.DiscountProducts)
+                    .ThenInclude(dp => dp.Discount)
+                .FirstOrDefaultAsync(p => p.Id == productId);
+        }
+
+        public async Task<IEnumerable<Product>> GetFeaturedDiscountProductsAsync(int count = 10)
+        {
+            return await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.Variants)
+                .Include(p => p.DiscountProducts)
+                    .ThenInclude(dp => dp.Discount)
+                .Where(p => p.DiscountProducts.Any(dp => 
+                    dp.Discount.IsActive && 
+                    dp.Discount.IsFeatured &&
+                    dp.Discount.StartDate <= DateTime.Now && 
+                    dp.Discount.EndDate >= DateTime.Now))
+                .OrderByDescending(p => p.DiscountProducts
+                    .Where(dp => dp.Discount.IsActive && dp.Discount.IsFeatured)
+                    .Max(dp => dp.Discount.CreatedAt))
+                .Take(count)
+                .ToListAsync();
+        }
+
+        public async Task<Discount?> GetActiveDiscountForProductAsync(int productId)
+        {
+            return await _context.DiscountProducts
+                .Where(dp => dp.ProductId == productId && 
+                            dp.Discount.IsActive && 
+                            dp.Discount.StartDate <= DateTime.Now && 
+                            dp.Discount.EndDate >= DateTime.Now)
+                .Select(dp => dp.Discount)
+                .OrderByDescending(d => d.IsFeatured)
+                .ThenByDescending(d => d.Type == DiscountType.Percentage ? d.PercentageValue : d.FixedValue)
+                .FirstOrDefaultAsync();
+        }
+
+        public async Task<IEnumerable<Discount>> GetFeaturedDiscountsAsync()
+        {
+            return await _context.Discounts
+                .Where(d => d.IsActive && d.IsFeatured && 
+                           d.StartDate <= DateTime.Now && 
+                           d.EndDate >= DateTime.Now)
+                .OrderByDescending(d => d.CreatedAt)
+                .Take(5)
+                .ToListAsync();
+        }
+
+        // ? NEW: Product Variant List Queries - for displaying variants directly
+        public async Task<IEnumerable<ProductVariant>> GetPaginatedProductVariantsAsync(int pageNumber, int pageSize, string searchTerm = "", int? categoryId = null, int? brandId = null)
+        {
+            var query = _context.ProductVariants
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Category)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Brand)
+                .Include(v => v.CurrentStock)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.DiscountProducts)
+                        .ThenInclude(dp => dp.Discount)
+                .AsQueryable();
+
+            // Apply filters based on product properties
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                searchTerm = searchTerm.ToLower();
+                query = query.Where(v =>
+                    v.Product.Name.ToLower().Contains(searchTerm) ||
+                    v.Product.Description.ToLower().Contains(searchTerm) ||
+                    v.Product.Category.Name.ToLower().Contains(searchTerm) ||
+                    v.Product.Brand.Name.ToLower().Contains(searchTerm) ||
+                    v.Color.ToLower().Contains(searchTerm) ||
+                    v.Size.ToLower().Contains(searchTerm));
+            }
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(v => v.Product.CategoryId == categoryId.Value);
+            }
+
+            if (brandId.HasValue)
+            {
+                query = query.Where(v => v.Product.BrandId == brandId.Value);
+            }
+
+            return await query
+                .OrderBy(v => v.Product.Name)
+                .ThenBy(v => v.Color)
+                .ThenBy(v => v.Size)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+        }
+
+        public async Task<int> GetTotalProductVariantCountAsync(string searchTerm = "", int? categoryId = null, int? brandId = null)
+        {
+            var query = _context.ProductVariants
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Category)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Brand)
+                .AsQueryable();
+
+            // Apply same filters as GetPaginatedProductVariantsAsync
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                searchTerm = searchTerm.ToLower();
+                query = query.Where(v =>
+                    v.Product.Name.ToLower().Contains(searchTerm) ||
+                    v.Product.Description.ToLower().Contains(searchTerm) ||
+                    v.Product.Category.Name.ToLower().Contains(searchTerm) ||
+                    v.Product.Brand.Name.ToLower().Contains(searchTerm) ||
+                    v.Color.ToLower().Contains(searchTerm) ||
+                    v.Size.ToLower().Contains(searchTerm));
+            }
+
+            if (categoryId.HasValue)
+            {
+                query = query.Where(v => v.Product.CategoryId == categoryId.Value);
+            }
+
+            if (brandId.HasValue)
+            {
+                query = query.Where(v => v.Product.BrandId == brandId.Value);
+            }
+
+            return await query.CountAsync();
+        }
+
+        public async Task<IEnumerable<ProductVariant>> GetFeaturedProductVariantsAsync(int count = 8)
+        {
+            return await _context.ProductVariants
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Category)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Brand)
+                .Include(v => v.CurrentStock)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.DiscountProducts)
+                        .ThenInclude(dp => dp.Discount)
+                .Where(v => v.CurrentStock != null && v.CurrentStock.AvailableQuantity > 0) // Only in-stock variants
+                .OrderByDescending(v => v.Id) // Newest variants first (assuming higher ID = newer)
+                .Take(count)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ProductVariant>> GetDiscountedProductVariantsAsync(int page = 1, int pageSize = 12)
+        {
+            return await _context.ProductVariants
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Category)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.Brand)
+                .Include(v => v.CurrentStock)
+                .Include(v => v.Product)
+                    .ThenInclude(p => p.DiscountProducts)
+                        .ThenInclude(dp => dp.Discount)
+                .Where(v => v.Product.DiscountProducts.Any(dp => 
+                    dp.Discount.IsActive && 
+                    dp.Discount.StartDate <= DateTime.Now && 
+                    dp.Discount.EndDate >= DateTime.Now))
+                .OrderByDescending(v => v.Product.DiscountProducts
+                    .Where(dp => dp.Discount.IsActive)
+                    .Max(dp => dp.Discount.Type == DiscountType.Percentage ? dp.Discount.PercentageValue : dp.Discount.FixedValue))
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
         }
     }
 }

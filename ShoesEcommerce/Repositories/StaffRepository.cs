@@ -3,16 +3,43 @@ using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Accounts;
 using ShoesEcommerce.Repositories.Interfaces;
 using DepartmentEntity = ShoesEcommerce.Models.Departments.Department;
+using Microsoft.Extensions.Logging;
 
 namespace ShoesEcommerce.Repositories
 {
     public class StaffRepository : IStaffRepository
     {
         private readonly AppDbContext _context;
+        private readonly ILogger<StaffRepository> _logger;
 
-        public StaffRepository(AppDbContext context)
+        public StaffRepository(AppDbContext context, ILogger<StaffRepository> logger)
         {
             _context = context;
+            _logger = logger;
+        }
+
+        // Authentication Methods
+        public async Task<Staff?> ValidateStaffAsync(string email, string password)
+        {
+            try
+            {
+                var staff = await _context.Staffs
+                    .FirstOrDefaultAsync(s => s.Email == email);
+
+                if (staff != null && BCrypt.Net.BCrypt.Verify(password, staff.PasswordHash))
+                {
+                    _logger.LogInformation("Staff validation successful for {Email}", email);
+                    return staff;
+                }
+
+                _logger.LogWarning("Staff validation failed for {Email}", email);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error validating staff: {Email}", email);
+                throw;
+            }
         }
 
         // CRUD Operations
@@ -32,15 +59,6 @@ namespace ShoesEcommerce.Repositories
                 .Include(s => s.Roles)
                     .ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(s => s.Id == id);
-        }
-
-        public async Task<Staff?> GetStaffByFirebaseUidAsync(string firebaseUid)
-        {
-            return await _context.Staffs
-                .Include(s => s.Department)
-                .Include(s => s.Roles)
-                    .ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(s => s.FirebaseUid == firebaseUid);
         }
 
         public async Task<Staff> CreateStaffAsync(Staff staff)

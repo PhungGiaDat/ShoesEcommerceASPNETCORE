@@ -8,11 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/ShoesEcommerce.styles.css" asp-append-version="true" />
+    
+    <!-- Global JavaScript Variables for Error Logging -->
+    <script>
+        window.currentUserId = '@(User?.Identity?.IsAuthenticated == true ? User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value : "anonymous")';
+        window.sessionId = '@Context.Session.Id';
+        window.environmentName = '@Html.Raw(ViewContext.HttpContext.RequestServices.GetService<IWebHostEnvironment>()?.EnvironmentName)';
+    </script>
 </head>
 <body>
-    <!-- Navigation Header -->
-    <header class="main-header">
-        <nav class="navbar navbar-expand-lg">
+    <!-- Minimalist Navigation Header -->
+    <header class="minimalist-header">
+        <nav class="navbar navbar-expand-lg navbar-light">
             <div class="container">
                 <!-- Brand Logo -->
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
@@ -20,7 +27,7 @@
                 </a>
                 
                 <!-- Mobile Toggle Button -->
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 
@@ -31,30 +38,59 @@
                             <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Trang chủ</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Cửa hàng</a>
+                            <a class="nav-link" asp-controller="Product" asp-action="Index">Cửa hàng</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Giỏ hàng</a>
+                            <a class="nav-link" asp-controller="Cart" asp-action="Index">Giỏ hàng</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="#">Lịch sử mua hàng</a>
+                            <a class="nav-link" href="#" onclick="alert('Chức năng đang phát triển')">Lịch sử mua hàng</a>
                         </li>
                     </ul>
                     
-                    <!-- Right Side Icons -->
+                    <!-- Right Side User Menu -->
                     <div class="navbar-nav ms-auto">
                         <div class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle user-dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-shopping-cart me-2"></i>
-                                <i class="fas fa-user me-2"></i>
-                                <span>Đăng nhập</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end user-dropdown-menu" aria-labelledby="userDropdown">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-sign-in-alt me-2"></i>Đăng nhập</a></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-user-plus me-2"></i>Đăng ký</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-user-circle me-2"></i>Tài khoản của tôi</a></li>
-                            </ul>
+                            @if (User.Identity?.IsAuthenticated == true)
+                            {
+                                <a class="nav-link user-menu d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user me-1"></i>
+                                    <span class="user-text">@(User.FindFirst("FullName")?.Value ?? "User")</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">Tài khoản của tôi</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Cart" asp-action="Index">Giỏ hàng</a></li>
+                                    
+                                    @* Show admin link for staff and admin users *@
+                                    @if (User.IsInRole("Admin") || User.IsInRole("Staff"))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-area="Admin" asp-controller="Admin" asp-action="Index">
+                                            <i class="fas fa-cog me-2"></i>Quản trị hệ thống
+                                        </a></li>
+                                    }
+                                    
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form asp-controller="Account" asp-action="Logout" method="post" style="display: inline;">
+                                            <button type="submit" class="dropdown-item" style="background: none; border: none; width: 100%; text-align: left;">
+                                                <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            }
+                            else
+                            {
+                                <a class="nav-link user-menu d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="fas fa-user me-1"></i>
+                                    <span class="user-text">USER</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Login">Đăng nhập</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Account" asp-action="Register">Đăng ký</a></li>
+                                </ul>
+                            }
                         </div>
                     </div>
                 </div>
@@ -67,18 +103,18 @@
         @RenderBody()
     </main>
 
-    <!-- Footer -->
-    <footer class="main-footer">
+    <!-- Minimalist Footer -->
+    <footer class="minimalist-footer">
         <div class="container">
-            <div class="row g-4">
+            <div class="row">
                 <!-- Free Shipping -->
                 <div class="col-md-4">
-                    <div class="footer-feature">
-                        <div class="feature-icon">
+                    <div class="footer-service">
+                        <div class="service-icon">
                             <i class="fas fa-shipping-fast"></i>
                         </div>
-                        <div class="feature-content">
-                            <h5>MIỄN PHÍ SHIP</h5>
+                        <div class="service-content">
+                            <h6>MIỄN PHÍ SHIP</h6>
                             <p>Chúng tôi miễn phí giao hàng cho đơn hàng > 10.000.000 đ</p>
                         </div>
                     </div>
@@ -86,12 +122,12 @@
                 
                 <!-- Quality Check -->
                 <div class="col-md-4">
-                    <div class="footer-feature">
-                        <div class="feature-icon">
+                    <div class="footer-service">
+                        <div class="service-icon">
                             <i class="fas fa-search"></i>
                         </div>
-                        <div class="feature-content">
-                            <h5>KIỂM TRA TRƯỚC KHI NHẬN</h5>
+                        <div class="service-content">
+                            <h6>KIỂM TRA TRƯỚC KHI NHẬN</h6>
                             <p>Khách hàng kiểm tra trước và đầy đủ các thông tin chính thức khi nhận và thanh toán sản phẩm</p>
                         </div>
                     </div>
@@ -99,12 +135,12 @@
                 
                 <!-- 24/7 Support -->
                 <div class="col-md-4">
-                    <div class="footer-feature">
-                        <div class="feature-icon">
+                    <div class="footer-service">
+                        <div class="service-icon">
                             <i class="fas fa-headset"></i>
                         </div>
-                        <div class="feature-content">
-                            <h5>HỖ TRỢ 24/7</h5>
+                        <div class="service-content">
+                            <h6>HỖ TRỢ 24/7</h6>
                             <p>Tư vấn và đáp ứng mọi thắc mắc của khách hàng 24/7</p>
                         </div>
                     </div>
@@ -112,7 +148,7 @@
             </div>
             
             <!-- Copyright -->
-            <div class="row mt-4">
+            <div class="row">
                 <div class="col-12 text-center">
                     <div class="copyright">
                         &copy; 2025 - ShoesEcommerce. All rights reserved.
@@ -125,6 +161,560 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    
+    <!-- JavaScript Error Logger -->
+    <script src="~/js/error-logger.js" asp-append-version="true"></script>
+    
+    <!-- Success Popup for Registration -->
+    @if (TempData["ShowSuccessPopup"] != null && TempData["SuccessMessage"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showSuccessPopup('@Html.Raw(TempData["SuccessMessage"])');
+            });
+        </script>
+    }
+    
+    <!-- Enhanced Error Display -->
+    @if (TempData["Error"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showErrorAlert('@Html.Raw(TempData["Error"])');
+            });
+        </script>
+    }
+    
+    @if (TempData["Success"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showSuccessAlert('@Html.Raw(TempData["Success"])');
+            });
+        </script>
+    }
+    
+    @if (TempData["Info"] != null)
+    {
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                showInfoAlert('@Html.Raw(TempData["Info"])');
+            });
+        </script>
+    }
+    
     @await RenderSectionAsync("Scripts", required: false)
+
+    <!-- Minimalist Layout Styles -->
+    <style>
+        :root {
+            --color-black: #000000;
+            --color-white: #ffffff;
+            --color-gray-100: #f5f5f5;
+            --color-gray-200: #e5e5e5;
+            --color-gray-300: #d1d1d1;
+            --color-gray-400: #a3a3a3;
+            --color-gray-500: #737373;
+            --color-gray-600: #525252;
+            --color-gray-700: #404040;
+            --color-gray-800: #262626;
+        }
+
+        /* Reset and Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+            color: var(--color-gray-800);
+            line-height: 1.5;
+            font-size: 14px;
+            background: var(--color-white);
+        }
+
+        /* Minimalist Header */
+        .minimalist-header {
+            background: var(--color-white);
+            border-bottom: 1px solid var(--color-gray-200);
+            padding: 0;
+        }
+
+        .minimalist-header .navbar {
+            padding: 1rem 0;
+        }
+
+        .minimalist-header .brand-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-black);
+            text-decoration: none;
+            font-family: 'Times New Roman', serif;
+        }
+
+        .minimalist-header .navbar-nav .nav-link {
+            color: var(--color-gray-700);
+            font-size: 0.9rem;
+            font-weight: 400;
+            padding: 0.5rem 1.5rem;
+            text-transform: none;
+            letter-spacing: 0;
+            transition: color 0.2s ease;
+        }
+
+        .minimalist-header .navbar-nav .nav-link:hover,
+        .minimalist-header .navbar-nav .nav-link.active {
+            color: var(--color-black);
+        }
+
+        .minimalist-header .user-menu {
+            color: var(--color-gray-700);
+            font-size: 0.85rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .minimalist-header .user-menu:hover {
+            color: var(--color-black);
+        }
+
+        .minimalist-header .user-text {
+            margin-left: 0.25rem;
+        }
+
+        .minimalist-header .dropdown-menu {
+            border: 1px solid var(--color-gray-200);
+            border-radius: 4px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 0.5rem 0;
+        }
+
+        .minimalist-header .dropdown-item {
+            color: var(--color-gray-700);
+            font-size: 0.85rem;
+            padding: 0.5rem 1rem;
+            transition: all 0.2s ease;
+        }
+
+        .minimalist-header .dropdown-item:hover {
+            color: var(--color-black);
+            background: var(--color-gray-100);
+        }
+
+        /* Minimalist Footer */
+        .minimalist-footer {
+            background: var(--color-gray-700);
+            color: var(--color-white);
+            padding: 3rem 0 2rem 0;
+            margin-top: 4rem;
+        }
+
+        .footer-service {
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .service-icon {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--color-white);
+        }
+
+        .service-content h6 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.75rem;
+            color: var(--color-white);
+        }
+
+        .service-content p {
+            font-size: 0.75rem;
+            color: var(--color-gray-300);
+            line-height: 1.4;
+            margin: 0;
+        }
+
+        .copyright {
+            border-top: 1px solid var(--color-gray-600);
+            padding-top: 2rem;
+            margin-top: 2rem;
+            font-size: 0.75rem;
+            color: var(--color-gray-400);
+        }
+
+        /* Alert Styles */
+        .alert-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            min-width: 300px;
+            max-width: 500px;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            animation: slideInFromRight 0.3s ease-out;
+            background: white;
+            border: 1px solid #e0e0e0;
+        }
+
+        .alert-toast.error {
+            border-left: 4px solid #dc3545;
+            background-color: #f8f9fa;
+        }
+
+        .alert-toast.success {
+            border-left: 4px solid #28a745;
+            background-color: #f8f9fa;
+        }
+
+        .alert-toast.info {
+            border-left: 4px solid #17a2b8;
+            background-color: #f8f9fa;
+        }
+
+        .alert-toast .toast-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .alert-toast .toast-icon {
+            margin-right: 0.5rem;
+            font-size: 1.1rem;
+        }
+
+        .alert-toast.error .toast-icon {
+            color: #dc3545;
+        }
+
+        .alert-toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .alert-toast.info .toast-icon {
+            color: #17a2b8;
+        }
+
+        .alert-toast .toast-body {
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.4;
+        }
+
+        .alert-toast .toast-close {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .alert-toast .toast-close:hover {
+            color: #666;
+        }
+
+        .alert-toast.removing {
+            animation: slideOutToRight 0.3s ease-out forwards;
+        }
+
+        @@keyframes slideInFromRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @@keyframes slideOutToRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
+        /* Success Popup Styles */
+        .success-popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--color-white);
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            z-index: 10000;
+            text-align: center;
+            min-width: 350px;
+            max-width: 90vw;
+            animation: popupSlideIn 0.3s ease-out;
+        }
+
+        .success-popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 9999;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .success-popup .popup-icon {
+            font-size: 3rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+
+        .success-popup h3 {
+            color: var(--color-black);
+            font-size: 1.5rem;
+            font-weight: 500;
+            margin-bottom: 1rem;
+        }
+
+        .success-popup p {
+            color: var(--color-gray-600);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .success-popup .popup-button {
+            background: var(--color-black);
+            color: var(--color-white);
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .success-popup .popup-button:hover {
+            background: var(--color-gray-800);
+        }
+
+        @@keyframes popupSlideIn {
+            from {
+                opacity: 0;
+                transform: translate(-50%, -60%);
+            }
+            to {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+        }
+
+        @@keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @@keyframes slideOut {
+            from {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            to {
+                opacity: 0;
+                transform: translate(-50%, -40%);
+            }
+        }
+
+        .success-popup.closing {
+            animation: slideOut 0.3s ease-out forwards;
+        }
+
+        .success-popup-overlay.closing {
+            animation: fadeIn 0.3s ease-out reverse;
+        }
+
+        /* Mobile Responsiveness */
+        @@media (max-width: 768px) {
+            .minimalist-header .navbar-nav .nav-link {
+                padding: 0.75rem 0;
+                border-bottom: 1px solid var(--color-gray-100);
+            }
+
+            .footer-service {
+                margin-bottom: 2rem;
+            }
+
+            .service-content h6 {
+                font-size: 0.75rem;
+            }
+
+            .service-content p {
+                font-size: 0.7rem;
+            }
+
+            .alert-toast {
+                top: 10px;
+                right: 10px;
+                left: 10px;
+                min-width: auto;
+                max-width: none;
+            }
+        }
+    </style>
+    
+    <!-- Enhanced Alert and Popup JavaScript -->
+    <script>
+        // Enhanced Alert Functions
+        function showAlert(message, type = 'info', duration = 5000) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert-toast ${type}`;
+            
+            const iconMap = {
+                error: 'fas fa-exclamation-circle',
+                success: 'fas fa-check-circle',
+                info: 'fas fa-info-circle',
+                warning: 'fas fa-exclamation-triangle'
+            };
+            
+            const titleMap = {
+                error: 'Lỗi',
+                success: 'Thành công',
+                info: 'Thông báo',
+                warning: 'Cảnh báo'
+            };
+            
+            alertDiv.innerHTML = `
+                <div class="toast-header">
+                    <i class="toast-icon ${iconMap[type] || iconMap.info}"></i>
+                    <span>${titleMap[type] || titleMap.info}</span>
+                </div>
+                <div class="toast-body">${message}</div>
+                <button class="toast-close" onclick="removeAlert(this.parentElement)">&times;</button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto remove after duration
+            setTimeout(() => removeAlert(alertDiv), duration);
+            
+            // Log to JavaScript error logger for tracking
+            if (window.JSErrorLogger && type === 'error') {
+                window.JSErrorLogger.logError(message, { type: 'user_notification' }, 'warning');
+            }
+        }
+        
+        function removeAlert(alertElement) {
+            if (alertElement && alertElement.parentNode) {
+                alertElement.classList.add('removing');
+                setTimeout(() => {
+                    if (alertElement.parentNode) {
+                        alertElement.parentNode.removeChild(alertElement);
+                    }
+                }, 300);
+            }
+        }
+        
+        function showErrorAlert(message, duration = 7000) {
+            showAlert(message, 'error', duration);
+        }
+        
+        function showSuccessAlert(message, duration = 5000) {
+            showAlert(message, 'success', duration);
+        }
+        
+        function showInfoAlert(message, duration = 5000) {
+            showAlert(message, 'info', duration);
+        }
+        
+        function showWarningAlert(message, duration = 6000) {
+            showAlert(message, 'warning', duration);
+        }
+        
+        function showSuccessPopup(message) {
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'success-popup-overlay';
+            
+            // Create popup
+            const popup = document.createElement('div');
+            popup.className = 'success-popup';
+            popup.innerHTML = `
+                <div class="popup-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h3>Thành công!</h3>
+                <p>${message}</p>
+                <button class="popup-button" onclick="closeSuccessPopup()">Đóng</button>
+            `;
+            
+            // Add to body
+            document.body.appendChild(overlay);
+            document.body.appendChild(popup);
+            
+            // Auto close after 5 seconds
+            setTimeout(function() {
+                closeSuccessPopup();
+            }, 5000);
+            
+            // Close on overlay click
+            overlay.addEventListener('click', closeSuccessPopup);
+        }
+        
+        function closeSuccessPopup() {
+            const popup = document.querySelector('.success-popup');
+            const overlay = document.querySelector('.success-popup-overlay');
+            
+            if (popup && overlay) {
+                popup.classList.add('closing');
+                overlay.classList.add('closing');
+                
+                setTimeout(function() {
+                    if (popup.parentNode) popup.parentNode.removeChild(popup);
+                    if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                }, 300);
+            }
+        }
+        
+        // Close popup on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeSuccessPopup();
+                // Also close any alert toasts
+                const alerts = document.querySelectorAll('.alert-toast');
+                alerts.forEach(alert => removeAlert(alert));
+            }
+        });
+        
+        // Global error handler for unhandled promise rejections
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled promise rejection:', event.reason);
+            showErrorAlert('Có lỗi không mong muốn xảy ra. Vui lòng thử lại sau.', 8000);
+        });
+    </script>
 </body>
 </html>

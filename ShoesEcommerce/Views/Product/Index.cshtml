@@ -1,9 +1,7 @@
-﻿@*
-    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-*@
-@model List<ShoesEcommerce.Models.Products.Product>
+﻿@model ShoesEcommerce.ViewModels.Product.ProductListViewModel
 @{
     ViewData["Title"] = ViewData["Title"] ?? "Sản phẩm";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
 <div class="container-fluid">
@@ -12,7 +10,7 @@
             <h2 class="text-center my-4">@ViewData["Title"]</h2>
             
             @* Filter và Search Bar *@
-            <form method="get" asp-action="Index">
+            <form method="get" asp-action="Index" id="filterForm">
                 <div class="row mb-4">
                     <div class="col-md-4">
                         <div class="input-group">
@@ -24,7 +22,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <select class="form-select" name="categoryId" onchange="this.form.submit()">
+                        <select class="form-select" name="categoryId" id="categoryFilter">
                             <option value="">Tất cả danh mục</option>
                             @if (ViewBag.Categories != null)
                             {
@@ -44,7 +42,7 @@
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <select class="form-select" name="brandId" onchange="this.form.submit()">
+                        <select class="form-select" name="brandId" id="brandFilter">
                             <option value="">Tất cả thương hiệu</option>
                             @if (ViewBag.Brands != null)
                             {
@@ -79,66 +77,138 @@
         </div>
     </div>
 
-    @if (Model != null && Model.Any())
+    @* Featured Discounts Banner *@
+    @if (Model.FeaturedDiscounts != null && Model.FeaturedDiscounts.Any())
     {
-        @* Results info and Create button *@
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="alert alert-warning border-0 shadow-sm">
+                    <h5 class="alert-heading mb-3">
+                        <i class="fas fa-fire text-danger"></i> Khuyến mãi đặc biệt!
+                    </h5>
+                    <div class="row">
+                        @foreach (var discount in Model.FeaturedDiscounts)
+                        {
+                            <div class="col-md-4 mb-2">
+                                <div class="p-2 bg-light rounded">
+                                    <strong>@discount.Name</strong>
+                                    <span class="badge bg-danger ms-2">@discount.DisplayValue</span>
+                                    <br />
+                                    <small class="text-muted">Mã: <strong>@discount.Code</strong></small>
+                                    <br />
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock"></i> 
+                                        Hết hạn: @discount.EndDate.ToString("dd/MM/yyyy")
+                                    </small>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @if (Model.Products != null && Model.Products.Any())
+    {
+        @* Results info and filter options *@
         <div class="row mb-3">
             <div class="col-md-6">
                 <p class="text-muted">
-                    Hiển thị @Model.Count() sản phẩm
-                    @if (ViewBag.TotalItems != null)
-                    {
-                        <span> trong tổng số @ViewBag.TotalItems sản phẩm</span>
-                    }
+                    Hiển thị @Model.Products.Count() sản phẩm trong tổng số @Model.TotalItems sản phẩm
                 </p>
             </div>
             <div class="col-md-6 text-end">
-                <a href="@Url.Action("Create", "Product")" class="btn btn-success">
-                    <i class="fas fa-plus"></i> Thêm sản phẩm mới
-                </a>
+                @if (!Model.ShowDiscountsOnly)
+                {
+                    <a href="@Url.Action("DiscountedProducts")" class="btn btn-warning me-2">
+                        <i class="fas fa-percent"></i> Sản phẩm khuyến mãi
+                    </a>
+                }
+                else
+                {
+                    <a href="@Url.Action("Index")" class="btn btn-primary me-2">
+                        <i class="fas fa-list"></i> Tất cả sản phẩm
+                    </a>
+                }
             </div>
         </div>
 
         <div class="row" id="productContainer">
-            @foreach (var product in Model)
+            @foreach (var product in Model.Products)
             {
                 <div class="col-lg-3 col-md-4 col-sm-6 mb-4 product-item">
                     <div class="card h-100 shadow-sm product-card">
                         @* Product Image *@
                         <div class="position-relative">
-                            <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/no-image.jpg" : product.ImageUrl)" 
+                            <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/no-image.svg" : product.ImageUrl)" 
                                  class="card-img-top" 
                                  alt="@product.Name" 
                                  style="height: 250px; object-fit: cover;"
-                                 onerror="this.src='/images/no-image.jpg'" />
+                                 onerror="this.src='/images/no-image.svg'" />
+                            
+                            @* Discount Badge *@
+                            @if (product.HasActiveDiscount)
+                            {
+                                <div class="position-absolute top-0 start-0 m-2">
+                                    <span class="badge bg-danger fs-6">
+                                        <i class="fas fa-percent"></i> @(product.DiscountPercentage?.ToString("F0"))%
+                                    </span>
+                                </div>
+                            }
                             
                             @* Price Badge *@
                             <div class="position-absolute top-0 end-0 m-2">
-                                <span class="badge bg-primary fs-6">
-                                    @product.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
-                                </span>
+                                @if (product.HasActiveDiscount)
+                                {
+                                    <div class="text-end">
+                                        <div class="badge bg-secondary text-decoration-line-through">
+                                            @product.MinPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
+                                        </div>
+                                        <br />
+                                        <div class="badge bg-danger fs-6">
+                                            @product.DiscountedMinPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-primary fs-6">
+                                        @if (product.MinPrice == product.MaxPrice)
+                                        {
+                                            <text>@product.MinPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))</text>
+                                        }
+                                        else
+                                        {
+                                            <text>@product.MinPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN")) - @product.MaxPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))</text>
+                                        }
+                                    </span>
+                                }
                             </div>
                         </div>
 
                         <div class="card-body d-flex flex-column">
-                            @* Product Name *@
-                            <h5 class="card-title text-truncate" title="@product.Name">@product.Name</h5>
+                            @* Product Name - Brand (modified format) *@
+                            <h5 class="card-title text-truncate" title="@product.Name - @product.BrandName">
+                                @product.Name - @product.BrandName
+                            </h5>
                             
-                            @* Brand and Category *@
+                            @* Category Badge *@
                             <div class="mb-2">
-                                @if (product.Brand != null)
-                                {
-                                    <span class="badge bg-light text-dark me-1">
-                                        <i class="fas fa-tag"></i> @product.Brand.Name
-                                    </span>
-                                }
-                                @if (product.Category != null)
-                                {
-                                    <span class="badge bg-light text-dark">
-                                        <i class="fas fa-layer-group"></i> @product.Category.Name
-                                    </span>
-                                }
+                                <span class="badge bg-light text-dark">
+                                    <i class="fas fa-layer-group"></i> @product.CategoryName
+                                </span>
                             </div>
+
+                            @* Discount Info *@
+                            @if (product.HasActiveDiscount)
+                            {
+                                <div class="mb-2">
+                                    <small class="text-success fw-bold">
+                                        <i class="fas fa-fire"></i> @product.DiscountName
+                                    </small>
+                                </div>
+                            }
 
                             @* Product Description *@
                             @if (!string.IsNullOrEmpty(product.Description))
@@ -148,34 +218,34 @@
                                 </p>
                             }
 
-                            @* Variants Info *@
-                            @if (product.Variants != null && product.Variants.Any())
-                            {
-                                <div class="mb-2">
-                                    <small class="text-muted">
-                                        <i class="fas fa-palette"></i> @product.Variants.Select(v => v.Color).Distinct().Count() màu |
-                                        <i class="fas fa-ruler"></i> @product.Variants.Select(v => v.Size).Distinct().Count() size
-                                    </small>
-                                </div>
-                            }
+                            @* Variants Info (without stock indicator) *@
+                            <div class="mb-2">
+                                <small class="text-muted">
+                                    <i class="fas fa-cubes"></i> @product.VariantCount biến thể có sẵn
+                                </small>
+                            </div>
 
                             @* Action buttons *@
                             <div class="mt-auto">
                                 <div class="d-grid gap-2">
                                     <a href="@Url.Action("Details", "Product", new { id = product.Id })" 
-                                       class="btn btn-outline-primary btn-sm">
+                                       class="btn btn-primary btn-sm">
                                         <i class="fas fa-eye"></i> Xem chi tiết
                                     </a>
-                                    <div class="btn-group" role="group">
-                                        <a href="@Url.Action("Edit", "Product", new { id = product.Id })" 
-                                           class="btn btn-outline-warning btn-sm">
-                                            <i class="fas fa-edit"></i> Sửa
-                                        </a>
-                                        <a href="@Url.Action("Delete", "Product", new { id = product.Id })" 
-                                           class="btn btn-outline-danger btn-sm">
-                                            <i class="fas fa-trash"></i> Xóa
-                                        </a>
-                                    </div>
+                                    @if (product.IsInStock)
+                                    {
+                                        <button type="button" 
+                                                class="btn btn-success btn-sm add-to-cart-btn"
+                                                data-product-id="@product.Id">
+                                            <i class="fas fa-cart-plus"></i> Thêm vào giỏ
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                            <i class="fas fa-ban"></i> Hết hàng
+                                        </button>
+                                    }
                                 </div>
                             </div>
                         </div>
@@ -185,24 +255,25 @@
         </div>
 
         @* Pagination *@
-        @if (ViewBag.TotalPages != null && ViewBag.TotalPages > 1)
+        @if (Model.TotalPages > 1)
         {
             <div class="row mt-4">
                 <div class="col-12">
                     <nav aria-label="Product pagination">
                         <ul class="pagination justify-content-center">
                             @{
-                                var currentPage = ViewBag.CurrentPage ?? 1;
-                                var totalPages = ViewBag.TotalPages ?? 1;
+                                var currentPage = Model.CurrentPage;
+                                var totalPages = Model.TotalPages;
                                 var searchString = ViewData["CurrentFilter"]?.ToString();
                                 var categoryFilter = ViewData["CategoryFilter"]?.ToString();
                                 var brandFilter = ViewData["BrandFilter"]?.ToString();
+                                var actionName = Model.ShowDiscountsOnly ? "DiscountedProducts" : "Index";
                             }
 
                             @* Previous button *@
                             <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
                                 <a class="page-link" 
-                                   href="@Url.Action("Index", new { 
+                                   href="@Url.Action(actionName, new { 
                                        page = currentPage - 1, 
                                        searchString = searchString,
                                        categoryId = categoryFilter,
@@ -218,7 +289,7 @@
                             {
                                 <li class="page-item @(i == currentPage ? "active" : "")">
                                     <a class="page-link" 
-                                       href="@Url.Action("Index", new { 
+                                       href="@Url.Action(actionName, new { 
                                            page = i, 
                                            searchString = searchString,
                                            categoryId = categoryFilter,
@@ -232,7 +303,7 @@
                             @* Next button *@
                             <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
                                 <a class="page-link" 
-                                   href="@Url.Action("Index", new { 
+                                   href="@Url.Action(actionName, new { 
                                        page = currentPage + 1, 
                                        searchString = searchString,
                                        categoryId = categoryFilter,
@@ -248,7 +319,7 @@
                     <div class="text-center mt-2">
                         <small class="text-muted">
                             Trang @currentPage của @totalPages
-                            (@ViewBag.TotalItems sản phẩm)
+                            (@Model.TotalItems sản phẩm)
                         </small>
                     </div>
                 </div>
@@ -268,6 +339,10 @@
                 {
                     <span>Không tìm thấy sản phẩm nào</span>
                 }
+                else if (Model.ShowDiscountsOnly)
+                {
+                    <span>Hiện tại không có sản phẩm khuyến mãi nào</span>
+                }
                 else
                 {
                     <span>Chưa có sản phẩm nào</span>
@@ -284,19 +359,19 @@
                         <i class="fas fa-undo"></i> Xóa bộ lọc
                     </a>
                 }
+                else if (Model.ShowDiscountsOnly)
+                {
+                    <span>Hãy tạo một số khuyến mãi để hiển thị ở đây!</span>
+                    <br />
+                    <a href="@Url.Action("Index")" class="btn btn-outline-primary mt-2">
+                        <i class="fas fa-list"></i> Xem tất cả sản phẩm
+                    </a>
+                }
                 else
                 {
                     <span>Hãy thêm sản phẩm đầu tiên vào cửa hàng của bạn!</span>
                 }
             </p>
-            @if (string.IsNullOrEmpty(ViewData["CurrentFilter"]?.ToString()) && 
-                 string.IsNullOrEmpty(ViewData["CategoryFilter"]?.ToString()) && 
-                 string.IsNullOrEmpty(ViewData["BrandFilter"]?.ToString()))
-            {
-                <a href="@Url.Action("Create", "Product")" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Thêm sản phẩm mới
-                </a>
-            }
         </div>
     }
 </div>
@@ -318,32 +393,98 @@
     </div>
 }
 
-@* Custom CSS *@
+@* Minimalist CSS Styles *@
 <style>
+    :root {
+        --neutral-50: #fafafa;
+        --neutral-100: #f5f5f5;
+        --neutral-200: #e5e5e5;
+        --neutral-300: #d4d4d4;
+        --neutral-400: #a3a3a3;
+        --neutral-500: #737373;
+        --neutral-600: #525252;
+        --neutral-700: #404040;
+        --neutral-800: #262626;
+        --neutral-900: #171717;
+        --black: #000000;
+        --white: #ffffff;
+    }
+    
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+        color: var(--neutral-800);
+        line-height: 1.6;
+    }
+    
     .product-card {
         transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        border: 1px solid var(--neutral-200);
+        border-radius: 0.5rem;
     }
     
     .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.08) !important;
+        border-color: var(--neutral-300);
     }
     
     .card-title {
         font-size: 1.1rem;
-        font-weight: 600;
+        font-weight: 500;
+        color: var(--neutral-900);
     }
     
     .badge {
         font-size: 0.75em;
     }
     
-    .add-to-cart:hover {
+    .add-to-cart-btn:hover {
         transform: scale(1.02);
+    }
+    
+    .btn-primary {
+        background: var(--black);
+        border-color: var(--black);
+    }
+    
+    .btn-primary:hover {
+        background: var(--neutral-800);
+        border-color: var(--neutral-800);
+    }
+    
+    .btn-success {
+        background: var(--neutral-700);
+        border-color: var(--neutral-700);
+    }
+    
+    .btn-success:hover {
+        background: var(--neutral-800);
+        border-color: var(--neutral-800);
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: var(--neutral-400);
+        box-shadow: 0 0 0 0.2rem rgba(115, 115, 115, 0.25);
+    }
+    
+    .pagination .page-link {
+        color: var(--neutral-700);
+        border-color: var(--neutral-300);
+    }
+    
+    .pagination .page-item.active .page-link {
+        background-color: var(--black);
+        border-color: var(--black);
+    }
+    
+    .pagination .page-link:hover {
+        color: var(--black);
+        background-color: var(--neutral-100);
+        border-color: var(--neutral-400);
     }
 </style>
 
-@* JavaScript for enhanced functionality *@
+@* Enhanced JavaScript functionality *@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Auto-dismiss alerts after 5 seconds
@@ -355,24 +496,65 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }, 5000);
 
-    // Confirm delete actions
-    document.querySelectorAll('a[href*="/Delete/"]').forEach(function(deleteLink) {
-        deleteLink.addEventListener('click', function(e) {
-            if (!confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?')) {
-                e.preventDefault();
-            }
+    // Add to cart functionality
+    document.querySelectorAll('.add-to-cart-btn').forEach(function(button) {
+        button.addEventListener('click', function() {
+            var productId = this.getAttribute('data-product-id');
+            // This would need to be implemented to show variant selection modal
+            // For now, redirect to product details
+            window.location.href = `/Product/Details/${productId}`;
         });
     });
 
-    // Loading state for form submissions
-    document.querySelectorAll('form').forEach(function(form) {
-        form.addEventListener('submit', function() {
-            var submitBtn = form.querySelector('button[type="submit"]');
+    // Handle filter form submission properly - prevents infinite loop
+    var filterForm = document.getElementById('filterForm');
+    var categoryFilter = document.getElementById('categoryFilter');
+    var brandFilter = document.getElementById('brandFilter');
+    var isSubmitting = false; // Prevent multiple rapid submissions
+    
+    // Add debounced change handlers to dropdowns
+    function submitFilterForm() {
+        if (!isSubmitting) {
+            isSubmitting = true;
+            
+            // Show loading indicator
+            var submitBtn = filterForm.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
                 submitBtn.disabled = true;
             }
+            
+            setTimeout(function() {
+                filterForm.submit();
+            }, 100); // Small delay to prevent rapid submissions
+        }
+    }
+    
+    // Handle category filter change
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', function() {
+            submitFilterForm();
         });
+    }
+    
+    // Handle brand filter change  
+    if (brandFilter) {
+        brandFilter.addEventListener('change', function() {
+            submitFilterForm();
+        });
+    }
+
+    // Handle search form submission
+    filterForm.addEventListener('submit', function(e) {
+        if (isSubmitting) {
+            return; // Already submitting
+        }
+        
+        var submitBtn = this.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
+            submitBtn.disabled = true;
+        }
     });
 
     // Smooth scroll to top when pagination

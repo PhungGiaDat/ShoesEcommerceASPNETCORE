@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Models.Accounts;
 using ShoesEcommerce.Models.Carts;
-using DepartmentEntity = ShoesEcommerce.Models.Departments.Department;
 using ShoesEcommerce.Models.Interactions;
 using ShoesEcommerce.Models.Orders;
 using ShoesEcommerce.Models.Products;
+using ShoesEcommerce.Models.Promotions;
 using ShoesEcommerce.Models.Stocks;
+using DepartmentEntity = ShoesEcommerce.Models.Departments.Department;
 
 namespace ShoesEcommerce.Data
 {
@@ -55,6 +56,12 @@ namespace ShoesEcommerce.Data
         public DbSet<Topic> Topics { get; set; }
         public DbSet<Favorite> Favorites { get; set; }
 
+        // ✅ ADD: Discount related DbSets
+        public DbSet<Discount> Discounts { get; set; }
+        public DbSet<DiscountProduct> DiscountProducts { get; set; }
+        public DbSet<DiscountCategory> DiscountCategories { get; set; }
+        public DbSet<DiscountUsage> DiscountUsages { get; set; }
+
         // ===== Fluent API =====
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -67,24 +74,13 @@ namespace ShoesEcommerce.Data
             ConfigureCarts(modelBuilder);
             ConfigureStocks(modelBuilder);
             ConfigureInteractions(modelBuilder);
+            ConfigurePromotions(modelBuilder);
         }
 
         // === Fluent API Configurations ===
 
         private void ConfigureAccounts(ModelBuilder modelBuilder)
         {
-
-            // =========================
-            // 🔐 Customer (User từ Firebase)
-            // =========================
-            modelBuilder.Entity<Customer>()
-                .Property(c => c.FirebaseUid)
-                .HasColumnName("FirebaseUid")
-                .IsRequired();
-
-            modelBuilder.Entity<Customer>()
-                .HasIndex(c => c.FirebaseUid)
-                .IsUnique(); // Đảm bảo mỗi Customer có FirebaseUid duy nhất
 
             modelBuilder.Entity<UserRole>()
                 .HasOne(ur => ur.Role)
@@ -291,6 +287,71 @@ namespace ShoesEcommerce.Data
                 .HasOne(q => q.Topic)
                 .WithMany(t => t.QAs)
                 .HasForeignKey(q => q.TopicId);
+        }
+
+        private void ConfigurePromotions(ModelBuilder modelBuilder)
+        {
+            // ✅ DISCOUNT Configuration
+            modelBuilder.Entity<Discount>()
+                .HasIndex(d => d.Code)
+                .IsUnique();
+
+            modelBuilder.Entity<Discount>()
+                .Property(d => d.Name)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            modelBuilder.Entity<Discount>()
+                .Property(d => d.Code)
+                .IsRequired()
+                .HasMaxLength(50);
+
+            modelBuilder.Entity<Discount>()
+                .Property(d => d.Description)
+                .HasMaxLength(500);
+
+            // ✅ DISCOUNT-PRODUCT Relationship (Many-to-Many via Junction)
+            modelBuilder.Entity<DiscountProduct>()
+                .HasOne(dp => dp.Discount)
+                .WithMany(d => d.DiscountProducts)
+                .HasForeignKey(dp => dp.DiscountId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DiscountProduct>()
+                .HasOne(dp => dp.Product)
+                .WithMany(p => p.DiscountProducts)
+                .HasForeignKey(dp => dp.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ✅ UNIQUE CONSTRAINT for DiscountProduct
+            modelBuilder.Entity<DiscountProduct>()
+                .HasIndex(dp => new { dp.DiscountId, dp.ProductId })
+                .IsUnique();
+
+            // ✅ DISCOUNT-CATEGORY Relationship (Many-to-Many via Junction)
+            modelBuilder.Entity<DiscountCategory>()
+                .HasOne(dc => dc.Discount)
+                .WithMany(d => d.DiscountCategories)
+                .HasForeignKey(dc => dc.DiscountId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<DiscountCategory>()
+                .HasOne(dc => dc.Category)
+                .WithMany() // Category doesn't have back-reference
+                .HasForeignKey(dc => dc.CategoryId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ✅ UNIQUE CONSTRAINT for DiscountCategory
+            modelBuilder.Entity<DiscountCategory>()
+                .HasIndex(dc => new { dc.DiscountId, dc.CategoryId })
+                .IsUnique();
+
+            // ✅ DISCOUNT USAGE Configuration
+            modelBuilder.Entity<DiscountUsage>()
+                .HasOne(du => du.Discount)
+                .WithMany(d => d.DiscountUsages)
+                .HasForeignKey(du => du.DiscountId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
