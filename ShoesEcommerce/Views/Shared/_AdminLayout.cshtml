@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="~/css/admin.css" />
     <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <!-- Mobile Menu Toggle -->
@@ -44,8 +46,29 @@
                         <i class="fas fa-user"></i> Tài khoản
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="accountDropdown">
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Staff" asp-action="Index">Nhân viên</a></li>
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Customer" asp-action="Index">Khách hàng</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Staff">Nhân viên</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Customer">Khách hàng</a></li>
+                    </ul>
+                </li>
+
+                <!-- Product Management Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="productDropdown" role="button" aria-expanded="false">
+                        <i class="fas fa-box-open"></i> Quản lý Sản phẩm
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="productDropdown">
+                        <li><a class="dropdown-item" href="/Admin/Product">
+                            <i class="fas fa-shopping-bag me-2"></i>Sản phẩm
+                        </a></li>
+                        <li><a class="dropdown-item" href="/Admin/Product/Categories">
+                            <i class="fas fa-tags me-2"></i>Danh mục
+                        </a></li>
+                        <li><a class="dropdown-item" href="/Admin/Product/Brands">
+                            <i class="fas fa-award me-2"></i>Thương hiệu
+                        </a></li>
+                        <li><a class="dropdown-item" href="/Admin/Product/Suppliers">
+                            <i class="fas fa-truck me-2"></i>Nhà cung cấp
+                        </a></li>
                     </ul>
                 </li>
 
@@ -55,9 +78,9 @@
                         <i class="fas fa-shopping-cart"></i> Danh sách order
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="orderDropdown">
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Order" asp-action="Pending">Phê duyệt</a></li>
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Order" asp-action="Confirmed">Xác nhận</a></li>
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Order" asp-action="Completed">Thành công</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Order/Pending">Phê duyệt</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Order/Confirmed">Xác nhận</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Order/Completed">Thành công</a></li>
                     </ul>
                 </li>
 
@@ -67,9 +90,9 @@
                         <i class="fas fa-box"></i> Hàng hóa
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="inventoryDropdown">
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Stock" asp-action="Inventory">Tồn kho</a></li>
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Stock" asp-action="Check">Kiểm kho</a></li>
-                        <li><a class="dropdown-item" asp-area="" asp-controller="Stock" asp-action="Import">Nhập hàng</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Stock/Inventory">Tồn kho</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Stock/Check">Kiểm kho</a></li>
+                        <li><a class="dropdown-item" href="/Admin/Stock/Import">Nhập hàng</a></li>
                     </ul>
                 </li>
 

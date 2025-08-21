@@ -1,0 +1,66 @@
+﻿@model List<ShoesEcommerce.Models.Carts.CartItem>
+
+@{
+    ViewData["Title"] = ViewData["Title"] ?? "Giỏ hàng";
+}
+
+<div class="container-fluid py-4">
+    <h2 class="mb-4">@ViewData["Title"]</h2>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Sản phẩm</th>
+                        <th>Màu sắc</th>
+                        <th>Kích thước</th>
+                        <th>Thương hiệu</th>
+                        <th>Giá</th>
+                        <th>Số lượng</th>
+                        <th>Tổng</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        var price = item.ProductVariant?.Price ?? 0; // ✅ FIXED: Use ProductVariant.Price
+                        var quantity = item.Quantity > 0 ? item.Quantity : 1;
+                        <tr>
+                            <td>@(item.ProductVariant?.Product?.Name ?? "Không có tên")</td>
+                            <td>@(item.ProductVariant?.Color ?? "Chưa có")</td>
+                            <td>@(item.ProductVariant?.Size ?? "Chưa có")</td>
+                            <td>@(item.ProductVariant?.Product?.Brand?.Name ?? "Chưa có")</td>
+                            <td>@(price > 0 ? price.ToString("C0", new System.Globalization.CultureInfo("vi-VN")) : "0 VND")</td>
+                            <td>
+                                <form asp-action="UpdateQuantity" method="post" style="display:inline;">
+                                    <input type="hidden" name="id" value="@item.Id" />
+                                    <input type="number" name="quantity" value="@quantity" min="1" style="width:60px;" />
+                                    <button type="submit" class="btn btn-secondary btn-sm">Cập nhật</button>
+                                </form>
+                            </td>
+                            <td>@((price * quantity).ToString("C0", new System.Globalization.CultureInfo("vi-VN")))</td>
+                            <td>
+                                <a href="@Url.Action("RemoveFromCart", "Cart", new { id = item.Id })" class="btn btn-danger btn-sm">Xóa</a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+    }
+    else
+    {
+        <div class="text-center my-5">
+            <i class="fas fa-shopping-cart fa-5x text-muted"></i>
+            <h4 class="text-muted">Giỏ hàng của bạn trống.</h4>
+            <p class="text-muted">Hãy thêm sản phẩm từ trang sản phẩm!</p>
+            <a href="@Url.Action("Index", "Product")" class="btn btn-primary mt-2">
+                <i class="fas fa-arrow-left"></i> Quay lại danh sách sản phẩm
+            </a>
+        </div>
+    }
+</div>

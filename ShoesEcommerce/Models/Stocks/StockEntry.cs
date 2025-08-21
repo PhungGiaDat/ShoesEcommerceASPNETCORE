@@ -12,7 +12,20 @@ namespace ShoesEcommerce.Models.Stocks
         public int SupplierId { get; set; }
         public Supplier Supplier { get; set; }
 
-        public int Quantity { get; set; }
+        // ✅ QUANTITY RECEIVED
+        public int QuantityReceived { get; set; }
+
+        // ✅ COST TRACKING
+        public decimal UnitCost { get; set; }
+        public decimal TotalCost => QuantityReceived * UnitCost;
+
+        // ✅ RECEIPT INFO
         public DateTime EntryDate { get; set; }
+        public string BatchNumber { get; set; } = string.Empty;
+        public string Notes { get; set; } = string.Empty;
+
+        // ✅ STATUS
+        public bool IsProcessed { get; set; }
+        public string ReceivedBy { get; set; } = string.Empty;
     }
 }

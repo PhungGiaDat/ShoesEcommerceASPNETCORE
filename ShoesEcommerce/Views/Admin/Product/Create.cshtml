@@ -1,0 +1,371 @@
+﻿@model ShoesEcommerce.ViewModels.Product.CreateProductViewModel
+@{
+    ViewData["Title"] = "Thêm Sản phẩm mới";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="product-create">
+    <!-- Page Header -->
+    <div class="page-header bg-gradient-success text-white rounded-3 mb-4 p-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="page-title mb-2">
+                    <i class="fas fa-plus-circle me-2"></i>
+                    Thêm Sản phẩm mới
+                </h2>
+                <p class="page-subtitle mb-0 opacity-75">Tạo sản phẩm mới với thông tin chi tiết</p>
+            </div>
+            <div class="page-actions">
+                <a asp-action="Index" class="btn btn-light btn-lg">
+                    <i class="fas fa-arrow-left me-2"></i>
+                    Quay lại
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Links -->
+    <div class="row mb-4">
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm quick-link-card bg-primary text-white">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-tags fa-lg mb-2"></i>
+                    <h6 class="card-title mb-2">Cần thêm danh mục?</h6>
+                    <a asp-action="CreateCategory" class="btn btn-light btn-sm">
+                        Thêm danh mục
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm quick-link-card bg-success text-white">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-award fa-lg mb-2"></i>
+                    <h6 class="card-title mb-2">Cần thêm thương hiệu?</h6>
+                    <a asp-action="CreateBrand" class="btn btn-light btn-sm">
+                        Thêm thương hiệu
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm quick-link-card bg-warning text-white">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-truck fa-lg mb-2"></i>
+                    <h6 class="card-title mb-2">Cần thêm nhà cung cấp?</h6>
+                    <a asp-action="CreateSupplier" class="btn btn-light btn-sm">
+                        Thêm nhà cung cấp
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm quick-link-card bg-info text-white">
+                <div class="card-body text-center py-3">
+                    <i class="fas fa-palette fa-lg mb-2"></i>
+                    <h6 class="card-title mb-2">Sau khi tạo sản phẩm</h6>
+                    <span class="btn btn-light btn-sm">
+                        Thêm phiên bản
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>
+            @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-circle me-2"></i>
+            @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- Product Form -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-0 py-3">
+            <h5 class="card-title mb-0">
+                <i class="fas fa-edit me-2 text-primary"></i>
+                Thông tin sản phẩm
+            </h5>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="Create" method="post" class="needs-validation" novalidate>
+                <div class="row">
+                    <!-- Product Name -->
+                    <div class="col-lg-12 col-md-12 mb-4">
+                        <label asp-for="Name" class="form-label fw-semibold required">
+                            <i class="fas fa-tag me-1"></i>Tên sản phẩm
+                        </label>
+                        <input asp-for="Name" class="form-control form-control-lg" 
+                               placeholder="VD: Giày Nike Air Max 90" maxlength="200" required>
+                        <span asp-validation-for="Name" class="text-danger small"></span>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Tên sản phẩm nên rõ ràng, mô tả chính xác sản phẩm
+                        </div>
+                    </div>
+
+                    <!-- Category Selection -->
+                    <div class="col-lg-6 col-md-12 mb-4">
+                        <label asp-for="CategoryId" class="form-label fw-semibold required">
+                            <i class="fas fa-tags me-1"></i>Danh mục
+                        </label>
+                        <div class="position-relative">
+                            <select asp-for="CategoryId" class="form-select form-select-lg category-select" required>
+                                <option value="">-- Chọn danh mục --</option>
+                                @if (ViewBag.Categories is SelectList categories)
+                                {
+                                    @foreach (var item in categories)
+                                    {
+                                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                    }
+                                }
+                            </select>
+                            <div class="category-actions mt-2">
+                                <a asp-action="CreateCategory" class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="fas fa-plus me-1"></i>Thêm danh mục mới
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="refreshCategories()">
+                                    <i class="fas fa-refresh me-1"></i>Làm mới
+                                </button>
+                            </div>
+                        </div>
+                        <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Brand Selection -->
+                    <div class="col-lg-6 col-md-12 mb-4">
+                        <label asp-for="BrandId" class="form-label fw-semibold required">
+                            <i class="fas fa-award me-1"></i>Thương hiệu
+                        </label>
+                        <div class="position-relative">
+                            <select asp-for="BrandId" class="form-select form-select-lg brand-select" required>
+                                <option value="">-- Chọn thương hiệu --</option>
+                                @if (ViewBag.Brands is SelectList brands)
+                                {
+                                    @foreach (var item in brands)
+                                    {
+                                        <option value="@item.Value" selected="@item.Selected">@item.Text</option>
+                                    }
+                                }
+                            </select>
+                            <div class="brand-actions mt-2">
+                                <a asp-action="CreateBrand" class="btn btn-outline-success btn-sm" target="_blank">
+                                    <i class="fas fa-plus me-1"></i>Thêm thương hiệu mới
+                                </a>
+                                <button type="button" class="btn btn-outline-secondary btn-sm" onclick="refreshBrands()">
+                                    <i class="fas fa-refresh me-1"></i>Làm mới
+                                </button>
+                            </div>
+                        </div>
+                        <span asp-validation-for="BrandId" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Product Description -->
+                    <div class="col-12 mb-4">
+                        <label asp-for="Description" class="form-label fw-semibold">
+                            <i class="fas fa-align-left me-1"></i>Mô tả sản phẩm
+                        </label>
+                        <textarea asp-for="Description" class="form-control" rows="4" 
+                                  placeholder="Mô tả chi tiết về sản phẩm, chất liệu, tính năng đặc biệt..." maxlength="1000"></textarea>
+                        <span asp-validation-for="Description" class="text-danger small"></span>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Mô tả chi tiết giúp khách hàng hiểu rõ hơn về sản phẩm (tối đa 1000 ký tự)
+                        </div>
+                    </div>
+
+                    <!-- Product Status -->
+                    <div class="col-lg-6 col-md-12 mb-4">
+                        <label class="form-label fw-semibold">
+                            <i class="fas fa-toggle-on me-1"></i>Trạng thái
+                        </label>
+                        <div class="form-check form-switch">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" role="switch" checked>
+                            <label class="form-check-label" for="IsActive">
+                                <span class="active-text">Kích hoạt sản phẩm ngay</span>
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Sản phẩm được kích hoạt sẽ hiển thị trên website
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="alert alert-info" role="alert">
+                    <h6 class="alert-heading">
+                        <i class="fas fa-info-circle me-2"></i>Lưu ý
+                    </h6>
+                    <p class="mb-0">
+                        Sau khi tạo sản phẩm, bạn cần thêm các <strong>phiên bản sản phẩm</strong> với giá cụ thể, màu sắc, kích thước và hình ảnh.
+                        Mỗi phiên bản sẽ có giá riêng và số lượng tồn kho riêng.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="d-flex flex-wrap gap-3 justify-content-between">
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-success btn-lg px-4">
+                                    <i class="fas fa-save me-2"></i>
+                                    Lưu sản phẩm
+                                </button>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="reset" class="btn btn-outline-secondary btn-lg">
+                                    <i class="fas fa-undo me-2"></i>
+                                    Đặt lại
+                                </button>
+                                <a asp-action="Index" class="btn btn-light btn-lg">
+                                    <i class="fas fa-times me-2"></i>
+                                    Hủy
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .page-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .quick-link-card {
+            transition: transform 0.2s ease-in-out;
+        }
+        
+        .quick-link-card:hover {
+            transform: translateY(-3px);
+        }
+        
+        .required::after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: #28a745;
+            box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+        }
+        
+        .category-actions, .brand-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .form-check-input:checked {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        
+        .active-text {
+            font-weight: 500;
+            color: #28a745;
+        }
+        
+        .form-text {
+            font-size: 0.875em;
+        }
+        
+        @@media (max-width: 768px) {
+            .page-header .page-actions {
+                margin-top: 1rem;
+            }
+            
+            .category-actions, .brand-actions {
+                flex-direction: column;
+            }
+            
+            .d-flex.gap-3.justify-content-between {
+                flex-direction: column;
+            }
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Form validation
+        (function() {
+            'use strict';
+            window.addEventListener('load', function() {
+                var forms = document.getElementsByClassName('needs-validation');
+                var validation = Array.prototype.filter.call(forms, function(form) {
+                    form.addEventListener('submit', function(event) {
+                        if (form.checkValidity() === false) {
+                            event.preventDefault();
+                            event.stopPropagation();
+                        }
+                        form.classList.add('was-validated');
+                    }, false);
+                });
+            }, false);
+        })();
+
+        // Refresh categories dropdown
+        function refreshCategories() {
+            // This would make an AJAX call to refresh the categories
+            // For now, just reload the page
+            window.location.reload();
+        }
+
+        // Refresh brands dropdown
+        function refreshBrands() {
+            // This would make an AJAX call to refresh the brands
+            // For now, just reload the page
+            window.location.reload();
+        }
+
+        // Auto-select first option if only one exists
+        window.addEventListener('load', function() {
+            const categorySelect = document.querySelector('.category-select');
+            const brandSelect = document.querySelector('.brand-select');
+            
+            if (categorySelect.options.length === 2) { // Only default option + 1 category
+                categorySelect.selectedIndex = 1;
+            }
+            
+            if (brandSelect.options.length === 2) { // Only default option + 1 brand
+                brandSelect.selectedIndex = 1;
+            }
+        });
+
+        // Show helpful messages based on selections
+        document.querySelector('.category-select').addEventListener('change', function() {
+            if (this.value) {
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+            }
+        });
+
+        document.querySelector('.brand-select').addEventListener('change', function() {
+            if (this.value) {
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+            }
+        });
+    </script>
+
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
