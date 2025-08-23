@@ -60,5 +60,7 @@ namespace ShoesEcommerce.Models.Accounts
         public ICollection<QA>? QAs { get; set; }
         public ICollection<Favorite>? Favorites { get; set; }
         public ICollection<UserRole>? Roles { get; set; }
+
+        public string FullName => $"{FirstName} {LastName}";
     }
 }

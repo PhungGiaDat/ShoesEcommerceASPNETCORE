@@ -60,5 +60,8 @@ namespace ShoesEcommerce.Repositories.Interfaces
         Task<IEnumerable<Product>> GetFeaturedDiscountProductsAsync(int count = 10);
         Task<Discount?> GetActiveDiscountForProductAsync(int productId);
         Task<IEnumerable<Discount>> GetFeaturedDiscountsAsync();
+
+        // Admin Report Data
+        Task<IEnumerable<ProductVariant>> GetAllProductVariantsAsync();
     }
 }

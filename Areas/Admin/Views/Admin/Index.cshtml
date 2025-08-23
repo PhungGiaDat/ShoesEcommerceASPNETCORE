@@ -1,0 +1,255 @@
+@{
+    ViewData["Title"] = "Trang ch? Admin";
+}
+
+<!-- Dashboard Header -->
+<div class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>B?ng ?i?u khi?n Admin</h2>
+        <button class="btn btn-outline-secondary">Bán hàng</button>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Nhân viên
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.StaffCount</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-users fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Phòng ban
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.DepartmentCount</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-building fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Vai trò
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">@ViewBag.RoleCount</div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-shield-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Tr?ng thái Database
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800">
+                            @if (ViewBag.DatabaseStatus == "Connected")
+                            {
+                                <span class="text-success">K?t n?i</span>
+                            }
+                            else
+                            {
+                                <span class="text-danger">L?i</span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-database fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue Card -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">K?t qu? doanh thu Tháng 01/2025</h6>
+    </div>
+    <div class="card-body">
+        <!-- Revenue Statistics -->
+        <div class="row text-center mb-4">
+            <div class="col-md-6">
+                <div class="border-right">
+                    <div class="h4 font-weight-bold">1</div>
+                    <div class="text-muted">hoá ??n</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="h4 font-weight-bold">0</div>
+                <div class="text-muted">phi?u</div>
+            </div>
+        </div>
+        
+        <!-- Revenue Summary -->
+        <div class="row text-center mb-4">
+            <div class="col-md-6">
+                <div class="border-right">
+                    <div class="h4 font-weight-bold text-success">$199</div>
+                    <div class="text-muted">Doanh thu</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="h4 font-weight-bold">0</div>
+                <div class="text-muted">Tr? hàng</div>
+            </div>
+        </div>
+        
+        <!-- Financial Summary -->
+        <div class="row text-center">
+            <div class="col-md-6">
+                <div class="border-right">
+                    <div class="text-muted">Ti?n v?n</div>
+                    <div class="h4 font-weight-bold">$60.000</div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="text-muted">Ti?n l?i</div>
+                <div class="h4 font-weight-bold text-danger">-$59.801</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Container -->
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Bi?u ?? doanh thu</h6>
+    </div>
+    <div class="card-body">
+        <div class="chart-area">
+            <canvas id="revenueChart" style="height: 400px;"></canvas>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    // Revenue Chart
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('revenueChart').getContext('2d');
+        
+        const chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'],
+                datasets: [{
+                    label: 'Doanh thu',
+                    data: [200, 100, 160, 90, 170, 180, 60, 90, 110, 150, 170, 170],
+                    borderColor: '#4a90e2',
+                    backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#4a90e2',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 6,
+                    pointHoverRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#4a90e2',
+                        borderWidth: 1
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 250,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        ticks: {
+                            color: '#666',
+                            stepSize: 50
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        hoverBackgroundColor: '#4a90e2'
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            }
+        });
+
+        // Responsive chart resize
+        window.addEventListener('resize', function() {
+            chart.resize();
+        });
+    });
+</script>
+
+<style>
+    .border-left-primary {
+        border-left: 0.25rem solid #4e73df !important;
+    }
+    .border-left-success {
+        border-left: 0.25rem solid #1cc88a !important;
+    }
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    .border-left-warning {
+        border-left: 0.25rem solid #f6c23e !important;
+    }
+</style>
+}

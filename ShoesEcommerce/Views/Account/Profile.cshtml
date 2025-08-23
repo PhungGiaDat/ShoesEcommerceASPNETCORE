@@ -1,6 +1,6 @@
-@model ShoesEcommerce.ViewModels.Account.CustomerProfileViewModel
+﻿@model ShoesEcommerce.ViewModels.Account.CustomerProfileViewModel
 @{
-    ViewData["Title"] = "Th�ng tin t�i kho?n";
+    ViewData["Title"] = "Thông tin tài khoản";
 }
 
 <style>
@@ -29,12 +29,12 @@
         border-bottom: 1px solid var(--color-gray-200);
     }
 
-    .profile-header h1 {
-        font-size: 2rem;
-        font-weight: 300;
-        color: var(--color-black);
-        margin-bottom: 0.5rem;
-    }
+        .profile-header h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            color: var(--color-black);
+            margin-bottom: 0.5rem;
+        }
 
     .profile-card {
         background: var(--color-white);
@@ -58,9 +58,9 @@
         border-bottom: 1px solid var(--color-gray-100);
     }
 
-    .info-row:last-child {
-        border-bottom: none;
-    }
+        .info-row:last-child {
+            border-bottom: none;
+        }
 
     .info-label {
         font-weight: 500;
@@ -99,10 +99,10 @@
         color: var(--color-white);
     }
 
-    .btn-primary:hover {
-        background: var(--color-gray-800);
-        color: var(--color-white);
-    }
+        .btn-primary:hover {
+            background: var(--color-gray-800);
+            color: var(--color-white);
+        }
 
     .btn-secondary {
         background: var(--color-white);
@@ -110,10 +110,10 @@
         border: 1px solid var(--color-gray-300);
     }
 
-    .btn-secondary:hover {
-        background: var(--color-gray-100);
-        color: var(--color-black);
-    }
+        .btn-secondary:hover {
+            background: var(--color-gray-100);
+            color: var(--color-black);
+        }
 
     .stats-grid {
         display: grid;
@@ -146,23 +146,23 @@
 
 <div class="profile-container">
     <div class="profile-header">
-        <h1>Th�ng tin t�i kho?n</h1>
-        <p style="color: var(--color-gray-600);">Qu?n l� th�ng tin c� nh�n c?a b?n</p>
+        <h1>Thông tin tài khoản</h1>
+        <p style="color: var(--color-gray-600);">Quản lý thông tin cá nhân của bạn</p>
     </div>
 
     <!-- Statistics -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-number">@Model.TotalOrders</div>
-            <div class="stat-label">??n h�ng</div>
+            <div class="stat-label">Đơn hàng</div>
         </div>
         <div class="stat-card">
             <div class="stat-number">@Model.TotalSpent.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))</div>
-            <div class="stat-label">T?ng chi ti�u</div>
+            <div class="stat-label">Tổng chi tiêu</div>
         </div>
         <div class="stat-card">
             <div class="stat-number">@((DateTime.Now - Model.CreatedAt).Days)</div>
-            <div class="stat-label">Ng�y th�nh vi�n</div>
+            <div class="stat-label">Ngày thành viên</div>
         </div>
     </div>
 
@@ -170,7 +170,7 @@
     <div class="profile-card">
         <div class="profile-info">
             <div class="info-row">
-                <span class="info-label">H? v� t�n:</span>
+                <span class="info-label">Họ và tên:</span>
                 <span class="info-value">@Model.FullName</span>
             </div>
             <div class="info-row">
@@ -178,29 +178,29 @@
                 <span class="info-value">@Model.Email</span>
             </div>
             <div class="info-row">
-                <span class="info-label">S? ?i?n tho?i:</span>
+                <span class="info-label">Số điện thoại:</span>
                 <span class="info-value">@Model.PhoneNumber</span>
             </div>
             <div class="info-row">
-                <span class="info-label">Ng�y sinh:</span>
+                <span class="info-label">Ngày sinh:</span>
                 <span class="info-value">@Model.DateOfBirth.ToString("dd/MM/yyyy")</span>
             </div>
             @if (!string.IsNullOrEmpty(Model.Address))
             {
                 <div class="info-row">
-                    <span class="info-label">??a ch?:</span>
+                    <span class="info-label">Địa chỉ:</span>
                     <span class="info-value">@Model.Address</span>
                 </div>
             }
             @if (!string.IsNullOrEmpty(Model.City))
             {
                 <div class="info-row">
-                    <span class="info-label">Th�nh ph?:</span>
+                    <span class="info-label">Thành phố:</span>
                     <span class="info-value">@Model.City</span>
                 </div>
             }
             <div class="info-row">
-                <span class="info-label">Ng�y ??ng k�:</span>
+                <span class="info-label">Ngày đăng ký:</span>
                 <span class="info-value">@Model.CreatedAt.ToString("dd/MM/yyyy")</span>
             </div>
         </div>
@@ -208,9 +208,9 @@
 
     <!-- Actions -->
     <div class="profile-actions">
-        <a asp-action="EditProfile" class="btn btn-primary">Ch?nh s?a th�ng tin</a>
-        <a asp-action="ChangePassword" class="btn btn-secondary">??i m?t kh?u</a>
-        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">V? trang ch?</a>
+        <a asp-action="EditProfile" class="btn btn-primary">Chỉnh sửa thông tin</a>
+        <a asp-action="ChangePassword" class="btn btn-secondary">Đổi mật khẩu</a>
+        <a asp-controller="Home" asp-action="Index" class="btn btn-secondary">Về trang chủ</a>
     </div>
 </div>
 

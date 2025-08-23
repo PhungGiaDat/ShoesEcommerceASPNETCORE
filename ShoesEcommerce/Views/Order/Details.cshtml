@@ -191,13 +191,6 @@
                                 <i class="fas fa-arrow-left me-1"></i>
                                 Quay lại
                             </a>
-                            @if (Model.PaymentStatus != "Paid")
-                            {
-                                <button class="btn btn-success me-2" onclick="updatePaymentStatus('Paid')">
-                                    <i class="fas fa-check me-1"></i>
-                                    Đã thanh toán
-                                </button>
-                            }
                             <a href="@Url.Action("Index", "Product")" class="btn btn-primary">
                                 <i class="fas fa-shopping-cart me-1"></i>
                                 Mua thêm

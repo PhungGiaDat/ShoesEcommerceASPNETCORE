@@ -1,0 +1,132 @@
+@{
+    ViewData["Title"] = "Qu?n lý T?n kho - Admin";
+}
+
+<div style="background: #f8f9fa; min-height: 100vh; padding: 20px;">
+    <!-- Page Header -->
+    <div style="background: white; border-radius: 8px; padding: 24px; margin-bottom: 24px; border: 1px solid #e9ecef;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;">
+            <div>
+                <h4 style="margin: 0; color: #2d3748; font-weight: 600; font-size: 20px;">
+                    <i class="fas fa-list" style="color: #718096; margin-right: 8px; font-size: 16px;"></i>
+                    Danh sách s?n ph?m
+                </h4>
+                <p style="margin: 4px 0 0 0; color: #718096; font-size: 14px;">
+                    Qu?n lý t?n kho và theo dõi s? l??ng s?n ph?m
+                </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn btn-sm" style="background: #48bb78; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px;">
+                    <i class="fas fa-plus" style="margin-right: 4px;"></i> Thêm s?n ph?m
+                </button>
+                <button type="button" class="btn btn-sm" style="background: #4299e1; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 13px;">
+                    <i class="fas fa-download" style="margin-right: 4px;"></i> Xu?t Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- Search and Filter Row -->
+        <form method="get" asp-action="Inventory">
+            <div style="display: flex; gap: 12px; align-items: end;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568; font-size: 13px;">Nh?p tên s?n ph?m ho?c mã</label>
+                    <input type="text" name="searchTerm" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;" placeholder="Tìm ki?m s?n ph?m..." />
+                </div>
+                <div style="min-width: 140px;">
+                    <label style="display: block; margin-bottom: 6px; font-weight: 500; color: #4a5568; font-size: 13px;">Tr?ng thái</label>
+                    <select name="status" style="width: 100%; padding: 10px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 14px;">
+                        <option value="">T?t c?</option>
+                        <option value="instock">Còn hàng</option>
+                        <option value="lowstock">S?p h?t</option>
+                        <option value="outofstock">H?t hàng</option>
+                    </select>
+                </div>
+                <div>
+                    <button type="submit" style="background: #4299e1; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 500;">
+                        <i class="fas fa-search" style="margin-right: 6px;"></i> Tìm ki?m
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Stats Cards -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+        <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #e9ecef;">
+            <div style="display: flex; align-items: center; justify-content: between;">
+                <div>
+                    <p style="margin: 0; color: #718096; font-size: 13px; font-weight: 500;">T?NG S?N PH?M</p>
+                    <p style="margin: 4px 0 0 0; color: #2d3748; font-size: 24px; font-weight: 700;">0</p>
+                </div>
+                <div style="background: #e6fffa; padding: 12px; border-radius: 50%; margin-left: auto;">
+                    <i class="fas fa-box" style="color: #38b2ac; font-size: 20px;"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #e9ecef;">
+            <div style="display: flex; align-items: center; justify-content: between;">
+                <div>
+                    <p style="margin: 0; color: #718096; font-size: 13px; font-weight: 500;">CÒN HÀNG</p>
+                    <p style="margin: 4px 0 0 0; color: #2d3748; font-size: 24px; font-weight: 700;">0</p>
+                </div>
+                <div style="background: #f0fff4; padding: 12px; border-radius: 50%; margin-left: auto;">
+                    <i class="fas fa-check-circle" style="color: #48bb78; font-size: 20px;"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #e9ecef;">
+            <div style="display: flex; align-items: center; justify-content: between;">
+                <div>
+                    <p style="margin: 0; color: #718096; font-size: 13px; font-weight: 500;">S?P H?T</p>
+                    <p style="margin: 4px 0 0 0; color: #2d3748; font-size: 24px; font-weight: 700;">0</p>
+                </div>
+                <div style="background: #fffbeb; padding: 12px; border-radius: 50%; margin-left: auto;">
+                    <i class="fas fa-exclamation-triangle" style="color: #f6ad55; font-size: 20px;"></i>
+                </div>
+            </div>
+        </div>
+        
+        <div style="background: white; border-radius: 8px; padding: 20px; border: 1px solid #e9ecef;">
+            <div style="display: flex; align-items: center; justify-content: between;">
+                <div>
+                    <p style="margin: 0; color: #718096; font-size: 13px; font-weight: 500;">H?T HÀNG</p>
+                    <p style="margin: 4px 0 0 0; color: #2d3748; font-size: 24px; font-weight: 700;">0</p>
+                </div>
+                <div style="background: #fed7d7; padding: 12px; border-radius: 50%; margin-left: auto;">
+                    <i class="fas fa-times-circle" style="color: #f56565; font-size: 20px;"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Table -->
+    <div style="background: white; border-radius: 8px; border: 1px solid #e9ecef;">
+        <div style="padding: 20px; border-bottom: 1px solid #e9ecef;">
+            <h5 style="margin: 0; color: #2d3748; font-weight: 600;">Danh sách t?n kho</h5>
+        </div>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead style="background: #f7fafc;">
+                    <tr>
+                        <th style="padding: 12px 20px; text-align: left; font-weight: 600; color: #4a5568; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e9ecef;">S?n ph?m</th>
+                        <th style="padding: 12px 20px; text-align: left; font-weight: 600; color: #4a5568; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e9ecef;">Danh m?c</th>
+                        <th style="padding: 12px 20px; text-align: center; font-weight: 600; color: #4a5568; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e9ecef;">T?n kho</th>
+                        <th style="padding: 12px 20px; text-align: center; font-weight: 600; color: #4a5568; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e9ecef;">Tr?ng thái</th>
+                        <th style="padding: 12px 20px; text-align: center; font-weight: 600; color: #4a5568; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e9ecef;">Giá</th>
+                        <th style="padding: 12px 20px; text-align: center; font-weight: 600; color: #4a5568; font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid #e9ecef;">Hành ??ng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" style="padding: 40px 20px; text-align: center; color: #718096; font-size: 14px;">
+                            <i class="fas fa-box-open" style="font-size: 48px; color: #e2e8f0; margin-bottom: 16px; display: block;"></i>
+                            Ch?a có s?n ph?m nào trong kho
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

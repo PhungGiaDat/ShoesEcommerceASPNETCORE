@@ -14,7 +14,6 @@ namespace ShoesEcommerce.Models.Interactions
         public Product Product { get; set; }
 
         public string Content { get; set; }
-        public int Rating { get; set; } // Số sao đánh giá (1-5)
 
         public DateTime CreatedAt { get; set; }
     }   

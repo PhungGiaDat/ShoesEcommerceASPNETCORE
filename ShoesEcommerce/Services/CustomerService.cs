@@ -1,3 +1,4 @@
+using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Accounts;
 using ShoesEcommerce.Repositories.Interfaces;
 using ShoesEcommerce.Services.Interfaces;
@@ -10,15 +11,18 @@ namespace ShoesEcommerce.Services
         private readonly ICustomerRepository _customerRepository;
         private readonly IFileUploadService _fileUploadService;
         private readonly ILogger<CustomerService> _logger;
+        private readonly AppDbContext _context;
 
         public CustomerService(
             ICustomerRepository customerRepository,
             IFileUploadService fileUploadService,
-            ILogger<CustomerService> logger)
+            ILogger<CustomerService> logger,
+            AppDbContext context)
         {
             _customerRepository = customerRepository;
             _fileUploadService = fileUploadService;
             _logger = logger;
+            _context = context;
         }
 
         // Customer Management
@@ -181,6 +185,27 @@ namespace ShoesEcommerce.Services
                     // Don't fail the registration if role assignment fails
                 }
 
+                // Create empty cart for customer
+                try
+                {
+                    var cart = new ShoesEcommerce.Models.Carts.Cart
+                    {
+                        Customer = createdCustomer,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    _context.Carts.Add(cart);
+                    await _context.SaveChangesAsync();
+                    createdCustomer.Cart = cart;
+                    createdCustomer.CartId = cart.Id;
+                    await _customerRepository.UpdateCustomerAsync(createdCustomer);
+                    _logger.LogInformation("? Cart created for customer {CustomerId}", createdCustomer.Id);
+                }
+                catch (Exception cartEx)
+                {
+                    _logger.LogError(cartEx, "? Exception while creating cart for customer, but continuing registration");
+                }
+
                 result.Success = true;
                 result.Customer = createdCustomer;
 
@@ -202,7 +227,6 @@ namespace ShoesEcommerce.Services
                         level, innerEx.GetType().Name, innerEx.Message);
                     innerEx = innerEx.InnerException;
                     level++;
-                    
                     if (level > 5) break; // Prevent infinite loops
                 }
                 
@@ -222,7 +246,6 @@ namespace ShoesEcommerce.Services
                 {
                     result.ErrorMessage = "L?i ??nh d?ng email. Vui lòng ki?m tra ??a ch? email.";
                 }
-                
                 return result;
             }
         }

@@ -14,5 +14,7 @@ namespace ShoesEcommerce.Models.Orders
 
         public int Quantity { get; set; }
         public decimal UnitPrice { get; set; }
+
+        public string Status { get; set; } // e.g. Pending, Confirmed, Completed
     }
 }

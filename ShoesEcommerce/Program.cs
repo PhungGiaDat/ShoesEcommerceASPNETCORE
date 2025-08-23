@@ -77,10 +77,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Register repositories
 builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IProductRepository, ProductRepository>();
 builder.Services.AddScoped<IDiscountRepository, DiscountRepository>();
 builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<IQARepository, QARepository>();
 
 // Register services
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
@@ -92,6 +95,7 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IStockService, StockService>();
+builder.Services.AddScoped<ShoesEcommerce.Services.ICommentService, ShoesEcommerce.Services.CommentService>();
 
 // Register HttpContextAccessor for services
 builder.Services.AddHttpContextAccessor();
@@ -105,7 +109,7 @@ builder.Services.AddSession(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
-// Configure authentication
+// Configure authentication - KEEP IT SIMPLE
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
@@ -214,17 +218,44 @@ try
     app.UseAuthentication();
     app.UseAuthorization();
 
-    // ✅ FIXED: Proper Area-based routing to resolve controller ambiguity
-    // Default route for regular controllers (no area) - MUST come first
+    // ENHANCED ROUTING - Admin controllers with proper naming
+    
+    // Admin-specific routes - these must come BEFORE the default route
+    app.MapControllerRoute(
+        name: "admin_product",
+        pattern: "Admin/Product/{action=Index}/{id?}",
+        defaults: new { controller = "AdminProduct" });
+
+    app.MapControllerRoute(
+        name: "admin_stock",
+        pattern: "Admin/Stock/{action=Index}/{id?}",
+        defaults: new { controller = "AdminStock" });
+
+    app.MapControllerRoute(
+        name: "admin_staff",
+        pattern: "Admin/Staff/{action=Index}/{id?}",
+        defaults: new { controller = "AdminStaff" });
+
+    app.MapControllerRoute(
+        name: "admin_order",
+        pattern: "Admin/Order/{action=Index}/{id?}",
+        defaults: new { controller = "AdminOrder" });
+
+    app.MapControllerRoute(
+        name: "admin_data",
+        pattern: "Admin/Data/{action=Index}/{id?}",
+        defaults: new { controller = "Data" });
+
+    // General admin route
+    app.MapControllerRoute(
+        name: "admin_default",
+        pattern: "Admin/{action=Index}/{id?}",
+        defaults: new { controller = "Admin" });
+
+    // Default route for all other controllers
     app.MapControllerRoute(
         name: "default",
         pattern: "{controller=Home}/{action=Index}/{id?}");
-
-    // Route for Admin area - should come after default route
-    app.MapControllerRoute(
-        name: "admin",
-        pattern: "Admin/{controller=Admin}/{action=Index}/{id?}",
-        defaults: new { area = "Admin" });
 
     // Custom error handling routes
     app.MapControllerRoute(

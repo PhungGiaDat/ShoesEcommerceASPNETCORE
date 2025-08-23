@@ -1,0 +1,40 @@
+﻿@model List<ShoesEcommerce.Models.ViewModels.OrderViewModel>
+@{
+    ViewData["Title"] = "Đơn hàng Thành công";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+<h2>@ViewData["Title"]</h2>
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không có đơn hàng.</div>
+}
+else
+{
+    <table class="table minimalist-table">
+        <thead>
+            <tr>
+                <th>Mã Đơn</th>
+                <th>Khách hàng</th>
+                <th>Ngày đặt</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in Model)
+        {
+            <tr>
+                <td>@order.OrderNumber</td>
+                <td>@order.CustomerName</td>
+                <td>@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@order.TotalAmount.ToString("N0") đ</td>
+                <td>@order.Status</td>
+                <td>
+                    <a href="@Url.Action("Details", "AdminOrder", new { id = order.Id })" class="btn btn-sm btn-outline-dark">Chi tiết</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}

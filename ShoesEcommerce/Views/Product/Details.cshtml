@@ -1,9 +1,12 @@
 ﻿@model ShoesEcommerce.Models.Products.Product
-
+@using ShoesEcommerce.ViewModels.Product
 @{
     ViewData["Title"] = Model.Name;
     var variants = ViewBag.Variants as IEnumerable<ShoesEcommerce.ViewModels.Product.ProductVariantInfo>;
     var discountInfo = ViewBag.DiscountInfo as ShoesEcommerce.Services.Interfaces.ProductDiscountInfo;
+    var comments = ViewBag.Comments as List<ProductCommentViewModel>;
+    var qas = ViewBag.QAs as List<ProductQAViewModel>;
+    var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
 }
 
 <!-- Add anti-forgery token for AJAX requests -->
@@ -211,42 +214,88 @@
         </div>
     </div>
 
-    <!-- Product Reviews Section (Simplified) -->
-    @if (Model.Comments != null && Model.Comments.Any())
-    {
-        <div class="reviews-section">
-            <h3 class="reviews-title">Đánh giá sản phẩm</h3>
-            <div class="reviews-list">
-                @foreach (var comment in Model.Comments.Take(3))
+    <!-- Product Reviews Section -->
+    <div class="reviews-section">
+        <h3 class="reviews-title">Đánh giá sản phẩm</h3>
+        <div class="reviews-list">
+            @if (comments != null && comments.Any())
+            {
+                foreach (var comment in comments.Take(5))
                 {
                     <div class="review-item">
                         <div class="review-header">
-                            <span class="review-author">Khách hàng</span>
+                            <span class="review-author">@comment.CustomerName</span>
                             <span class="review-date">@comment.CreatedAt.ToString("dd/MM/yyyy")</span>
                         </div>
                         <div class="review-content">@comment.Content</div>
-                        @if (comment.Rating > 0)
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-muted">Chưa có bình luận nào.</div>
+            }
+        </div>
+        <div class="review-form mt-4">
+            @if (isAuthenticated)
+            {
+                <form asp-action="AddComment" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ProductId" value="@Model.Id" />
+                    <div class="mb-2">
+                        <textarea name="Content" class="form-control" rows="2" maxlength="255" placeholder="Viết bình luận..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-dark">Gửi bình luận</button>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-warning">Bạn cần <a href="@Url.Action("Login", "Account")">đăng nhập</a> để bình luận.</div>
+            }
+        </div>
+    </div>
+
+    <!-- Q&A Section -->
+    <div class="qa-section mt-5">
+        <h3 class="reviews-title">Hỏi đáp về sản phẩm</h3>
+        <div class="qa-list">
+            @if (qas != null && qas.Any())
+            {
+                foreach (var qa in qas.Take(5))
+                {
+                    <div class="qa-item mb-3">
+                        <div class="qa-question"><strong>Q:</strong> @qa.Question</div>
+                        <div class="qa-meta text-muted" style="font-size:12px;">@qa.CustomerName - @qa.AskedAt.ToString("dd/MM/yyyy")</div>
+                        @if (!string.IsNullOrEmpty(qa.Answer))
                         {
-                            <div class="review-rating">
-                                @for (int i = 1; i <= 5; i++)
-                                {
-                                    @if (i <= comment.Rating)
-                                    {
-                                        <span class="star-filled">★</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="star-empty">☆</span>
-                                    }
-                                }
-                                <span class="rating-text">(@comment.Rating/5)</span>
-                            </div>
+                            <div class="qa-answer mt-1"><strong>A:</strong> @qa.Answer</div>
                         }
                     </div>
                 }
-            </div>
+            }
+            else
+            {
+                <div class="text-muted">Chưa có câu hỏi nào.</div>
+            }
         </div>
-    }
+        <div class="qa-form mt-4">
+            @if (isAuthenticated)
+            {
+                <form asp-action="AddQA" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="ProductId" value="@Model.Id" />
+                    <div class="mb-2">
+                        <textarea name="Question" class="form-control" rows="2" maxlength="255" placeholder="Đặt câu hỏi về sản phẩm..." required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-outline-dark">Gửi câu hỏi</button>
+                </form>
+            }
+            else
+            {
+                <div class="alert alert-warning">Bạn cần <a href="@Url.Action("Login", "Account")">đăng nhập</a> để gửi câu hỏi.</div>
+            }
+        </div>
+    </div>
 </div>
 
 <!-- Ultra Minimalist Styles -->
@@ -620,32 +669,75 @@
         line-height: 1.6;
     }
 
-    .review-rating {
-        display: flex;
-        align-items: center;
-        gap: 0.25rem;
+    /* Q&A Section */
+    .qa-section {
+        border-top: 1px solid var(--color-gray-200);
+        padding-top: 3rem;
+        margin-top: 3rem;
     }
 
-    .star-filled {
-        color: #ffc107;
-        font-size: 1rem;
+    .qa-item {
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--color-gray-200);
     }
 
-    .star-empty {
-        color: var(--color-gray-300);
-        font-size: 1rem;
+    .qa-item:last-child {
+        border-bottom: none;
     }
 
-    .rating-text {
-        font-size: 0.85rem;
-        color: var(--color-gray-600);
-        margin-left: 0.5rem;
+    .qa-question {
+        font-weight: 500;
+        color: var(--color-black);
+    }
+
+    .qa-answer {
+        margin-top: 0.5rem;
+        color: var(--color-gray-700);
+    }
+
+    .qa-meta {
+        font-size: 0.8rem;
+        color: var(--color-gray-500);
+        margin-top: 0.25rem;
+    }
+
+    /* Product Comments */
+    .review-form,
+    .qa-form {
+        background: var(--color-gray-100);
+        padding: 1.5rem;
+        border-radius: 4px;
+        margin-top: 1.5rem;
+    }
+
+    .form-control {
+        border: 1px solid var(--color-gray-300);
+        border-radius: 2px;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+    }
+
+    .form-control:focus {
+        border-color: var(--color-black);
+        box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
+    }
+
+    .form-select {
+        border: 1px solid var(--color-gray-300);
+        border-radius: 2px;
+        padding: 0.75rem;
+        font-size: 0.9rem;
+        appearance: none;
+        background: url('/images/arrow-down.svg') no-repeat right 0.75rem center;
+        background-size: 12px;
+    }
+
+    .form-select:focus {
+        border-color: var(--color-black);
+        box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.1);
     }
 
     /* Responsive Design */
-</style>
-
-<style>
     @@media (max-width: 768px) {
         .minimal-container {
             padding: 1rem;
@@ -708,27 +800,34 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addToCartFromOptions = function() {
         const selectedColor = document.querySelector('input[name="selectedColor"]:checked')?.value;
         const selectedSize = document.querySelector('select[name="selectedSize"]')?.value;
-        const quantity = document.querySelector('.quantity-input')?.value || 1;
+        const quantityInput = document.querySelector('.quantity-input');
+        const quantity = quantityInput ? parseInt(quantityInput.value) || 1 : 1;
 
         // Find matching variant
         const variants = document.querySelectorAll('.variant-item');
         let selectedVariant = null;
+        let stock = 0;
 
         for (let variant of variants) {
             const variantColor = variant.getAttribute('data-color');
             const variantSize = variant.getAttribute('data-size');
-            
+            const variantStock = parseInt(variant.getAttribute('data-stock'));
             if ((!selectedColor || variantColor === selectedColor) && 
                 (!selectedSize || variantSize === selectedSize)) {
                 selectedVariant = variant;
+                stock = variantStock;
                 break;
             }
         }
 
+        // Out of stock logic
         if (selectedVariant) {
             const variantId = selectedVariant.getAttribute('data-variant-id');
-            const stock = parseInt(selectedVariant.getAttribute('data-stock'));
-            
+            if (stock < quantity) {
+                showNotification('Số lượng yêu cầu vượt quá số lượng còn lại (' + stock + ')', 'error');
+                quantityInput.value = stock > 0 ? stock : 1;
+                return;
+            }
             if (stock > 0) {
                 addToCart(variantId, quantity);
             } else {
@@ -743,22 +842,15 @@ document.addEventListener('DOMContentLoaded', function() {
     function addToCart(variantId, quantity = 1) {
         const button = document.querySelector('.btn-add-cart');
         const originalText = button.textContent;
-        
-        // Show loading state
         button.textContent = 'ĐANG THÊM...';
         button.disabled = true;
-
-        // Create form data
         const formData = new FormData();
         formData.append('productVariantId', variantId);
-
-        // Get anti-forgery token
+        formData.append('quantity', quantity);
         const tokenInput = document.querySelector('input[name="__RequestVerificationToken"]');
         if (tokenInput) {
             formData.append('__RequestVerificationToken', tokenInput.value);
         }
-
-        // Make API call
         fetch('/Cart/AddToCart', {
             method: 'POST',
             body: formData
@@ -766,11 +858,9 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(response => {
             if (response.ok) {
                 return response.text().then(text => {
-                    // Check if response is HTML (redirect) or JSON
                     try {
                         return JSON.parse(text);
                     } catch {
-                        // If it's HTML, it means redirect to cart - success!
                         return { success: true };
                     }
                 });
@@ -781,8 +871,6 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success !== false) {
                 showNotification('Đã thêm sản phẩm vào giỏ hàng!', 'success');
-                
-                // Optional: redirect to cart after 1 second
                 setTimeout(() => {
                     window.location.href = '/Cart';
                 }, 1000);
@@ -795,7 +883,6 @@ document.addEventListener('DOMContentLoaded', function() {
             showNotification('Có lỗi xảy ra khi thêm sản phẩm vao giỏ', 'error');
         })
         .finally(() => {
-            // Restore button state
             button.textContent = originalText;
             button.disabled = false;
         });
@@ -820,13 +907,10 @@ document.addEventListener('DOMContentLoaded', function() {
             transition: transform 0.3s ease;
         `;
         notification.textContent = message;
-        
         document.body.appendChild(notification);
-        
         setTimeout(() => {
             notification.style.transform = 'translateX(0)';
         }, 100);
-        
         setTimeout(() => {
             notification.style.transform = 'translateX(100%)';
             setTimeout(() => {

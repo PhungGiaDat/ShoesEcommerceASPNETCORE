@@ -25,14 +25,31 @@ namespace ShoesEcommerce.Services
             {
                 _logger.LogInformation("Getting order {OrderId} for customer {CustomerId}", orderId, customerId);
                 
-                var order = await _context.Orders
-                    .Include(o => o.Customer)
-                    .Include(o => o.ShippingAddress)
-                    .Include(o => o.Payment)
-                    .Include(o => o.OrderDetails)
-                        .ThenInclude(od => od.ProductVariant)
-                            .ThenInclude(pv => pv.Product)
-                    .FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == customerId);
+                Order order;
+                if (customerId == 0)
+                {
+                    // Admin: ignore customer filter
+                    order = await _context.Orders
+                        .Include(o => o.Customer)
+                        .Include(o => o.ShippingAddress)
+                        .Include(o => o.Payment)
+                        .Include(o => o.OrderDetails)
+                            .ThenInclude(od => od.ProductVariant)
+                                .ThenInclude(pv => pv.Product)
+                        .FirstOrDefaultAsync(o => o.Id == orderId);
+                }
+                else
+                {
+                    // Customer: filter by customerId
+                    order = await _context.Orders
+                        .Include(o => o.Customer)
+                        .Include(o => o.ShippingAddress)
+                        .Include(o => o.Payment)
+                        .Include(o => o.OrderDetails)
+                            .ThenInclude(od => od.ProductVariant)
+                                .ThenInclude(pv => pv.Product)
+                        .FirstOrDefaultAsync(o => o.Id == orderId && o.CustomerId == customerId);
+                }
 
                 if (order == null)
                 {
@@ -48,20 +65,30 @@ namespace ShoesEcommerce.Services
                     OrderNumber = $"ORD{order.Id:D6}",
                     CreatedAt = order.CreatedAt,
                     TotalAmount = order.TotalAmount,
-                    Status = "Đang xử lý", // Có thể thêm enum cho status
+                    Status = order.Status, // Use actual status
                     PaymentStatus = order.Payment?.Status ?? "Chưa thanh toán",
                     OrderDetails = order.OrderDetails.Select(od => new OrderDetailViewModel
                     {
                         Id = od.Id,
-                        ProductVariant = new ProductVariantViewModel
-                        {
-                            Id = od.ProductVariant.Id,
-                            Name = od.ProductVariant.Product.Name,
-                            ImageUrl = od.ProductVariant.ImageUrl, // ✅ FIXED: Use ProductVariant.ImageUrl
-                            Color = od.ProductVariant.Color,
-                            Size = od.ProductVariant.Size,
-                            Price = od.UnitPrice
-                        },
+                        ProductVariant = od.ProductVariant != null && od.ProductVariant.Product != null
+                            ? new ProductVariantViewModel
+                            {
+                                Id = od.ProductVariant.Id,
+                                Name = od.ProductVariant.Product.Name,
+                                ImageUrl = od.ProductVariant.ImageUrl,
+                                Color = od.ProductVariant.Color,
+                                Size = od.ProductVariant.Size,
+                                Price = od.UnitPrice
+                            }
+                            : new ProductVariantViewModel
+                            {
+                                Id = od.ProductVariant?.Id ?? 0,
+                                Name = "(Sản phẩm đã bị xóa)",
+                                ImageUrl = od.ProductVariant?.ImageUrl ?? "/images/no-image.svg",
+                                Color = od.ProductVariant?.Color ?? "",
+                                Size = od.ProductVariant?.Size ?? "",
+                                Price = od.UnitPrice
+                            },
                         Quantity = od.Quantity,
                         UnitPrice = od.UnitPrice,
                         SubTotal = od.Quantity * od.UnitPrice
@@ -81,7 +108,11 @@ namespace ShoesEcommerce.Services
                         Method = order.Payment?.Method ?? "",
                         Status = order.Payment?.Status ?? "",
                         PaidAt = order.Payment?.PaidAt
-                    }
+                    },
+                    CustomerName = order.Customer != null ? order.Customer.FirstName + " " + order.Customer.LastName : "",
+                    CustomerId = order.CustomerId,
+                    CustomerEmail = order.Customer?.Email ?? "",
+                    CustomerPhone = order.Customer?.PhoneNumber ?? ""
                 };
             }
             catch (Exception ex)
@@ -115,20 +146,30 @@ namespace ShoesEcommerce.Services
                     OrderNumber = $"ORD{order.Id:D6}",
                     CreatedAt = order.CreatedAt,
                     TotalAmount = order.TotalAmount,
-                    Status = "Đang xử lý",
+                    Status = order.Status, // Use actual status from DB
                     PaymentStatus = order.Payment?.Status ?? "Chưa thanh toán",
                     OrderDetails = order.OrderDetails.Select(od => new OrderDetailViewModel
                     {
                         Id = od.Id,
-                        ProductVariant = new ProductVariantViewModel
-                        {
-                            Id = od.ProductVariant.Id,
-                            Name = od.ProductVariant.Product.Name,
-                            ImageUrl = od.ProductVariant.ImageUrl, // ✅ FIXED: Use ProductVariant.ImageUrl
-                            Color = od.ProductVariant.Color,
-                            Size = od.ProductVariant.Size,
-                            Price = od.UnitPrice
-                        },
+                        ProductVariant = od.ProductVariant != null && od.ProductVariant.Product != null
+                            ? new ProductVariantViewModel
+                            {
+                                Id = od.ProductVariant.Id,
+                                Name = od.ProductVariant.Product.Name,
+                                ImageUrl = od.ProductVariant.ImageUrl, // ✅ FIXED: Use ProductVariant.ImageUrl
+                                Color = od.ProductVariant.Color,
+                                Size = od.ProductVariant.Size,
+                                Price = od.UnitPrice
+                            }
+                            : new ProductVariantViewModel
+                            {
+                                Id = od.ProductVariant?.Id ?? 0,
+                                Name = "(Sản phẩm đã bị xóa)",
+                                ImageUrl = od.ProductVariant?.ImageUrl ?? "/images/no-image.svg",
+                                Color = od.ProductVariant?.Color ?? "",
+                                Size = od.ProductVariant?.Size ?? "",
+                                Price = od.UnitPrice
+                            },
                         Quantity = od.Quantity,
                         UnitPrice = od.UnitPrice,
                         SubTotal = od.Quantity * od.UnitPrice
@@ -191,6 +232,7 @@ namespace ShoesEcommerce.Services
                     ShippingAddressId = model.ShippingAddressId,
                     CreatedAt = DateTime.Now,
                     TotalAmount = totalAmount,
+                    Status = "Pending", // Ensure Status is set
                     OrderDetails = new List<OrderDetail>()
                 };
 
@@ -201,7 +243,8 @@ namespace ShoesEcommerce.Services
                     {
                         ProductVariantId = cartItem.ProductVarientId,
                         Quantity = cartItem.Quantity,
-                        UnitPrice = cartItem.ProductVariant.Price // ✅ FIXED: Use ProductVariant.Price
+                        UnitPrice = cartItem.ProductVariant.Price, // ✅ FIXED: Use ProductVariant.Price
+                        Status = "Pending" // Ensure Status is set
                     });
                 }
 
@@ -388,8 +431,8 @@ namespace ShoesEcommerce.Services
                     return false;
                 }
 
-                // Có thể thêm logic cập nhật status
-                // Note: Order model không có Status property
+                order.Status = status; // Cập nhật trạng thái đơn hàng
+
                 await _context.SaveChangesAsync();
 
                 _logger.LogInformation("Order {OrderId} status updated successfully", orderId);
@@ -477,6 +520,86 @@ namespace ShoesEcommerce.Services
                 _logger.LogError(ex, "Error calculating shipping fee for {City}, {District}", city, district);
                 return 30000m; // Default fallback fee
             }
+        }
+
+        public async Task<List<OrderViewModel>> GetOrdersByStatusAsync(string status)
+        {
+            var orders = await _context.Orders
+                .Include(o => o.Customer)
+                .Include(o => o.ShippingAddress)
+                .Include(o => o.OrderDetails)
+                    .ThenInclude(od => od.ProductVariant)
+                .Include(o => o.Payment)
+                .Where(o => o.Status == status && o.Payment != null)
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+
+            return orders.Select(o => new OrderViewModel
+            {
+                Id = o.Id,
+                OrderNumber = o.Id.ToString(),
+                CreatedAt = o.CreatedAt,
+                TotalAmount = o.TotalAmount,
+                Status = o.Status,
+                PaymentStatus = o.Payment?.Status ?? "",
+                PaymentMethod = o.Payment?.Method ?? "",
+                PaymentDate = o.Payment?.PaidAt,
+                OrderDetails = o.OrderDetails.Select(od =>
+                    od.ProductVariant != null && od.ProductVariant.Product != null
+                    ? new OrderDetailViewModel
+                    {
+                        Id = od.Id,
+                        ProductVariant = new ProductVariantViewModel
+                        {
+                            Id = od.ProductVariant.Id,
+                            Name = od.ProductVariant.Product.Name,
+                            ImageUrl = od.ProductVariant.ImageUrl,
+                            Color = od.ProductVariant.Color,
+                            Size = od.ProductVariant.Size,
+                            Price = od.UnitPrice
+                        },
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice,
+                        SubTotal = od.Quantity * od.UnitPrice
+                    }
+                    : new OrderDetailViewModel
+                    {
+                        Id = od.Id,
+                        ProductVariant = new ProductVariantViewModel
+                        {
+                            Id = od.ProductVariant?.Id ?? 0,
+                            Name = "(Sản phẩm đã bị xóa)",
+                            ImageUrl = od.ProductVariant?.ImageUrl ?? "/images/no-image.svg",
+                            Color = od.ProductVariant?.Color ?? "",
+                            Size = od.ProductVariant?.Size ?? "",
+                            Price = od.UnitPrice
+                        },
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice,
+                        SubTotal = od.Quantity * od.UnitPrice
+                    }
+                ).ToList(),
+                ShippingAddress = new ShippingAddressViewModel
+                {
+                    Id = o.ShippingAddress.Id,
+                    FullName = o.ShippingAddress.FullName,
+                    PhoneNumber = o.ShippingAddress.PhoneNumber,
+                    Address = o.ShippingAddress.Address,
+                    City = o.ShippingAddress.City,
+                    District = o.ShippingAddress.District
+                },
+                Payment = o.Payment != null ? new PaymentViewModel
+                {
+                    Id = o.Payment.Id,
+                    Method = o.Payment.Method,
+                    Status = o.Payment.Status,
+                    PaidAt = o.Payment.PaidAt
+                } : null,
+                CustomerName = o.Customer != null ? o.Customer.FirstName + " " + o.Customer.LastName : "",
+                CustomerId = o.CustomerId,
+                CustomerEmail = o.Customer?.Email ?? "",
+                CustomerPhone = o.Customer?.PhoneNumber ?? ""
+            }).ToList();
         }
     }
 }

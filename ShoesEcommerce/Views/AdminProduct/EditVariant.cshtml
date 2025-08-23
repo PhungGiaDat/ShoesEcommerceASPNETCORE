@@ -1,0 +1,156 @@
+﻿@model ShoesEcommerce.ViewModels.Product.EditProductVariantViewModel
+
+@{
+    ViewData["Title"] = "Chỉnh sửa Phiên bản";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="content-wrapper">
+    <div class="page-header">
+        <h3 class="page-title">
+            <span class="page-title-icon bg-gradient-primary text-white me-2">
+                <i class="mdi mdi-package-variant"></i>
+            </span>
+            Chỉnh sửa Phiên bản
+        </h3>
+        <nav aria-label="breadcrumb">
+            <ul class="breadcrumb">
+                <li class="breadcrumb-item"><a href="/Admin/Product">Sản phẩm</a></li>
+                <li class="breadcrumb-item"><a href="/Admin/Product/Variants/@Model.ProductId">Phiên bản</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa</li>
+            </ul>
+        </nav>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Thông tin phiên bản</h4>
+                    <p class="card-description">Cập nhật thông tin phiên bản sản phẩm</p>
+
+                    @if (ViewBag.Product != null)
+                    {
+                        <div class="alert alert-info">
+                            <strong>Sản phẩm:</strong> @ViewBag.Product.Name
+                        </div>
+                    }
+
+                    <form class="forms-sample" method="post" asp-action="EditVariant">
+                        <input type="hidden" asp-for="Id" />
+                        <input type="hidden" asp-for="ProductId" />
+                        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+                        <div class="form-group row">
+                            <label asp-for="Color" class="col-sm-3 col-form-label">Màu sắc</label>
+                            <div class="col-sm-9">
+                                <input asp-for="Color" class="form-control" placeholder="Nhập màu sắc" />
+                                <span asp-validation-for="Color" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <label asp-for="Size" class="col-sm-3 col-form-label">Kích thước</label>
+                            <div class="col-sm-9">
+                                <input asp-for="Size" class="form-control" placeholder="Nhập kích thước" />
+                                <span asp-validation-for="Size" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <label asp-for="Price" class="col-sm-3 col-form-label">Giá</label>
+                            <div class="col-sm-9">
+                                <input asp-for="Price" type="number" step="0.01" min="0" class="form-control" placeholder="Nhập giá" />
+                                <span asp-validation-for="Price" class="text-danger"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <label asp-for="ImageUrl" class="col-sm-3 col-form-label">URL Hình ảnh</label>
+                            <div class="col-sm-9">
+                                <input asp-for="ImageUrl" class="form-control" placeholder="Nhập URL hình ảnh" />
+                                <span asp-validation-for="ImageUrl" class="text-danger"></span>
+                                <small class="form-text text-muted">Để trống nếu không có hình ảnh riêng</small>
+                            </div>
+                        </div>
+
+                        <div class="form-group row">
+                            <div class="col-sm-12">
+                                <button type="submit" class="btn btn-gradient-primary me-2">
+                                    <i class="mdi mdi-content-save"></i>
+                                    Cập nhật
+                                </button>
+                                <a href="@Url.Action("Variants", new { id = Model.ProductId })" class="btn btn-light">
+                                    <i class="mdi mdi-arrow-left"></i>
+                                    Quay lại
+                                </a>
+                                <a href="@Url.Action("DeleteVariant", new { id = Model.Id })" class="btn btn-gradient-danger">
+                                    <i class="mdi mdi-delete"></i>
+                                    Xoá
+                                </a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 grid-margin stretch-card">
+            <div class="card">
+                <div class="card-body">
+                    <h4 class="card-title">Hướng dẫn</h4>
+                    <div class="template-demo">
+                        <div class="alert alert-info">
+                            <h6><i class="mdi mdi-information"></i> Lưu ý</h6>
+                            <ul class="mb-0">
+                                <li>Màu sắc và kích thước là bắt buộc</li>
+                                <li>Giá phải lớn hơn 0</li>
+                                <li>Số lượng tồn kho không được âm</li>
+                                <li>URL hình ảnh có thể để trống</li>
+                            </ul>
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                        {
+                            <div class="alert alert-success">
+                                <h6><i class="mdi mdi-image"></i> Hình ảnh hiện tại</h6>
+                                <img src="@Model.ImageUrl" alt="Hình ảnh phiên bản" class="img-fluid" style="max-height: 150px;" onerror="this.style.display='none';" />
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        // Preview image when URL is changed
+        $('#ImageUrl').on('input', function() {
+            var url = $(this).val();
+            var previewContainer = $('.alert-success');
+
+            if (url) {
+                if (previewContainer.length === 0) {
+                    // Create preview container if it doesn't exist
+                    $('.alert-info').after(`
+                        <div class="alert alert-success">
+                            <h6><i class="mdi mdi-image"></i> Xem trước</h6>
+                            <img src="${url}" alt="Xem trước hình ảnh" class="img-fluid" style="max-height: 150px;" onerror="this.style.display='none';" />
+                        </div>
+                    `);
+                } else {
+                    // Update existing preview
+                    previewContainer.find('img').attr('src', url).show();
+                }
+            } else {
+                previewContainer.remove();
+            }
+        });
+    </script>
+}

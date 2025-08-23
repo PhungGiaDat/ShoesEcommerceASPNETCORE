@@ -2,25 +2,55 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
+using ShoesEcommerce.ViewModels.Admin;
+using ShoesEcommerce.Repositories.Interfaces;
+using System.Linq;
 
 namespace ShoesEcommerce.Controllers.Admin
 {
-    [Area("Admin")]
     [Authorize(Roles = "Admin,Staff")] // Require Admin or Staff role
     public class AdminController : Controller
     {
         private readonly AppDbContext _context;
         private readonly ILogger<AdminController> _logger;
+        private readonly IOrderRepository _orderRepository;
+        private readonly IStockRepository _stockRepository;
+        private readonly IProductRepository _productRepository;
 
-        public AdminController(AppDbContext context, ILogger<AdminController> logger)
+        public AdminController(AppDbContext context, ILogger<AdminController> logger, IOrderRepository orderRepository, IStockRepository stockRepository, IProductRepository productRepository)
+            : base()
         {
             _context = context;
             _logger = logger;
+            _orderRepository = orderRepository;
+            _stockRepository = stockRepository;
+            _productRepository = productRepository;
         }
 
         public async Task<IActionResult> Index()
         {
             ViewData["Title"] = "Trang chủ Admin";
+            
+            var model = new AdminReportViewModel();
+            var orders = await _orderRepository.GetAllOrdersAsync();
+            model.TotalOrders = orders.Count();
+            model.TotalRevenue = orders.Sum(o => o.TotalAmount);
+            var products = await _productRepository.GetAllProductVariantsAsync();
+            model.TotalProducts = products.Count();
+            model.TotalStock = await _stockRepository.GetTotalStockQuantityAsync();
+            model.LowStockCount = await _stockRepository.GetLowStockCountAsync();
+            model.OutOfStockCount = await _stockRepository.GetOutOfStockCountAsync();
+            // Calculate total cost from StockEntries (imported cost)
+            model.TotalCost = products.SelectMany(p => p.StockEntries).Sum(se => se.UnitCost * se.QuantityReceived);
+            // Calculate total stock quantity from CurrentStock
+            model.TotalStock = products.Sum(p => p.AvailableQuantity);
+            model.TotalProfit = model.TotalRevenue - model.TotalCost;
+            var currentYear = DateTime.Now.Year;
+            for (int month = 1; month <= 12; month++)
+            {
+                var monthRevenue = orders.Where(o => o.CreatedAt.Year == currentYear && o.CreatedAt.Month == month).Sum(o => o.TotalAmount);
+                model.RevenueByMonth.Add(monthRevenue);
+            }
             
             try
             {
@@ -50,13 +80,13 @@ namespace ShoesEcommerce.Controllers.Admin
                 ViewBag.RoleCount = 0;
             }
             
-            return View();
+            return View(model);
         }
 
-        // Redirect to StaffController for staff management
+        // Simple redirect to AdminStaffController
         public IActionResult Staff()
         {
-            return RedirectToAction("Index", "Staff", new { area = "Admin" });
+            return RedirectToAction("Index", "AdminStaff");
         }
 
         public IActionResult Customer()

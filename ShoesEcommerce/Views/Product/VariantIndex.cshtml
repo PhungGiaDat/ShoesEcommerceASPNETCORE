@@ -1,549 +1,272 @@
-@model ShoesEcommerce.ViewModels.Product.ProductVariantListViewModel
+﻿@model ShoesEcommerce.ViewModels.Product.ProductVariantListViewModel
 @{
-    ViewData["Title"] = "T?t c? bi?n th? s?n ph?m";
+    ViewData["Title"] = "Tất cả sản phẩm";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<div class="container-fluid">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="text-center my-4">@ViewData["Title"]</h2>
-        </div>
-    </div>
+<div class="container py-4">
+    <h2 class="text-center mb-4" style="font-weight:500; letter-spacing:0.5px;">@ViewData["Title"]</h2>
 
-    <div class="row mb-4">
-        <!-- Filters Section -->
-        <div class="col-12">
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-body">
-                    <form method="get" id="filterForm">
-                        <div class="row g-3">
-                            <!-- Search Input -->
-                            <div class="col-md-4">
-                                <label for="searchTerm" class="form-label">
-                                    <i class="fas fa-search me-1"></i>T�m ki?m
-                                </label>
-                                <input type="text" class="form-control" id="searchTerm" name="searchTerm" 
-                                       value="@Model.SearchTerm" placeholder="T�n s?n ph?m, m�u s?c...">
-                            </div>
-                            
-                            <!-- Category Filter -->
-                            <div class="col-md-2">
-                                <label for="categoryId" class="form-label">
-                                    <i class="fas fa-tags me-1"></i>Danh m?c
-                                </label>
-                                <select class="form-select" id="categoryId" name="categoryId">
-                                    <option value="">T?t c?</option>
-                                    @if (ViewBag.Categories != null)
-                                    {
-                                        @foreach (var category in ViewBag.Categories)
-                                        {
-                                            <option value="@category.Id" selected="@(category.Id == Model.CategoryId)">
-                                                @category.Name
-                                            </option>
-                                        }
-                                    }
-                                </select>
-                            </div>
-                            
-                            <!-- Brand Filter -->
-                            <div class="col-md-2">
-                                <label for="brandId" class="form-label">
-                                    <i class="fas fa-award me-1"></i>Th??ng hi?u
-                                </label>
-                                <select class="form-select" id="brandId" name="brandId">
-                                    <option value="">T?t c?</option>
-                                    @if (ViewBag.Brands != null)
-                                    {
-                                        @foreach (var brand in ViewBag.Brands)
-                                        {
-                                            <option value="@brand.Id" selected="@(brand.Id == Model.BrandId)">
-                                                @brand.Name
-                                            </option>
-                                        }
-                                    }
-                                </select>
-                            </div>
-                            
-                            <!-- Price Range -->
-                            <div class="col-md-2">
-                                <label for="priceRange" class="form-label">
-                                    <i class="fas fa-dollar-sign me-1"></i>Kho?ng gi�
-                                </label>
-                                <select class="form-select" id="priceRange" name="priceRange">
-                                    <option value="">T?t c?</option>
-                                    <option value="0-500000">D??i 500K</option>
-                                    <option value="500000-1000000">500K - 1M</option>
-                                    <option value="1000000-2000000">1M - 2M</option>
-                                    <option value="2000000-">Tr�n 2M</option>
-                                </select>
-                            </div>
-                            
-                            <!-- Actions -->
-                            <div class="col-md-2 d-flex align-items-end">
-                                <div class="d-flex gap-2 w-100">
-                                    <button type="submit" class="btn btn-primary flex-fill">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                    <a href="@Url.Action("VariantIndex")" class="btn btn-outline-secondary flex-fill">
-                                        <i class="fas fa-refresh"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
+    <form method="get" asp-action="Index" asp-controller="Product" id="filterForm" class="mb-4 d-flex flex-wrap gap-3 justify-content-center align-items-end minimalist-form">
+        <input type="text" class="form-control minimalist-input" id="searchString" name="searchString" value="@Model.SearchTerm" placeholder="Tên sản phẩm, màu sắc..." style="max-width:220px;">
+        <select class="form-select minimalist-input" id="categoryId" name="categoryId" style="max-width:160px;">
+            <option value="">Tất cả danh mục</option>
+            @if (ViewBag.Categories != null)
+            {
+                foreach (var category in ViewBag.Categories)
+                {
+                    <option value="@category.Id" selected="@(Model.CategoryId == category.Id ? "selected" : null)">@category.Name</option>
+                }
+            }
+        </select>
+        <select class="form-select minimalist-input" id="brandId" name="brandId" style="max-width:160px;">
+            <option value="">Tất cả thương hiệu</option>
+            @if (ViewBag.Brands != null)
+            {
+                foreach (var brand in ViewBag.Brands)
+                {
+                    <option value="@brand.Id" selected="@(Model.BrandId == brand.Id ? "selected" : null)">@brand.Name</option>
+                }
+            }
+        </select>
+        <select class="form-select minimalist-input" id="priceRange" name="priceRange" style="max-width:160px;">
+            <option value="">Tất cả giá</option>
+            <option value="0-500000">Dưới 500K</option>
+            <option value="500000-1000000">500K - 1M</option>
+            <option value="1000000-2000000">1M - 2M</option>
+            <option value="2000000-">Trên 2M</option>
+        </select>
+        <button type="submit" class="btn btn-dark minimalist-btn" style="min-width:100px;">Tìm kiếm</button>
+        <a href="@Url.Action("Index", "Product")" class="btn btn-outline-dark minimalist-btn" style="min-width:100px;">Làm mới</a>
+    </form>
 
     @if (Model.ProductVariants != null && Model.ProductVariants.Any())
     {
-        <!-- Results Info -->
-        <div class="row mb-3">
-            <div class="col-12">
-                <p class="text-muted">
-                    Hi?n th? @Model.ProductVariants.Count() bi?n th? trong t?ng s? @Model.TotalItems bi?n th?
-                </p>
-            </div>
-        </div>
-
-        <!-- Variants Grid -->
-        <div class="row" id="variantContainer">
+        <div class="row g-3">
             @foreach (var variant in Model.ProductVariants)
             {
-                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12 mb-4 variant-item">
-                    <div class="card h-100 shadow-sm variant-card" style="border-radius: 12px; overflow: hidden; transition: all 0.3s ease; border: 1px solid #e0e0e0;">
-                        
-                        <!-- Product Image Container -->
-                        <div style="position: relative; height: 280px; overflow: hidden; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
-                            <img src="@(string.IsNullOrEmpty(variant.ImageUrl) ? "/images/no-image.svg" : variant.ImageUrl)" 
-                                 class="card-img-top" 
-                                 alt="@variant.ProductName - @variant.Color" 
-                                 style="width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease;"
-                                 onerror="this.src='/images/no-image.svg'" />
-                            
-                            @* Discount Badge *@
-                            @if (variant.HasActiveDiscount)
-                            {
-                                <div style="position: absolute; top: 1rem; left: 1rem; background: linear-gradient(45deg, #ff4757, #ff6b6b); color: white; padding: 0.4rem 0.8rem; border-radius: 20px; font-weight: 700; font-size: 0.8rem; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);">
-                                    <i class="fas fa-percent"></i> @(variant.DiscountPercentage?.ToString("F0"))%
-                                </div>
-                            }
-                            
-                            @* Stock Status Badge *@
-                            <div style="position: absolute; bottom: 1rem; left: 1rem;">
-                                @if (!variant.IsInStock)
-                                {
-                                    <span style="background: rgba(239, 68, 68, 0.9); color: white; padding: 0.3rem 0.6rem; border-radius: 15px; font-size: 0.75rem; font-weight: 600; backdrop-filter: blur(10px);">
-                                        <i class="fas fa-times-circle"></i> H?t h�ng
-                                    </span>
-                                }
+                <div class="col-xl-3 col-lg-4 col-md-6 col-sm-12">
+                    <div class="card minimalist-card h-100">
+                        <img src="@(string.IsNullOrEmpty(variant.ImageUrl) ? "/images/no-image.svg" : variant.ImageUrl)" class="card-img-top minimalist-img" alt="@variant.ProductName - @variant.Color" onerror="this.src='/images/no-image.svg'" />
+                        <div class="card-body d-flex flex-column p-3">
+                            <h5 class="card-title minimalist-title" title="@variant.ProductName - @variant.Color">@variant.ProductName - @variant.Color</h5>
+                            <div class="mb-2 minimalist-meta">
+                                <span>@variant.BrandName</span> · <span>@variant.CategoryName</span> · <span>Size: @variant.Size</span>
                             </div>
-
-                            @* Price Badge *@
-                            <div style="position: absolute; bottom: 1rem; right: 1rem;">
+                            <div class="mb-2 minimalist-price">
                                 @if (variant.HasActiveDiscount)
                                 {
-                                    <div style="text-align: right;">
-                                        <div style="background: rgba(108, 117, 125, 0.9); color: white; padding: 0.2rem 0.5rem; border-radius: 0.3rem; font-size: 0.75rem; text-decoration: line-through; margin-bottom: 0.2rem;">
-                                            @variant.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
-                                        </div>
-                                        <div style="background: linear-gradient(45deg, #ff4757, #ff6b6b); color: white; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);">
-                                            @variant.DiscountedPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
-                                        </div>
-                                    </div>
+                                    <span class="text-decoration-line-through text-muted">@variant.Price.ToString("N0")</span>
+                                    <span class="ms-2 text-danger">@variant.DiscountedPrice.ToString("N0")</span>
                                 }
                                 else
                                 {
-                                    <span style="background: linear-gradient(45deg, #007bff, #0056b3); color: white; padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-weight: 700; font-size: 0.9rem; box-shadow: 0 4px 15px rgba(0, 123, 255, 0.4);">
-                                        @variant.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
-                                    </span>
+                                    <span>@variant.Price.ToString("N0")</span>
                                 }
                             </div>
-                        </div>
-
-                        <div class="card-body d-flex flex-column" style="padding: 1.5rem;">
-                            @* Product Name - Only Product Name and Color *@
-                            <h5 class="card-title" style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.8rem; line-height: 1.3; color: #2c3e50;" title="@variant.ProductName - @variant.Color">
-                                @{
-                                    var displayName = $"{variant.ProductName} - {variant.Color}";
-                                }
-                                @if (displayName.Length > 50)
+                            <div class="mt-auto d-flex gap-2">
+                                <a href="@Url.Action("Details", "Product", new { id = variant.ProductId })" class="btn btn-outline-dark btn-sm w-100 minimalist-btn">Xem chi tiết</a>
+                                @if (variant.IsInStock)
                                 {
-                                    @(displayName.Substring(0, 50) + "...")
+                                    <button type="button" class="add-to-cart-btn btn btn-dark btn-sm w-100 minimalist-btn" data-variant-id="@variant.Id">Thêm vào giỏ</button>
                                 }
                                 else
                                 {
-                                    @displayName
+                                    <button type="button" class="btn btn-secondary btn-sm w-100 minimalist-btn" disabled>Hết hàng</button>
                                 }
-                            </h5>
-                            
-                            @* Brand, Category, and Variant Info *@
-                            <div class="mb-2">
-                                <span style="background: #f8f9fa; color: #495057; padding: 0.3rem 0.6rem; border-radius: 0.4rem; font-size: 0.8rem; font-weight: 500; margin-right: 0.3rem; margin-bottom: 0.3rem; display: inline-block;">
-                                    <i class="fas fa-award me-1"></i>@variant.BrandName
-                                </span>
-                                <span style="background: #e3f2fd; color: #1976d2; padding: 0.3rem 0.6rem; border-radius: 0.4rem; font-size: 0.8rem; font-weight: 500; margin-right: 0.3rem; margin-bottom: 0.3rem; display: inline-block;">
-                                    <i class="fas fa-layer-group me-1"></i>@variant.CategoryName
-                                </span>
-                            </div>
-
-                            @* Size Information *@
-                            <div class="mb-3">
-                                <span style="background: #fff3e0; color: #f57c00; padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.85rem; font-weight: 600; display: inline-block;">
-                                    Size: @variant.Size
-                                </span>
-                            </div>
-
-                            @* Discount Info *@
-                            @if (variant.HasActiveDiscount)
-                            {
-                                <div class="mb-2">
-                                    <small style="color: #e65100; font-weight: 700; font-size: 0.85rem;">
-                                        <i class="fas fa-fire"></i> @variant.DiscountName
-                                    </small>
-                                </div>
-                            }
-
-                            @* Stock Quantity *@
-                            <div class="mb-3">
-                                <small style="color: #6c757d; font-size: 0.85rem;">
-                                    <i class="fas fa-boxes me-1"></i>T?n kho: <strong>@variant.StockQuantity</strong>
-                                </small>
-                            </div>
-
-                            @* Action Buttons *@
-                            <div class="mt-auto">
-                                <div style="display: grid; gap: 0.5rem;">
-                                    <a href="@Url.Action("Details", "Product", new { id = variant.ProductId })" 
-                                       style="background: transparent; color: #495057; padding: 0.75rem 1rem; border: 1px solid #dee2e6; border-radius: 0.5rem; text-decoration: none; font-weight: 500; font-size: 0.875rem; text-align: center; transition: all 0.2s ease; display: block;">
-                                        <i class="fas fa-eye me-1"></i> Xem chi ti?t
-                                    </a>
-                                    @if (variant.IsInStock)
-                                    {
-                                        <button type="button" 
-                                                class="add-to-cart-btn"
-                                                data-variant-id="@variant.Id"
-                                                style="background: linear-gradient(45deg, #28a745, #20c997); color: white; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);">
-                                            <i class="fas fa-cart-plus me-1"></i> Th�m v�o gi?
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button type="button" 
-                                                style="background: #6c757d; color: white; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; font-weight: 500; font-size: 0.875rem; cursor: not-allowed; opacity: 0.7;">
-                                            <i class="fas fa-ban me-1"></i> H?t h�ng
-                                        </button>
-                                    }
-                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             }
         </div>
-
-        @* Pagination *@
         @if (Model.TotalPages > 1)
         {
-            <div class="row mt-4">
-                <div class="col-12">
-                    <nav aria-label="Variant pagination">
-                        <ul class="pagination justify-content-center">
-                            @{
-                                var currentPage = Model.CurrentPage;
-                                var totalPages = Model.TotalPages;
-                            }
-
-                            @* Previous button *@
-                            <li class="page-item @(currentPage <= 1 ? "disabled" : "")">
-                                <a class="page-link" 
-                                   href="@Url.Action("VariantIndex", new { 
-                                       page = currentPage - 1, 
-                                       searchTerm = Model.SearchTerm,
-                                       categoryId = Model.CategoryId,
-                                       brandId = Model.BrandId 
-                                   })" 
-                                   tabindex="@(currentPage <= 1 ? "-1" : "")">
-                                    <i class="fas fa-chevron-left"></i> Tr??c
-                                </a>
-                            </li>
-
-                            @* Page numbers *@
-                            @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
-                            {
-                                <li class="page-item @(i == currentPage ? "active" : "")">
-                                    <a class="page-link" 
-                                       href="@Url.Action("VariantIndex", new { 
-                                           page = i, 
-                                           searchTerm = Model.SearchTerm,
-                                           categoryId = Model.CategoryId,
-                                           brandId = Model.BrandId 
-                                       })">
-                                        @i
-                                    </a>
-                                </li>
-                            }
-
-                            @* Next button *@
-                            <li class="page-item @(currentPage >= totalPages ? "disabled" : "")">
-                                <a class="page-link" 
-                                   href="@Url.Action("VariantIndex", new { 
-                                       page = currentPage + 1, 
-                                       searchTerm = Model.SearchTerm,
-                                       categoryId = Model.CategoryId,
-                                       brandId = Model.BrandId 
-                                   })">
-                                    Sau <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
-                        </ul>
-                    </nav>
-
-                    @* Pagination info *@
-                    <div class="text-center mt-2">
-                        <small class="text-muted">
-                            Trang @currentPage c?a @totalPages
-                            (@Model.TotalItems bi?n th?)
-                        </small>
-                    </div>
-                </div>
-            </div>
+            <nav class="mt-4" aria-label="Variant pagination">
+                <ul class="pagination justify-content-center minimalist-pagination">
+                    @for (int i = 1; i <= Model.TotalPages; i++)
+                    {
+                        <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                            <a class="page-link minimalist-page-link" href="@Url.Action("Index", "Product", new { page = i, searchString = Model.SearchTerm, categoryId = Model.CategoryId, brandId = Model.BrandId })">@i</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
         }
     }
     else
     {
-        <div class="text-center my-5">
-            <div class="mb-4">
-                <i class="fas fa-cube fa-5x text-muted"></i>
-            </div>
-            <h4 class="text-muted">
-                @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.CategoryId.HasValue || Model.BrandId.HasValue)
-                {
-                    <span>Kh�ng t�m th?y bi?n th? n�o</span>
-                }
-                else
-                {
-                    <span>Ch?a c� bi?n th? s?n ph?m n�o</span>
-                }
-            </h4>
-            <p class="text-muted">
-                @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.CategoryId.HasValue || Model.BrandId.HasValue)
-                {
-                    <span>H�y th? thay ??i b? l?c ho?c t? kh�a t�m ki?m!</span>
-                    <br />
-                    <a href="@Url.Action("VariantIndex")" class="btn btn-outline-primary mt-2">
-                        <i class="fas fa-undo"></i> X�a b? l?c
-                    </a>
-                }
-                else
-                {
-                    <span>H�y th�m s?n ph?m v� bi?n th? v�o c?a h�ng!</span>
-                    <br />
-                    <a href="@Url.Action("Index")" class="btn btn-outline-primary mt-2">
-                        <i class="fas fa-list"></i> Xem t?t c? s?n ph?m
-                    </a>
-                }
-            </p>
+        <div class="text-center py-5 text-muted minimalist-empty">
+            <i class="fas fa-cube fa-3x mb-3"></i>
+            <h4>Không tìm thấy sản phẩm nào</h4>
+            <p>Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm!</p>
+            <a href="@Url.Action("Index", "Product")" class="btn btn-outline-dark minimalist-btn mt-2">Xóa bộ lọc</a>
         </div>
     }
 </div>
 
-@* Success/Error Messages *@
 @if (TempData["SuccessMessage"] != null)
 {
-    <div class="alert alert-success alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 1050;" role="alert">
+    <div class="alert alert-success alert-dismissible fade show position-fixed minimalist-alert" role="alert">
         <i class="fas fa-check-circle"></i> @TempData["SuccessMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
-
 @if (TempData["ErrorMessage"] != null)
 {
-    <div class="alert alert-danger alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 1050;" role="alert">
+    <div class="alert alert-danger alert-dismissible fade show position-fixed minimalist-alert" role="alert">
         <i class="fas fa-exclamation-circle"></i> @TempData["ErrorMessage"]
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
     </div>
 }
 
-@* Custom Styles *@
 <style>
-    .variant-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 20px 40px rgba(0,0,0,0.1) !important;
-        border-color: #007bff !important;
+    .minimalist-form {
+        gap: 1rem;
     }
-    
-    .variant-card:hover img {
-        transform: scale(1.05);
-    }
-    
-    .variant-card a:hover {
-        background: #f8f9fa !important;
-        color: #007bff !important;
-        border-color: #007bff !important;
-    }
-    
-    .add-to-cart-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.4) !important;
-        background: linear-gradient(45deg, #218838, #1e7e34) !important;
-    }
-    
-    .form-control:focus, .form-select:focus {
-        border-color: #007bff;
-        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-    }
-    
-    .pagination .page-link {
-        color: #495057;
-        border-color: #dee2e6;
-    }
-    
-    .pagination .page-item.active .page-link {
-        background-color: #007bff;
-        border-color: #007bff;
-    }
-    
-    .pagination .page-link:hover {
-        color: #007bff;
-        background-color: #f8f9fa;
-        border-color: #007bff;
-    }
-</style>
 
-<style>
-    @@media (max-width: 768px) {
-        .variant-card {
-            margin-bottom: 1rem;
+    .minimalist-input {
+        border-radius: 8px;
+        border: 1px solid #e0e0e0;
+        background: #fafafa;
+        font-size: 1rem;
+    }
+
+    .minimalist-btn {
+        border-radius: 8px;
+        font-weight: 500;
+    }
+
+    .minimalist-card {
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        background: #fff;
+        transition: box-shadow 0.2s;
+    }
+
+        .minimalist-card:hover {
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
         }
+
+    .minimalist-img {
+        border-radius: 12px 12px 0 0;
+        height: 180px;
+        object-fit: cover;
+        background: #f4f4f4;
+    }
+
+    .minimalist-title {
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        color: #222;
+    }
+
+    .minimalist-meta {
+        font-size: 0.95rem;
+        color: #888;
+        margin-bottom: 0.5rem;
+    }
+
+    .minimalist-price {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+
+    .minimalist-stock {
+        font-size: 0.95rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .minimalist-pagination .page-link {
+        border-radius: 6px;
+        color: #222;
+        border: 1px solid #e0e0e0;
+    }
+
+    .minimalist-pagination .active .page-link {
+        background: #222;
+        color: #fff;
+        border-color: #222;
+    }
+
+    .minimalist-page-link:hover {
+        background: #f4f4f4;
+        color: #222;
+    }
+
+    .minimalist-empty {
+        color: #888;
+    }
+
+    .minimalist-alert {
+        top: 20px;
+        right: 20px;
+        z-index: 1050;
+        min-width: 220px;
     }
 </style>
-
-@* JavaScript functionality *@
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-dismiss alerts after 5 seconds
-    setTimeout(function() {
-        var alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            var bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        });
-    }, 5000);
-
-    // Add to cart functionality
-    document.querySelectorAll('.add-to-cart-btn').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var variantId = this.getAttribute('data-variant-id');
-            var originalText = this.innerHTML;
-            
-            // Show loading state
-            this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ?ang th�m...';
-            this.disabled = true;
-            
-            // Make AJAX call to add to cart
-            fetch('/Cart/AddToCart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                },
-                body: JSON.stringify({ productVariantId: parseInt(variantId) })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show success message
-                    showToast('?� th�m s?n ph?m v�o gi? h�ng!', 'success');
-                    
-                    // Update cart count if element exists
-                    var cartCount = document.querySelector('.cart-count');
-                    if (cartCount && data.cartItemCount) {
-                        cartCount.textContent = data.cartItemCount;
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+            var alerts = document.querySelectorAll('.alert');
+            alerts.forEach(function(alert) {
+                var bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 4000);
+        document.querySelectorAll('.add-to-cart-btn').forEach(function(button) {
+            button.addEventListener('click', function() {
+                var variantId = this.getAttribute('data-variant-id');
+                var originalText = this.innerHTML;
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang thêm...';
+                this.disabled = true;
+                fetch('/Cart/AddToCart', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
+                    },
+                    body: JSON.stringify({ productVariantId: parseInt(variantId) })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast('Đã thêm sản phẩm vào giỏ hàng!', 'success');
+                        var cartCount = document.querySelector('.cart-count');
+                        if (cartCount && data.cartItemCount) {
+                            cartCount.textContent = data.cartItemCount;
+                        }
+                    } else {
+                        showToast(data.message || 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ!', 'error');
                     }
-                } else {
-                    showToast(data.message || 'C� l?i x?y ra khi th�m s?n ph?m v�o gi?', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('C� l?i x?y ra khi th�m s?n ph?m v�o gi?', 'error');
-            })
-            .finally(() => {
-                // Restore button state
-                this.innerHTML = originalText;
-                this.disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ!', 'error');
+                })
+                .finally(() => {
+                    this.innerHTML = originalText;
+                    this.disabled = false;
+                });
             });
         });
+        var filterForm = document.getElementById('filterForm');
+        var categoryFilter = document.getElementById('categoryId');
+        var brandFilter = document.getElementById('brandId');
+        var priceRangeFilter = document.getElementById('priceRange');
+        if (categoryFilter) { categoryFilter.addEventListener('change', function() { filterForm.submit(); }); }
+        if (brandFilter) { brandFilter.addEventListener('change', function() { filterForm.submit(); }); }
+        if (priceRangeFilter) { priceRangeFilter.addEventListener('change', function() { filterForm.submit(); }); }
     });
-
-    // Handle filter form submission
-    var filterForm = document.getElementById('filterForm');
-    var categoryFilter = document.getElementById('categoryId');
-    var brandFilter = document.getElementById('brandId');
-    var priceRangeFilter = document.getElementById('priceRange');
-    
-    // Auto-submit on filter changes
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', function() {
-            filterForm.submit();
-        });
+    function showToast(message, type) {
+        const toast = document.createElement('div');
+        toast.style.cssText = `position: fixed; top: 2rem; right: 2rem; z-index: 1000; background: ${type === 'success' ? '#28a745' : '#dc3545'}; color: white; padding: 1rem 1.5rem; border-radius: 0.5rem; font-size: 0.875rem; font-weight: 500; transform: translateX(100%); transition: transform 0.3s ease; max-width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);`;
+        toast.innerHTML = message;
+        document.body.appendChild(toast);
+        setTimeout(() => { toast.style.transform = 'translateX(0)'; }, 100);
+        setTimeout(() => { toast.style.transform = 'translateX(100%)'; setTimeout(() => { document.body.removeChild(toast); }, 300); }, 3000);
     }
-    
-    if (brandFilter) {
-        brandFilter.addEventListener('change', function() {
-            filterForm.submit();
-        });
-    }
-    
-    if (priceRangeFilter) {
-        priceRangeFilter.addEventListener('change', function() {
-            filterForm.submit();
-        });
-    }
-
-    // Smooth scroll to top when pagination
-    document.querySelectorAll('.pagination a').forEach(function(link) {
-        link.addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    });
-});
-
-// Toast function for notifications
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        top: 2rem;
-        right: 2rem;
-        z-index: 1000;
-        background: ${type === 'success' ? '#28a745' : '#dc3545'};
-        color: white;
-        padding: 1rem 1.5rem;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        max-width: 300px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    `;
-    toast.innerHTML = message;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 100);
-    
-    setTimeout(() => {
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 300);
-    }, 3000);
-}
 </script>

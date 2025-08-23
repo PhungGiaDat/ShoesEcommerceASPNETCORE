@@ -304,39 +304,88 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<bool> ProcessStockEntryAsync(int stockEntryId, string processedBy)
         {
-            try
-            {
-                var stockEntry = await GetStockEntryByIdAsync(stockEntryId);
-                if (stockEntry == null) return false;
-
-                stockEntry.IsProcessed = true;
-                stockEntry.ReceivedBy = processedBy;
-                
-                _context.StockEntries.Update(stockEntry);
-                await _context.SaveChangesAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing stock entry: {Id}", stockEntryId);
+            var entry = await GetStockEntryByIdAsync(stockEntryId);
+            if (entry == null || entry.IsProcessed)
                 return false;
+            var stock = await GetStockByProductVariantIdAsync(entry.ProductVariantId);
+            int beforeQty = stock?.AvailableQuantity ?? 0;
+            if (stock == null)
+            {
+                stock = new Stock
+                {
+                    ProductVariantId = entry.ProductVariantId,
+                    AvailableQuantity = entry.QuantityReceived,
+                    ReservedQuantity = 0,
+                    LastUpdated = DateTime.Now,
+                    LastUpdatedBy = processedBy
+                };
+                await CreateOrUpdateStockAsync(stock);
             }
+            else
+            {
+                stock.AvailableQuantity += entry.QuantityReceived;
+                stock.LastUpdated = DateTime.Now;
+                stock.LastUpdatedBy = processedBy;
+                await CreateOrUpdateStockAsync(stock);
+            }
+            var transaction = new StockTransaction
+            {
+                ProductVariantId = entry.ProductVariantId,
+                Type = StockTransactionType.StockIn,
+                QuantityChange = entry.QuantityReceived,
+                AvailableQuantityBefore = beforeQty,
+                AvailableQuantityAfter = stock.AvailableQuantity,
+                ReservedQuantityBefore = stock.ReservedQuantity,
+                ReservedQuantityAfter = stock.ReservedQuantity,
+                TransactionDate = DateTime.Now,
+                Reason = "Nh?p kho t? phi?u nh?p",
+                Notes = entry.Notes,
+                CreatedBy = processedBy,
+                ReferenceType = "StockEntry",
+                ReferenceId = entry.Id
+            };
+            await CreateStockTransactionAsync(transaction);
+            entry.IsProcessed = true;
+            await UpdateStockEntryAsync(entry);
+            return true;
         }
 
-        public async Task<bool> DeleteStockEntryAsync(int id)
+        public async Task<bool> CreateStockAuditAsync(int productVariantId, int systemQuantity, int actualQuantity, string auditedBy, string notes)
         {
             try
             {
-                var stockEntry = await GetStockEntryByIdAsync(id);
-                if (stockEntry == null) return false;
+                var stock = await GetStockByProductVariantIdAsync(productVariantId);
+                if (stock == null) return false;
 
-                _context.StockEntries.Remove(stockEntry);
+                var difference = actualQuantity - systemQuantity;
+                // Create audit transaction
+                var auditTransaction = new StockTransaction
+                {
+                    ProductVariantId = productVariantId,
+                    Type = StockTransactionType.Adjustment,
+                    QuantityChange = difference,
+                    AvailableQuantityBefore = stock.AvailableQuantity,
+                    AvailableQuantityAfter = actualQuantity,
+                    ReservedQuantityBefore = stock.ReservedQuantity,
+                    ReservedQuantityAfter = stock.ReservedQuantity,
+                    Reason = $"Ki?m kho - Chênh l?ch: {difference}",
+                    Notes = notes,
+                    CreatedBy = auditedBy,
+                    ReferenceType = "StockAudit",
+                    TransactionDate = DateTime.Now
+                };
+                await CreateStockTransactionAsync(auditTransaction);
+                // Update stock quantity
+                stock.AvailableQuantity = actualQuantity;
+                stock.LastUpdated = DateTime.Now;
+                stock.LastUpdatedBy = auditedBy;
+                _context.Stocks.Update(stock);
                 await _context.SaveChangesAsync();
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting stock entry: {Id}", id);
+                _logger.LogError(ex, "Error creating stock audit for product variant: {ProductVariantId}", productVariantId);
                 return false;
             }
         }
@@ -453,51 +502,6 @@ namespace ShoesEcommerce.Repositories
             }
         }
 
-        public async Task<bool> CreateStockAuditAsync(int productVariantId, int systemQuantity, int actualQuantity, string auditedBy, string notes)
-        {
-            try
-            {
-                var stock = await GetStockByProductVariantIdAsync(productVariantId);
-                if (stock == null) return false;
-
-                var difference = actualQuantity - systemQuantity;
-                
-                // Create audit transaction
-                var auditTransaction = new StockTransaction
-                {
-                    ProductVariantId = productVariantId,
-                    Type = StockTransactionType.Adjustment,
-                    QuantityChange = difference,
-                    AvailableQuantityBefore = stock.AvailableQuantity,
-                    AvailableQuantityAfter = actualQuantity,
-                    ReservedQuantityBefore = stock.ReservedQuantity,
-                    ReservedQuantityAfter = stock.ReservedQuantity,
-                    Reason = $"Ki?m kho - Chênh l?ch: {difference}",
-                    Notes = notes,
-                    CreatedBy = auditedBy,
-                    ReferenceType = "StockAudit",
-                    TransactionDate = DateTime.Now
-                };
-
-                await CreateStockTransactionAsync(auditTransaction);
-
-                // Update stock quantity
-                stock.AvailableQuantity = actualQuantity;
-                stock.LastUpdated = DateTime.Now;
-                stock.LastUpdatedBy = auditedBy;
-                
-                _context.Stocks.Update(stock);
-                await _context.SaveChangesAsync();
-                
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error creating stock audit for product variant: {ProductVariantId}", productVariantId);
-                return false;
-            }
-        }
-
         public async Task<IEnumerable<StockTransaction>> GetAuditHistoryAsync(DateTime? startDate = null, DateTime? endDate = null)
         {
             try
@@ -506,13 +510,10 @@ namespace ShoesEcommerce.Repositories
                     .Include(st => st.ProductVariant)
                         .ThenInclude(pv => pv.Product)
                     .Where(st => st.Type == StockTransactionType.Adjustment && st.ReferenceType == "StockAudit");
-
                 if (startDate.HasValue)
                     query = query.Where(st => st.TransactionDate >= startDate);
-                
                 if (endDate.HasValue)
                     query = query.Where(st => st.TransactionDate <= endDate);
-
                 return await query.OrderByDescending(st => st.TransactionDate).ToListAsync();
             }
             catch (Exception ex)
@@ -522,7 +523,6 @@ namespace ShoesEcommerce.Repositories
             }
         }
 
-        // ===== ANALYTICS & REPORTS =====
         public async Task<decimal> GetTotalStockValueAsync()
         {
             try
@@ -582,7 +582,6 @@ namespace ShoesEcommerce.Repositories
         {
             try
             {
-                // Get stocks with recent transaction activity
                 var recentTransactionVariantIds = await _context.StockTransactions
                     .Where(st => st.TransactionDate >= DateTime.Now.AddDays(-30))
                     .GroupBy(st => st.ProductVariantId)
@@ -590,7 +589,6 @@ namespace ShoesEcommerce.Repositories
                     .Select(g => g.Key)
                     .Take(count)
                     .ToListAsync();
-
                 return await _context.Stocks
                     .Include(s => s.ProductVariant)
                         .ThenInclude(pv => pv.Product)
@@ -611,7 +609,6 @@ namespace ShoesEcommerce.Repositories
                 var inStock = await _context.Stocks.CountAsync(s => s.AvailableQuantity > 10);
                 var lowStock = await _context.Stocks.CountAsync(s => s.AvailableQuantity > 0 && s.AvailableQuantity <= 10);
                 var outOfStock = await _context.Stocks.CountAsync(s => s.AvailableQuantity <= 0);
-
                 return new Dictionary<string, int>
                 {
                     ["InStock"] = inStock,
@@ -637,7 +634,6 @@ namespace ShoesEcommerce.Repositories
                                   group se by s.Name into g
                                   select new { SupplierName = g.Key, TotalValue = g.Sum(se => se.TotalCost) })
                                   .ToDictionaryAsync(x => x.SupplierName, x => x.TotalValue);
-
                 return result;
             }
             catch (Exception ex)
@@ -647,16 +643,13 @@ namespace ShoesEcommerce.Repositories
             }
         }
 
-        // ===== SEARCH & FILTER =====
         public async Task<IEnumerable<Stock>> SearchStocksAsync(string searchTerm)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(searchTerm))
                     return await GetAllStocksAsync();
-
                 searchTerm = searchTerm.ToLower();
-
                 return await _context.Stocks
                     .Include(s => s.ProductVariant)
                         .ThenInclude(pv => pv.Product)
@@ -685,9 +678,7 @@ namespace ShoesEcommerce.Repositories
             {
                 if (string.IsNullOrWhiteSpace(searchTerm))
                     return await GetAllStockEntriesAsync();
-
                 searchTerm = searchTerm.ToLower();
-
                 return await _context.StockEntries
                     .Include(se => se.ProductVariant)
                         .ThenInclude(pv => pv.Product)
@@ -721,6 +712,24 @@ namespace ShoesEcommerce.Repositories
             {
                 _logger.LogError(ex, "Error getting stocks by product: {ProductId}", productId);
                 throw;
+            }
+        }
+
+        public async Task<bool> DeleteStockEntryAsync(int id)
+        {
+            try
+            {
+                var entry = await GetStockEntryByIdAsync(id);
+                if (entry == null)
+                    return false;
+                _context.StockEntries.Remove(entry);
+                await _context.SaveChangesAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting stock entry: {Id}", id);
+                return false;
             }
         }
     }

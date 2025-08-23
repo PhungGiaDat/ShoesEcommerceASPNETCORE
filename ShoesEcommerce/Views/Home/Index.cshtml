@@ -131,18 +131,6 @@
                                     <a href="/Product/Details/@variant.ProductId" class="btn-view-details">
                                         Xem chi tiết
                                     </a>
-                                    @if (variant.IsInStock)
-                                    {
-                                        <button type="button" class="btn-add-cart add-to-cart-btn" data-variant-id="@variant.Id">
-                                            Thêm vào giỏ
-                                        </button>
-                                    }
-                                    else
-                                    {
-                                        <button type="button" class="btn-out-of-stock" disabled>
-                                            Hết hàng
-                                        </button>
-                                    }
                                 </div>
                             </div>
                         </div>

@@ -1,5 +1,7 @@
 using ShoesEcommerce.Models.Orders;
 using ShoesEcommerce.Models.ViewModels;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ShoesEcommerce.Services.Interfaces
 {
@@ -15,5 +17,6 @@ namespace ShoesEcommerce.Services.Interfaces
         Task<bool> UpdatePaymentStatusAsync(int orderId, string status);
         Task<string> GenerateOrderNumberAsync();
         Task<decimal> CalculateShippingFeeAsync(string city, string district);
+        Task<List<OrderViewModel>> GetOrdersByStatusAsync(string status);
     }
 }

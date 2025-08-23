@@ -475,28 +475,86 @@ namespace ShoesEcommerce.Services
 
         public async Task<bool> ProcessStockEntryAsync(int stockEntryId, string processedBy)
         {
-            try
-            {
-                var stockEntry = await _stockRepository.GetStockEntryByIdAsync(stockEntryId);
-                if (stockEntry == null || stockEntry.IsProcessed)
-                    return false;
-
-                // Update stock entry status
-                var success = await _stockRepository.ProcessStockEntryAsync(stockEntryId, processedBy);
-                
-                if (success)
-                {
-                    // Add to inventory
-                    await AddStockAsync(stockEntry.ProductVariantId, stockEntry.QuantityReceived, stockEntry.SupplierId, processedBy);
-                }
-
-                return success;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error processing stock entry: {StockEntryId}", stockEntryId);
+            // 1. Get StockEntry
+            var entry = await _stockRepository.GetStockEntryByIdAsync(stockEntryId);
+            if (entry == null || entry.IsProcessed)
                 return false;
+
+            // 2. Update Stock
+            var stock = await _stockRepository.GetStockByProductVariantIdAsync(entry.ProductVariantId);
+            int beforeQty = stock?.AvailableQuantity ?? 0;
+            if (stock == null)
+            {
+                stock = new Stock
+                {
+                    ProductVariantId = entry.ProductVariantId,
+                    AvailableQuantity = entry.QuantityReceived,
+                    ReservedQuantity = 0,
+                    LastUpdated = DateTime.Now,
+                    LastUpdatedBy = processedBy
+                };
+                await _stockRepository.CreateOrUpdateStockAsync(stock);
             }
+            else
+            {
+                stock.AvailableQuantity += entry.QuantityReceived;
+                stock.LastUpdated = DateTime.Now;
+                stock.LastUpdatedBy = processedBy;
+                await _stockRepository.CreateOrUpdateStockAsync(stock);
+            }
+
+            // 3. Create StockTransaction
+            var transaction = new StockTransaction
+            {
+                ProductVariantId = entry.ProductVariantId,
+                Type = StockTransactionType.StockIn,
+                QuantityChange = entry.QuantityReceived,
+                AvailableQuantityBefore = beforeQty,
+                AvailableQuantityAfter = stock.AvailableQuantity,
+                ReservedQuantityBefore = stock.ReservedQuantity,
+                ReservedQuantityAfter = stock.ReservedQuantity,
+                TransactionDate = DateTime.Now,
+                Reason = "Nh?p kho t? phi?u nh?p",
+                Notes = entry.Notes,
+                CreatedBy = processedBy,
+                ReferenceType = "StockEntry",
+                ReferenceId = entry.Id
+            };
+            await _stockRepository.CreateStockTransactionAsync(transaction);
+
+            // 4. Mark entry as processed
+            entry.IsProcessed = true;
+            await _stockRepository.UpdateStockEntryAsync(entry);
+            return true;
+        }
+
+        public async Task<bool> PerformStockAuditAsync(int productVariantId, int actualQuantity, string auditedBy, string notes)
+        {
+            var stock = await _stockRepository.GetStockByProductVariantIdAsync(productVariantId);
+            if (stock == null) return false;
+            int beforeQty = stock.AvailableQuantity;
+            int diff = actualQuantity - beforeQty;
+            stock.AvailableQuantity = actualQuantity;
+            stock.LastUpdated = DateTime.Now;
+            stock.LastUpdatedBy = auditedBy;
+            await _stockRepository.CreateOrUpdateStockAsync(stock);
+            var transaction = new StockTransaction
+            {
+                ProductVariantId = productVariantId,
+                Type = StockTransactionType.Adjustment,
+                QuantityChange = diff,
+                AvailableQuantityBefore = beforeQty,
+                AvailableQuantityAfter = actualQuantity,
+                ReservedQuantityBefore = stock.ReservedQuantity,
+                ReservedQuantityAfter = stock.ReservedQuantity,
+                TransactionDate = DateTime.Now,
+                Reason = "Ki?m kho - ?i?u ch?nh t?n kho th?c t?",
+                Notes = notes,
+                CreatedBy = auditedBy,
+                ReferenceType = "StockAudit"
+            };
+            await _stockRepository.CreateStockTransactionAsync(transaction);
+            return true;
         }
 
         public async Task<bool> UpdateStockEntryAsync(int id, int quantity, decimal unitCost, string batchNumber, string notes)
@@ -558,22 +616,6 @@ namespace ShoesEcommerce.Services
             {
                 _logger.LogError(ex, "Error getting stocks for audit");
                 return new List<Stock>();
-            }
-        }
-
-        public async Task<bool> PerformStockAuditAsync(int productVariantId, int actualQuantity, string auditedBy, string notes)
-        {
-            try
-            {
-                var stock = await _stockRepository.GetStockByProductVariantIdAsync(productVariantId);
-                if (stock == null) return false;
-
-                return await _stockRepository.CreateStockAuditAsync(productVariantId, stock.AvailableQuantity, actualQuantity, auditedBy, notes);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error performing stock audit for ProductVariant: {ProductVariantId}", productVariantId);
-                return false;
             }
         }
 

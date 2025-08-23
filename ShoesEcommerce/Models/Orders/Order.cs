@@ -18,6 +18,7 @@ namespace ShoesEcommerce.Models.Orders
         public ICollection<OrderDetail> OrderDetails { get; set; }
         public Payment Payment { get; set; }
         public Invoice Invoice { get; set; }
+        public string Status { get; set; } // e.g. Pending, Confirmed, Completed
 
     }
 }

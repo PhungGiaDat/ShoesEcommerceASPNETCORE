@@ -68,18 +68,30 @@ namespace ShoesEcommerce.Middleware
                 "/Order"
             };
 
-            return _env.IsDevelopment() || 
-                   criticalPaths.Any(path => context.Request.Path.StartsWithSegments(path, StringComparison.OrdinalIgnoreCase));
+            // Suppress logging for browser probes and JS error logging endpoints
+            var path = context.Request.Path.Value?.ToLower() ?? "";
+            if (path.Contains("/.well-known/") ||
+                path.Contains("/favicon.ico") ||
+                path.Contains("/robots.txt") ||
+                path.EndsWith(".map") ||
+                path.Contains("/error/logjavascripterror"))
+            {
+                return false;
+            }
+
+            return _env.IsDevelopment() ||
+                   criticalPaths.Any(p => context.Request.Path.StartsWithSegments(p, StringComparison.OrdinalIgnoreCase));
         }
 
         private static bool ShouldLogResponse(HttpContext context)
         {
-            // Skip logging for Chrome DevTools and browser probes
+            // Skip logging for Chrome DevTools, browser probes, and JS error logging endpoints
             var path = context.Request.Path.Value?.ToLower() ?? "";
-            if (path.Contains("/.well-known/") || 
+            if (path.Contains("/.well-known/") ||
                 path.Contains("/favicon.ico") ||
                 path.Contains("/robots.txt") ||
-                path.EndsWith(".map"))
+                path.EndsWith(".map") ||
+                path.Contains("/error/logjavascripterror"))
             {
                 return false;
             }
@@ -106,7 +118,7 @@ namespace ShoesEcommerce.Middleware
             _logger.LogInformation("Incoming request: {@RequestInfo}", requestInfo);
 
             // Log form data for POST requests (excluding sensitive fields)
-            if (context.Request.Method == "POST" && 
+            if (context.Request.Method == "POST" &&
                 context.Request.ContentType?.Contains("application/x-www-form-urlencoded") == true &&
                 context.Request.ContentLength > 0)
             {
@@ -149,7 +161,7 @@ namespace ShoesEcommerce.Middleware
                 {
                     var key = Uri.UnescapeDataString(keyValue[0]);
                     var value = Uri.UnescapeDataString(keyValue[1]);
-                    
+
                     // Don't log sensitive fields
                     if (IsSensitiveField(key))
                     {
@@ -204,7 +216,7 @@ namespace ShoesEcommerce.Middleware
             };
 
             var statusCode = (HttpStatusCode)context.Response.StatusCode;
-            
+
             switch (statusCode)
             {
                 case HttpStatusCode.NotFound:
@@ -238,7 +250,7 @@ namespace ShoesEcommerce.Middleware
         private async Task HandleExceptionAsync(HttpContext context, Exception ex)
         {
             var errorId = Guid.NewGuid().ToString();
-            
+
             var errorDetails = new
             {
                 ErrorId = errorId,
@@ -309,10 +321,10 @@ namespace ShoesEcommerce.Middleware
 
         private static bool IsSensitiveField(string fieldName)
         {
-            var sensitiveFields = new[] 
-            { 
-                "password", 
-                "confirmpassword", 
+            var sensitiveFields = new[]
+            {
+                "password",
+                "confirmpassword",
                 "__requestverificationtoken",
                 "creditcard",
                 "cvv",

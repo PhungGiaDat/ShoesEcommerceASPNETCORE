@@ -534,5 +534,12 @@ namespace ShoesEcommerce.Repositories
                 .Take(pageSize)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<ProductVariant>> GetAllProductVariantsAsync()
+        {
+            return await _context.ProductVariants
+                .Include(v => v.Product)
+                .ToListAsync();
+        }
     }
 }

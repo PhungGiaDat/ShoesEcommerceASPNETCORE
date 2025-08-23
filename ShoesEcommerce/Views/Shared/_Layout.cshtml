@@ -60,6 +60,7 @@
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                                     <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile">Tài khoản của tôi</a></li>
                                     <li><a class="dropdown-item" asp-controller="Cart" asp-action="Index">Giỏ hàng</a></li>
+                                    <li><a class="dropdown-item" asp-controller="Order" asp-action="Index">Đơn hàng của tôi</a></li>
                                     
                                     @* Show admin link for staff and admin users *@
                                     @if (User.IsInRole("Admin") || User.IsInRole("Staff"))
@@ -632,9 +633,7 @@
             if (alertElement && alertElement.parentNode) {
                 alertElement.classList.add('removing');
                 setTimeout(() => {
-                    if (alertElement.parentNode) {
-                        alertElement.parentNode.removeChild(alertElement);
-                    }
+                    alertElement.parentNode.removeChild(alertElement);
                 }, 300);
             }
         }

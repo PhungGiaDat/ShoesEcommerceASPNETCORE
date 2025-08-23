@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Carts;
 using ShoesEcommerce.Models.Products;
+using ShoesEcommerce.ViewModels.Cart;
 using System.Linq;
 
 namespace ShoesEcommerce.Controllers
@@ -81,14 +82,23 @@ namespace ShoesEcommerce.Controllers
                         .FirstOrDefaultAsync(c => c.SessionId == sessionId);
                 }
 
-                // Ensure we always return a List<CartItem> to prevent type mismatch
-                var cartItems = cart?.CartItems?.ToList() ?? new List<CartItem>();
+                var cartItemVMs = cart?.CartItems?.Select(ci => new CartItemViewModel
+                {
+                    Id = ci.Id,
+                    ProductName = ci.ProductVariant?.Product?.Name ?? "Không có tên",
+                    ImageUrl = ci.ProductVariant?.ImageUrl ?? "/images/no-image.png",
+                    Color = ci.ProductVariant?.Color ?? "Chưa có",
+                    Size = ci.ProductVariant?.Size ?? "Chưa có",
+                    Brand = ci.ProductVariant?.Product?.Brand?.Name ?? "Chưa có",
+                    Price = ci.ProductVariant?.Price ?? 0,
+                    Quantity = ci.Quantity
+                }).ToList() ?? new List<CartItemViewModel>();
 
                 _logger.LogInformation("Cart loaded successfully with {CartItemCount} items for customer {CustomerId} or session {SessionId}", 
-                    cartItems.Count, customerId, sessionId);
+                    cartItemVMs.Count, customerId, sessionId);
 
                 ViewData["Title"] = "Giỏ hàng";
-                return View(cartItems);
+                return View(cartItemVMs);
             }
             catch (Exception ex)
             {
@@ -97,21 +107,20 @@ namespace ShoesEcommerce.Controllers
                 TempData["Error"] = "Có lỗi xảy ra khi tải giỏ hàng. Vui lòng thử lại.";
                 
                 ViewData["Title"] = "Giỏ hàng";
-                return View(new List<CartItem>());
+                return View(new List<CartItemViewModel>());
             }
         }
 
         // POST: Cart/AddToCart
         [HttpPost]
-        public async Task<IActionResult> AddToCart(int productVariantId)
+        public async Task<IActionResult> AddToCart(int productVariantId, int quantity = 1)
         {
             try
             {
-                if (productVariantId == 0)
+                if (productVariantId == 0 || quantity < 1)
                 {
-                    _logger.LogWarning("Invalid product variant ID {ProductVariantId} provided to AddToCart", productVariantId);
-                    TempData["Error"] = "ID biến thể sản phẩm không hợp lệ.";
-                    return BadRequest("ID biến thể sản phẩm không hợp lệ.");
+                    _logger.LogWarning("Invalid product variant ID {ProductVariantId} or quantity {Quantity} provided to AddToCart", productVariantId, quantity);
+                    return Json(new { success = false, message = "ID biến thể sản phẩm hoặc số lượng không hợp lệ." });
                 }
 
                 var customerId = GetCurrentCustomerId();
@@ -128,16 +137,13 @@ namespace ShoesEcommerce.Controllers
                 if (productVariant == null)
                 {
                     _logger.LogWarning("Product variant {ProductVariantId} not found for AddToCart", productVariantId);
-                    TempData["Error"] = "Biến thể sản phẩm không tồn tại.";
-                    return NotFound("Biến thể sản phẩm không tồn tại.");
+                    return Json(new { success = false, message = "Biến thể sản phẩm không tồn tại." });
                 }
 
-                // Check stock availability using the correct property
-                if (productVariant.AvailableQuantity <= 0)
+                if (productVariant.AvailableQuantity < quantity)
                 {
-                    _logger.LogWarning("Product variant {ProductVariantId} is out of stock", productVariantId);
-                    TempData["Error"] = "Sản phẩm đã hết hàng.";
-                    return Json(new { success = false, message = "Sản phẩm đã hết hàng." });
+                    _logger.LogWarning("Requested quantity {Quantity} exceeds available stock {AvailableQuantity} for product variant {ProductVariantId}", quantity, productVariant.AvailableQuantity, productVariantId);
+                    return Json(new { success = false, message = $"Chỉ còn {productVariant.AvailableQuantity} sản phẩm trong kho." });
                 }
 
                 Cart? cart;
@@ -161,8 +167,6 @@ namespace ShoesEcommerce.Controllers
 
                 if (cart == null)
                 {
-                    _logger.LogInformation("Creating new cart for customer {CustomerId} or session {SessionId}", customerId, sessionId);
-                    
                     cart = new Cart
                     {
                         SessionId = sessionId,
@@ -171,8 +175,6 @@ namespace ShoesEcommerce.Controllers
                     };
                     _context.Carts.Add(cart);
                     await _context.SaveChangesAsync();
-                    
-                    // Nếu đã đăng nhập, cập nhật Customer.CartId
                     if (customerId != 0)
                     {
                         var customer = await _context.Customers.FindAsync(customerId);
@@ -180,7 +182,6 @@ namespace ShoesEcommerce.Controllers
                         {
                             customer.CartId = cart.Id;
                             await _context.SaveChangesAsync();
-                            _logger.LogInformation("Updated customer {CustomerId} CartId to {CartId}", customerId, cart.Id);
                         }
                     }
                 }
@@ -190,16 +191,11 @@ namespace ShoesEcommerce.Controllers
 
                 if (cartItem != null)
                 {
-                    // Check if adding one more would exceed stock using the correct property
-                    if (cartItem.Quantity + 1 > productVariant.AvailableQuantity)
+                    if (cartItem.Quantity + quantity > productVariant.AvailableQuantity)
                     {
-                        _logger.LogWarning("Cannot add more of product variant {ProductVariantId} - would exceed stock limit", productVariantId);
-                        TempData["Error"] = "Không thể thêm sản phẩm này. Số lượng vượt quá hàng tồn kho.";
-                        return Json(new { success = false, message = "Không thể thêm sản phẩm này. Số lượng vượt quá hàng tồn kho." });
+                        return Json(new { success = false, message = $"Chỉ còn {productVariant.AvailableQuantity - cartItem.Quantity} sản phẩm có thể thêm." });
                     }
-                    
-                    cartItem.Quantity += 1;
-                    _logger.LogInformation("Updated quantity for existing cart item to {Quantity}", cartItem.Quantity);
+                    cartItem.Quantity += quantity;
                 }
                 else
                 {
@@ -207,27 +203,20 @@ namespace ShoesEcommerce.Controllers
                     {
                         CartId = cart.Id,
                         ProductVarientId = productVariantId,
-                        Quantity = 1
+                        Quantity = quantity
                     };
                     _context.CartItems.Add(cartItem);
-                    _logger.LogInformation("Added new cart item for product variant {ProductVariantId}", productVariantId);
                 }
 
                 cart.UpdatedAt = DateTime.Now;
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Product variant {ProductVariantId} successfully added to cart for customer {CustomerId}", 
-                    productVariantId, customerId);
-
-                TempData["Success"] = "Đã thêm sản phẩm vào giỏ hàng.";
-                return RedirectToAction(nameof(Index));
+                return Json(new { success = true, message = "Đã thêm sản phẩm vào giỏ hàng." });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error adding product variant {ProductVariantId} to cart for customer {CustomerId}", 
-                    productVariantId, GetCurrentCustomerId());
-                TempData["Error"] = "Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng. Vui lòng thử lại.";
-                return RedirectToAction(nameof(Index));
+                _logger.LogError(ex, "Error adding product variant {ProductVariantId} to cart for customer {CustomerId}", productVariantId, GetCurrentCustomerId());
+                return Json(new { success = false, message = "Có lỗi xảy ra khi thêm sản phẩm vào giỏ hàng. Vui lòng thử lại." });
             }
         }
 

@@ -1,0 +1,62 @@
+﻿@model ShoesEcommerce.Models.ViewModels.OrderViewModel
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+<h2>Chi tiết đơn hàng @Model.OrderNumber</h2>
+<div>
+    <strong>Khách hàng:</strong> @Model.CustomerName <br />
+    <strong>Ngày đặt:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm") <br />
+    <strong>Tổng tiền:</strong> @Model.TotalAmount.ToString("N0") đ <br />
+    <strong>Trạng thái:</strong> @Model.Status <br />
+</div>
+<h4>Sản phẩm</h4>
+<table class="table minimalist-table">
+    <thead>
+        <tr>
+            <th>Sản phẩm</th>
+            <th>Màu</th>
+            <th>Kích thước</th>
+            <th>SL</th>
+            <th>Đơn giá</th>
+            <th>Tổng</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model.OrderDetails)
+    {
+        <tr>
+            <td>@item.ProductVariant.Name</td>
+            <td>@item.ProductVariant.Color</td>
+            <td>@item.ProductVariant.Size</td>
+            <td>@item.Quantity</td>
+            <td>@item.UnitPrice.ToString("N0") đ</td>
+            <td>@item.SubTotal.ToString("N0") đ</td>
+        </tr>
+    }
+    </tbody>
+</table>
+@if (Model.Status == "Pending")
+{
+    <form asp-action="ConfirmOrder" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="btn btn-success">Xác nhận đơn hàng</button>
+    </form>
+}
+@if (Model.Status == "Confirmed")
+{
+    <form asp-action="CompleteOrder" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="id" value="@Model.Id" />
+        <button type="submit" class="btn btn-primary">Đã thanh toán & giao hàng</button>
+    </form>
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success mt-3">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger mt-3">@TempData["Error"]</div>
+}

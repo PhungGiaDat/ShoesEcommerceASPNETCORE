@@ -56,17 +56,17 @@ namespace ShoesEcommerce.Controllers
             {
                 // Try customer login first
                 var customerResult = await _authService.AuthenticateCustomerAsync(model);
-                
+
                 if (customerResult.Success)
                 {
                     _logger.LogInformation("Customer {Email} logged in successfully", model.Email);
-                    
+
                     // Clean return URL to avoid routing issues
                     if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl) && !model.ReturnUrl.Contains("Admin"))
                     {
                         return LocalRedirect(model.ReturnUrl);
                     }
-                    
+
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -80,17 +80,17 @@ namespace ShoesEcommerce.Controllers
                 };
 
                 var staffResult = await _authService.AuthenticateStaffAsync(staffLoginModel);
-                
+
                 if (staffResult.Success)
                 {
                     _logger.LogInformation("Staff {Email} logged in successfully", model.Email);
-                    
+
                     // Staff users should go to admin area by default
                     if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                     {
                         return LocalRedirect(model.ReturnUrl);
                     }
-                    
+
                     return RedirectToAction("Index", "Admin", new { area = "Admin" });
                 }
 
@@ -118,7 +118,7 @@ namespace ShoesEcommerce.Controllers
 
             var model = new RegisterViewModel();
             ViewData["ReturnUrl"] = returnUrl;
-            
+
             return View(model);
         }
 
@@ -130,27 +130,39 @@ namespace ShoesEcommerce.Controllers
         {
             try
             {
-                // Log the received model for debugging
                 _logger.LogInformation("🚀 Registration attempt started for email: {Email}", model.Email);
-                _logger.LogDebug("Registration model: FirstName={FirstName}, LastName={LastName}, Phone={Phone}, DateOfBirth={DateOfBirth}, AcceptTerms={AcceptTerms}", 
-                    model.FirstName, model.LastName, model.PhoneNumber, model.DateOfBirth, model.AcceptTerms);
-                
-                // Check model state first
+                _logger.LogDebug("Registration model received: DateOfBirth={DateOfBirth}", model.DateOfBirth);
+
+                // *** FIX: Manual DateOfBirth validation ***
+                int calculatedAge = 0;
+                if (model.DateOfBirth == DateTime.MinValue)
+                {
+                    ModelState.AddModelError("DateOfBirth", "Vui lòng chọn ngày sinh của bạn.");
+                }
+                else
+                {
+                    var today = DateTime.Today;
+                    calculatedAge = today.Year - model.DateOfBirth.Year;
+                    if (model.DateOfBirth.Date > today.AddYears(-calculatedAge)) calculatedAge--;
+                    _logger.LogDebug("🔍 Age validation: calculated age = {Age}", calculatedAge);
+                    if (calculatedAge < 13)
+                    {
+                        ModelState.AddModelError("DateOfBirth", "Bạn phải đủ 13 tuổi để đăng ký.");
+                        _logger.LogWarning("❌ Age validation failed: age {Age} is below minimum", calculatedAge);
+                    }
+                }
+                // *** END FIX ***
+
                 if (!ModelState.IsValid)
                 {
                     _logger.LogWarning("❌ Model validation failed for registration: {Email}", model.Email);
-                    
-                    // Log all validation errors for debugging
                     foreach (var error in ModelState)
                     {
                         if (error.Value.Errors.Any())
                         {
-                            _logger.LogWarning("Validation error for {Field}: {Errors}", 
-                                error.Key, 
-                                string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage)));
+                            _logger.LogWarning("Validation error for {Field}: {Errors}", error.Key, string.Join(", ", error.Value.Errors.Select(e => e.ErrorMessage)));
                         }
                     }
-                    
                     ViewData["ReturnUrl"] = returnUrl;
                     return View(model);
                 }
@@ -159,7 +171,7 @@ namespace ShoesEcommerce.Controllers
 
                 // Additional server-side validation
                 var validationErrors = new Dictionary<string, string>();
-                
+
                 _logger.LogDebug("🔍 Checking if email exists: {Email}", model.Email);
                 // Check if email already exists
                 if (await _customerService.EmailExistsAsync(model.Email))
@@ -168,7 +180,7 @@ namespace ShoesEcommerce.Controllers
                     ModelState.AddModelError("Email", "Email này đã được sử dụng");
                     _logger.LogWarning("❌ Email already exists: {Email}", model.Email);
                 }
-                
+
                 _logger.LogDebug("🔍 Checking if phone exists: {Phone}", model.PhoneNumber);
                 // Check if phone already exists
                 if (await _customerService.PhoneExistsAsync(model.PhoneNumber))
@@ -177,26 +189,26 @@ namespace ShoesEcommerce.Controllers
                     ModelState.AddModelError("PhoneNumber", "Số điện thoại này đã được sử dụng");
                     _logger.LogWarning("❌ Phone already exists: {Phone}", model.PhoneNumber);
                 }
-                
+
                 // Age validation
                 var age = DateTime.Now.Year - model.DateOfBirth.Year;
                 if (model.DateOfBirth > DateTime.Now.AddYears(-age)) age--;
                 _logger.LogDebug("🔍 Age validation: calculated age = {Age}", age);
-                
+
                 if (age < 13)
                 {
                     validationErrors.Add("DateOfBirth", "Bạn phải đủ 13 tuổi để đăng ký");
                     ModelState.AddModelError("DateOfBirth", "Bạn phải đủ 13 tuổi để đăng ký");
                     _logger.LogWarning("❌ Age validation failed: age {Age} is below minimum", age);
                 }
-                
+
                 // If there are validation errors, return the view
                 if (validationErrors.Any())
                 {
-                    _logger.LogWarning("❌ Server-side validation failed for {Email}: {Errors}", 
-                        model.Email, 
+                    _logger.LogWarning("❌ Server-side validation failed for {Email}: {Errors}",
+                        model.Email,
                         string.Join(", ", validationErrors.Select(e => $"{e.Key}: {e.Value}")));
-                    
+
                     ViewData["ReturnUrl"] = returnUrl;
                     return View(model);
                 }
@@ -205,24 +217,24 @@ namespace ShoesEcommerce.Controllers
 
                 // Proceed with registration
                 var result = await _authService.RegisterCustomerAsync(model);
-                
+
                 if (result.Success)
                 {
                     _logger.LogInformation("🎉 New customer registered successfully: {Email}", model.Email);
-                    
+
                     // Set success message for popup
                     TempData["SuccessMessage"] = "Đăng ký thành công! Chào mừng bạn đến với cửa hàng.";
                     TempData["ShowSuccessPopup"] = "true";
-                    
+
                     return RedirectToAction("Index", "Home");
                 }
                 else
                 {
                     _logger.LogError("❌ Registration service failed for {Email}: {Error}", model.Email, result.ErrorMessage);
-                    _logger.LogDebug("Registration failure details: ValidationErrors={ValidationErrors}, RequiresTwoFactor={RequiresTwoFactor}", 
-                        string.Join(", ", result.ValidationErrors?.Select(e => $"{e.Key}:{e.Value}") ?? []), 
+                    _logger.LogDebug("Registration failure details: ValidationErrors={ValidationErrors}, RequiresTwoFactor={RequiresTwoFactor}",
+                        string.Join(", ", result.ValidationErrors?.Select(e => $"{e.Key}:{e.Value}") ?? []),
                         result.GetType().GetProperty("RequiresTwoFactor")?.GetValue(result));
-                    
+
                     // Add validation errors from service
                     if (result.ValidationErrors?.Any() == true)
                     {
@@ -241,20 +253,20 @@ namespace ShoesEcommerce.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "💥 CRITICAL: Unexpected error during registration for {Email}. Exception Type: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}", 
+                _logger.LogError(ex, "💥 CRITICAL: Unexpected error during registration for {Email}. Exception Type: {ExceptionType}, Message: {Message}, StackTrace: {StackTrace}",
                     model.Email ?? "UNKNOWN", ex.GetType().Name, ex.Message, ex.StackTrace);
-                
+
                 // Log inner exceptions if they exist
                 var innerEx = ex.InnerException;
                 var level = 1;
                 while (innerEx != null)
                 {
-                    _logger.LogError("💥 Inner Exception Level {Level}: Type={Type}, Message={Message}", 
+                    _logger.LogError("💥 Inner Exception Level {Level}: Type={Type}, Message={Message}",
                         level, innerEx.GetType().Name, innerEx.Message);
                     innerEx = innerEx.InnerException;
                     level++;
                 }
-                
+
                 ModelState.AddModelError(string.Empty, "Có lỗi xảy ra trong quá trình đăng ký. Vui lòng thử lại.");
                 TempData["ErrorMessage"] = $"Lỗi hệ thống: {ex.Message}";
             }
@@ -273,9 +285,9 @@ namespace ShoesEcommerce.Controllers
             {
                 var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
                 await _authService.SignOutAsync();
-                
+
                 _logger.LogInformation("User {Email} logged out", userEmail);
-                
+
                 TempData["InfoMessage"] = "Bạn đã đăng xuất thành công.";
             }
             catch (Exception ex)
@@ -366,12 +378,12 @@ namespace ShoesEcommerce.Controllers
                 }
 
                 var success = await _customerService.UpdateCustomerProfileAsync(customerId.Value, model);
-                
+
                 if (success)
                 {
                     // Refresh user claims to update the display name
                     await _authService.RefreshUserClaimsAsync(customerId.Value, "Customer");
-                    
+
                     TempData["SuccessMessage"] = "Cập nhật thông tin thành công!";
                     return RedirectToAction("Profile");
                 }
@@ -416,7 +428,7 @@ namespace ShoesEcommerce.Controllers
                 }
 
                 var success = await _authService.ChangePasswordAsync(customerId.Value, "Customer", model);
-                
+
                 if (success)
                 {
                     TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
@@ -508,7 +520,7 @@ namespace ShoesEcommerce.Controllers
 
         // Debug endpoint to check model binding
         [HttpPost]
-        [AllowAnonymous] 
+        [AllowAnonymous]
         public IActionResult DebugModel(RegisterViewModel model)
         {
             var debugInfo = new
@@ -516,9 +528,9 @@ namespace ShoesEcommerce.Controllers
                 IsValid = ModelState.IsValid,
                 Errors = ModelState
                     .Where(x => x.Value.Errors.Count > 0)
-                    .Select(x => new { 
-                        Field = x.Key, 
-                        Errors = x.Value.Errors.Select(e => e.ErrorMessage) 
+                    .Select(x => new {
+                        Field = x.Key,
+                        Errors = x.Value.Errors.Select(e => e.ErrorMessage)
                     }),
                 Model = model
             };
@@ -528,24 +540,24 @@ namespace ShoesEcommerce.Controllers
 
         // DEBUG: Enhanced debug endpoint to test registration with detailed logging
         [HttpPost]
-        [AllowAnonymous] 
+        [AllowAnonymous]
         public async Task<IActionResult> DebugRegistration([FromBody] RegisterViewModel model)
         {
             var debugInfo = new Dictionary<string, object>();
-            
+
             try
             {
                 _logger.LogInformation("🔧 DEBUG: Starting debug registration test");
-                
+
                 debugInfo["step"] = "1. Model Validation";
                 debugInfo["modelState"] = new
                 {
                     IsValid = ModelState.IsValid,
                     Errors = ModelState
                         .Where(x => x.Value.Errors.Count > 0)
-                        .Select(x => new { 
-                            Field = x.Key, 
-                            Errors = x.Value.Errors.Select(e => e.ErrorMessage) 
+                        .Select(x => new {
+                            Field = x.Key,
+                            Errors = x.Value.Errors.Select(e => e.ErrorMessage)
                         }),
                     Model = new
                     {
@@ -562,19 +574,19 @@ namespace ShoesEcommerce.Controllers
                 if (ModelState.IsValid)
                 {
                     debugInfo["step"] = "2. Service Validation";
-                    
+
                     // Test email exists
                     var emailExists = await _customerService.EmailExistsAsync(model.Email);
                     debugInfo["emailExists"] = emailExists;
-                    
+
                     // Test phone exists  
                     var phoneExists = await _customerService.PhoneExistsAsync(model.PhoneNumber);
                     debugInfo["phoneExists"] = phoneExists;
-                    
+
                     if (!emailExists && !phoneExists)
                     {
                         debugInfo["step"] = "3. Registration Attempt";
-                        
+
                         // Attempt registration
                         var result = await _authService.RegisterCustomerAsync(model);
                         debugInfo["registrationResult"] = new
@@ -603,121 +615,122 @@ namespace ShoesEcommerce.Controllers
             return Json(debugInfo);
         }
 
-        // Enhanced debug endpoint to test all validation scenarios
-        [HttpPost]
-        [AllowAnonymous] 
-        public async Task<IActionResult> DebugRegistrationDetailed([FromBody] RegisterViewModel model)
-        {
-            var debugInfo = new Dictionary<string, object>();
-            
-            try
-            {
-                _logger.LogInformation("🔧 DEBUG: Starting comprehensive registration test for {Email}", model.Email);
-                
-                debugInfo["step"] = "1. Input Analysis";
-                debugInfo["inputData"] = new
-                {
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,  
-                    Email = model.Email,
-                    PhoneNumber = model.PhoneNumber,
-                    DateOfBirth = model.DateOfBirth,
-                    DateOfBirthString = model.DateOfBirth.ToString("yyyy-MM-dd HH:mm:ss"),
-                    DateOfBirthKind = model.DateOfBirth.Kind,
-                    DateOfBirthYear = model.DateOfBirth.Year,
-                    AcceptTerms = model.AcceptTerms,
-                    PasswordLength = model.Password?.Length ?? 0,
-                    IsMinValue = model.DateOfBirth == DateTime.MinValue,
-                    IsValidYear = model.DateOfBirth.Year >= 1900 && model.DateOfBirth.Year <= DateTime.Now.Year
-                };
+        //// Enhanced debug endpoint to test all validation scenarios
+        //[HttpPost]
+        //[AllowAnonymous]
+        //public async Task<IActionResult> DebugRegistrationDetailed([FromBody] RegisterViewModel model)
+        //{
+        //    var debugInfo = new Dictionary<string, object>();
 
-                debugInfo["step"] = "2. Model State Validation";
-                debugInfo["modelState"] = new
-                {
-                    IsValid = ModelState.IsValid,
-                    Errors = ModelState
-                        .Where(x => x.Value.Errors.Count > 0)
-                        .Select(x => new { 
-                            Field = x.Key, 
-                            Errors = x.Value.Errors.Select(e => e.ErrorMessage) 
-                        })
-                };
+        //    try
+        //    {
+        //        _logger.LogInformation("🔧 DEBUG: Starting comprehensive registration test for {Email}", model.Email);
 
-                if (ModelState.IsValid)
-                {
-                    debugInfo["step"] = "3. Service Validation";
-                    
-                    // Test email exists
-                    var emailExists = await _customerService.EmailExistsAsync(model.Email);
-                    debugInfo["emailExists"] = emailExists;
-                    
-                    // Test phone exists  
-                    var phoneExists = await _customerService.PhoneExistsAsync(model.PhoneNumber);
-                    debugInfo["phoneExists"] = phoneExists;
-                    
-                    // Test data validation
-                    var dataValid = await _customerService.ValidateRegistrationDataAsync(model);
-                    debugInfo["dataValidationResult"] = dataValid;
-                    
-                    if (!emailExists && !phoneExists && dataValid)
-                    {
-                        debugInfo["step"] = "4. Customer Service Registration";
-                        
-                        // Attempt registration via CustomerService directly
-                        var serviceResult = await _customerService.RegisterCustomerAsync(model);
-                        debugInfo["customerServiceResult"] = new
-                        {
-                            serviceResult.Success,
-                            serviceResult.ErrorMessage,
-                            ValidationErrors = serviceResult.ValidationErrors,
-                            CustomerCreated = serviceResult.Customer != null,
-                            CustomerId = serviceResult.Customer?.Id,
-                            CustomerEmail = serviceResult.Customer?.Email,
-                            CustomerPhone = serviceResult.Customer?.PhoneNumber,
-                            CustomerDOB = serviceResult.Customer?.DateOfBirth.ToString("yyyy-MM-dd")
-                        };
-                        
-                        if (serviceResult.Success)
-                        {
-                            debugInfo["step"] = "5. Auth Service Registration Test";
-                            
-                            // Also test the full AuthService flow
-                            var authResult = await _authService.RegisterCustomerAsync(model);
-                            debugInfo["authServiceResult"] = new
-                            {
-                                authResult.Success,
-                                authResult.ErrorMessage,
-                                ValidationErrors = authResult.ValidationErrors,
-                                CustomerCreated = authResult.Customer != null,
-                                CustomerId = authResult.Customer?.Id
-                            };
-                        }
-                    }
-                    else
-                    {
-                        debugInfo["validationFailures"] = new
-                        {
-                            EmailExists = emailExists,
-                            PhoneExists = phoneExists,
-                            DataValid = dataValid
-                        };
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "🔧 DEBUG: Exception in comprehensive debug registration");
-                debugInfo["exception"] = new
-                {
-                    Type = ex.GetType().Name,
-                    Message = ex.Message,
-                    StackTrace = ex.StackTrace?.Split('\n').Take(10), // Limit stack trace
-                    InnerException = ex.InnerException?.Message,
-                    Data = ex.Data?.Count > 0 ? ex.Data : null
-                };
-            }
+        //        debugInfo["step"] = "1. Input Analysis";
+        //        debugInfo["inputData"] = new
+        //        {
+        //            FirstName = model.FirstName,
+        //            LastName = model.LastName,
+        //            Email = model.Email,
+        //            PhoneNumber = model.PhoneNumber,
+        //            DateOfBirth = model.DateOfBirth,
+        //            DateOfBirthString = model.DateOfBirth.ToString("yyyy-MM-dd HH:mm:ss"),
+        //            DateOfBirthKind = model.DateOfBirth.Kind,
+        //            DateOfBirthYear = model.DateOfBirth.Year,
+        //            AcceptTerms = model.AcceptTerms,
+        //            PasswordLength = model.Password?.Length ?? 0,
+        //            IsMinValue = model.DateOfBirth == DateTime.MinValue,
+        //            IsValidYear = model.DateOfBirth.Year >= 1900 && model.DateOfBirth.Year <= DateTime.Now.Year
+        //        };
 
-            return Json(debugInfo);
-        }
+        //        debugInfo["step"] = "2. Model State Validation";
+        //        debugInfo["modelState"] = new
+        //        {
+        //            IsValid = ModelState.IsValid,
+        //            Errors = ModelState
+        //                .Where(x => x.Value.Errors.Count > 0)
+        //                .Select(x => new
+        //                {
+        //                    Field = x.Key,
+        //                    Errors = x.Value.Errors.Select(e => e.ErrorMessage)
+        //                })
+        //        };
+
+        //        if (ModelState.IsValid)
+        //        {
+        //            debugInfo["step"] = "3. Service Validation";
+
+        //            // Test email exists
+        //            var emailExists = await _customerService.EmailExistsAsync(model.Email);
+        //            debugInfo["emailExists"] = emailExists;
+
+        //            // Test phone exists  
+        //            var phoneExists = await _customerService.PhoneExistsAsync(model.PhoneNumber);
+        //            debugInfo["phoneExists"] = phoneExists;
+
+        //            // Test data validation
+        //            var dataValid = await _customerService.ValidateRegistrationDataAsync(model);
+        //            debugInfo["dataValidationResult"] = dataValid;
+
+        //            if (!emailExists && !phoneExists && dataValid)
+        //            {
+        //                debugInfo["step"] = "4. Customer Service Registration";
+
+        //                // Attempt registration via CustomerService directly
+        //                var serviceResult = await _customerService.RegisterCustomerAsync(model);
+        //                debugInfo["customerServiceResult"] = new
+        //                {
+        //                    serviceResult.Success,
+        //                    serviceResult.ErrorMessage,
+        //                    ValidationErrors = serviceResult.ValidationErrors,
+        //                    CustomerCreated = serviceResult.Customer != null,
+        //                    CustomerId = serviceResult.Customer?.Id,
+        //                    CustomerEmail = serviceResult.Customer?.Email,
+        //                    CustomerPhone = serviceResult.Customer?.PhoneNumber,
+        //                    CustomerDOB = serviceResult.Customer?.DateOfBirth.ToString("yyyy-MM-dd")
+        //                };
+
+        //                if (serviceResult.Success)
+        //                {
+        //                    debugInfo["step"] = "5. Auth Service Registration Test";
+
+        //                    // Also test the full AuthService flow
+        //                    var authResult = await _authService.RegisterCustomerAsync(model);
+        //                    debugInfo["authServiceResult"] = new
+        //                    {
+        //                        authResult.Success,
+        //                        authResult.ErrorMessage,
+        //                        ValidationErrors = authResult.ValidationErrors,
+        //                        CustomerCreated = authResult.Customer != null,
+        //                        CustomerId = authResult.Customer?.Id
+        //                    };
+        //                }
+        //            }
+        //            else
+        //            {
+        //                debugInfo["validationFailures"] = new
+        //                {
+        //                    EmailExists = emailExists,
+        //                    PhoneExists = phoneExists,
+        //                    DataValid = dataValid
+        //                };
+        //            }
+        //        }
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "🔧 DEBUG: Exception in comprehensive debug registration");
+        //        debugInfo["exception"] = new
+        //        {
+        //            Type = ex.GetType().Name,
+        //            Message = ex.Message,
+        //            StackTrace = ex.StackTrace?.Split('\n').Take(10), // Limit stack trace
+        //            InnerException = ex.InnerException?.Message,
+        //            Data = ex.Data?.Count > 0 ? ex.Data : null
+        //        };
+        //    }
+
+        //    return Json(debugInfo);
+        //}
     }
 }

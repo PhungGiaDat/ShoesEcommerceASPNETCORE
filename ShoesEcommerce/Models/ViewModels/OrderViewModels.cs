@@ -28,6 +28,12 @@ namespace ShoesEcommerce.Models.ViewModels
         public List<OrderDetailViewModel> OrderDetails { get; set; }
         public ShippingAddressViewModel ShippingAddress { get; set; }
         public PaymentViewModel Payment { get; set; }
+        public string CustomerName { get; set; } // Thêm thuộc tính CustomerName để hiển thị tên khách hàng
+        public int CustomerId { get; set; }
+        public string CustomerEmail { get; set; }
+        public string CustomerPhone { get; set; }
+        public string PaymentMethod { get; set; }
+        public DateTime? PaymentDate { get; set; }
     }
 
     // ViewModel cho chi tiết đơn hàng

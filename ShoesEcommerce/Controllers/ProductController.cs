@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using ShoesEcommerce.Services;
 using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.ViewModels.Product;
 
@@ -8,15 +10,18 @@ namespace ShoesEcommerce.Controllers
     {
         private readonly IProductService _productService;
         private readonly IDiscountService _discountService;
+        private readonly ICommentService _commentService;
         private readonly ILogger<ProductController> _logger;
 
         public ProductController(
             IProductService productService,
             IDiscountService discountService,
+            ICommentService commentService,
             ILogger<ProductController> logger)
         {
             _productService = productService;
             _discountService = discountService;
+            _commentService = commentService;
             _logger = logger;
         }
 
@@ -86,15 +91,16 @@ namespace ShoesEcommerce.Controllers
                     return NotFound("Sản phẩm không tồn tại.");
                 }
 
-                // Get product variants for this product
                 var variants = await _productService.GetProductVariantsAsync(id.Value);
-                
-                // Get discount information if available
                 var discountInfo = await _discountService.GetProductDiscountInfoAsync(id.Value);
+                var comments = await _commentService.GetCommentsAsync(id.Value);
+                var qas = await _commentService.GetQAsAsync(id.Value);
 
                 ViewData["Title"] = product.Name ?? "Chi tiết sản phẩm";
                 ViewBag.Variants = variants;
                 ViewBag.DiscountInfo = discountInfo;
+                ViewBag.Comments = comments;
+                ViewBag.QAs = qas;
 
                 return View(product);
             }
@@ -104,6 +110,58 @@ namespace ShoesEcommerce.Controllers
                 TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải thông tin sản phẩm.";
                 return RedirectToAction(nameof(Index));
             }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddComment(ProductCommentViewModel model)
+        {
+            if (!User.Identity.IsAuthenticated)
+            {
+                TempData["Error"] = "Bạn cần đăng nhập để bình luận.";
+                return RedirectToAction("Details", new { id = model.ProductId });
+            }
+            // Get customer id and name from claims
+            var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(customerIdClaim, out var customerId))
+            {
+                model.CustomerId = customerId;
+            }
+            model.CustomerName = User.Identity.Name ?? "Khách hàng";
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return RedirectToAction("Details", new { id = model.ProductId });
+            }
+            await _commentService.AddCommentAsync(model);
+            TempData["Success"] = "Đã gửi bình luận thành công.";
+            return RedirectToAction("Details", new { id = model.ProductId });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddQA(ProductQAViewModel model)
+        {
+            if (!User.Identity.IsAuthenticated)
+            {
+                TempData["Error"] = "Bạn cần đăng nhập để gửi câu hỏi.";
+                return RedirectToAction("Details", new { id = model.ProductId });
+            }
+            // Get customer id and name from claims
+            var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(customerIdClaim, out var customerId))
+            {
+                model.CustomerId = customerId;
+            }
+            model.CustomerName = User.Identity.Name ?? "Khách hàng";
+            if (!ModelState.IsValid)
+            {
+                TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                return RedirectToAction("Details", new { id = model.ProductId });
+            }
+            await _commentService.AddQAAsync(model);
+            TempData["Success"] = "Đã gửi câu hỏi thành công.";
+            return RedirectToAction("Details", new { id = model.ProductId });
         }
 
         // GET: Product/DiscountedProducts - Show product variants with active discounts

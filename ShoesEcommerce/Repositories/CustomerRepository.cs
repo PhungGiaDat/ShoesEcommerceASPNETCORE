@@ -47,20 +47,20 @@ namespace ShoesEcommerce.Repositories
         {
             customer.CreatedAt = DateTime.UtcNow;
             customer.UpdatedAt = DateTime.UtcNow;
-            
+
             _context.Customers.Add(customer);
             await _context.SaveChangesAsync();
-            
+
             return customer;
         }
 
         public async Task<Customer> UpdateCustomerAsync(Customer customer)
         {
             customer.UpdatedAt = DateTime.UtcNow;
-            
+
             _context.Entry(customer).State = EntityState.Modified;
             await _context.SaveChangesAsync();
-            
+
             return customer;
         }
 
@@ -111,7 +111,7 @@ namespace ShoesEcommerce.Repositories
             // Check if role assignment already exists
             var exists = await _context.UserRoles
                 .AnyAsync(ur => ur.CustomerId == customerId && ur.RoleId == roleId);
-            
+
             if (exists)
                 return false;
 
@@ -130,7 +130,7 @@ namespace ShoesEcommerce.Repositories
         {
             var userRole = await _context.UserRoles
                 .FirstOrDefaultAsync(ur => ur.CustomerId == customerId && ur.RoleId == roleId);
-            
+
             if (userRole == null)
                 return false;
 
@@ -146,11 +146,11 @@ namespace ShoesEcommerce.Repositories
                 return await GetAllCustomersAsync();
 
             searchTerm = searchTerm.ToLower();
-            
+
             return await _context.Customers
                 .Include(c => c.Roles)
                     .ThenInclude(ur => ur.Role)
-                .Where(c => 
+                .Where(c =>
                     c.FirstName.ToLower().Contains(searchTerm) ||
                     c.LastName.ToLower().Contains(searchTerm) ||
                     c.Email.ToLower().Contains(searchTerm) ||
@@ -218,7 +218,7 @@ namespace ShoesEcommerce.Repositories
 
             customer.PasswordHash = passwordHash;
             customer.UpdatedAt = DateTime.UtcNow;
-            
+
             await _context.SaveChangesAsync();
             return true;
         }

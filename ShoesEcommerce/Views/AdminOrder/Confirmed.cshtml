@@ -1,0 +1,62 @@
+﻿@model List<ShoesEcommerce.Models.ViewModels.OrderViewModel>
+@{
+    ViewData["Title"] = "Đơn hàng Đã Xác nhận";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+<h2>@ViewData["Title"]</h2>
+@if (!Model.Any())
+{
+    <div class="alert alert-info">Không có đơn hàng.</div>
+}
+else
+{
+    <table class="table minimalist-table">
+        <thead>
+            <tr>
+                <th>Mã Đơn</th>
+                <th>Khách hàng</th>
+                <th>Ngày đặt</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        @foreach (var order in Model)
+        {
+            <tr>
+                <td>@order.OrderNumber</td>
+                <td>@order.CustomerName</td>
+                <td>@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                <td>@order.TotalAmount.ToString("N0") đ</td>
+                <td>@order.Status</td>
+                <td>
+                    <a href="@Url.Action("Details", "AdminOrder", new { id = order.Id })" class="btn btn-sm btn-outline-dark">Chi tiết</a>
+                </td>
+            </tr>
+        }
+        </tbody>
+    </table>
+}
+<style>
+    .minimalist-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+
+        .minimalist-table th, .minimalist-table td {
+            border: 1px solid #eee;
+            padding: 0.75rem 1rem;
+            text-align: left;
+        }
+
+        .minimalist-table th {
+            background: #fafafa;
+            font-weight: 500;
+        }
+
+        .minimalist-table tr:nth-child(even) {
+            background: #f5f5f5;
+        }
+</style>

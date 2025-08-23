@@ -71,13 +71,13 @@
         position: relative;
     }
 
-    .register-card h2 {
-        text-align: center;
-        margin-bottom: 2rem;
-        font-weight: 300;
-        font-size: 1.8rem;
-        color: var(--text-color);
-    }
+        .register-card h2 {
+            text-align: center;
+            margin-bottom: 2rem;
+            font-weight: 300;
+            font-size: 1.8rem;
+            color: var(--text-color);
+        }
 
     .theme-toggle {
         position: absolute;
@@ -93,9 +93,9 @@
         transition: background-color 0.2s ease;
     }
 
-    .theme-toggle:hover {
-        background-color: var(--btn-hover);
-    }
+        .theme-toggle:hover {
+            background-color: var(--btn-hover);
+        }
 
     .form-group {
         margin-bottom: 1.5rem;
@@ -106,9 +106,9 @@
         gap: 1rem;
     }
 
-    .form-row .form-group {
-        flex: 1;
-    }
+        .form-row .form-group {
+            flex: 1;
+        }
 
     .form-group label {
         display: block;
@@ -129,19 +129,19 @@
         transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
-    .form-control:focus {
-        outline: none;
-        border-color: var(--btn-bg);
-        box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
-    }
+        .form-control:focus {
+            outline: none;
+            border-color: var(--btn-bg);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
 
-    .form-control.is-invalid {
-        border-color: #dc3545;
-    }
+        .form-control.is-invalid {
+            border-color: #dc3545;
+        }
 
-    .form-control.is-valid {
-        border-color: #28a745;
-    }
+        .form-control.is-valid {
+            border-color: #28a745;
+        }
 
     .text-danger {
         color: var(--error-text);
@@ -189,36 +189,36 @@
         color: white;
     }
 
-    .btn-primary:hover {
-        background-color: var(--btn-hover);
-        color: white;
-    }
+        .btn-primary:hover {
+            background-color: var(--btn-hover);
+            color: white;
+        }
 
     .btn-secondary {
         background-color: var(--btn-secondary);
         color: white;
     }
 
-    .btn-secondary:hover {
-        background-color: var(--btn-secondary-hover);
-        color: white;
-    }
+        .btn-secondary:hover {
+            background-color: var(--btn-secondary-hover);
+            color: white;
+        }
 
     .login-link {
         text-align: center;
         margin-top: 1.5rem;
     }
 
-    .login-link a {
-        color: var(--btn-bg);
-        text-decoration: none;
-        font-weight: 500;
-    }
+        .login-link a {
+            color: var(--btn-bg);
+            text-decoration: none;
+            font-weight: 500;
+        }
 
-    .login-link a:hover {
-        color: var(--btn-hover);
-        text-decoration: underline;
-    }
+            .login-link a:hover {
+                color: var(--btn-hover);
+                text-decoration: underline;
+            }
 
     .checkbox-group {
         display: flex;
@@ -227,25 +227,33 @@
         margin-bottom: 1.5rem;
     }
 
-    .checkbox-group input[type="checkbox"] {
-        margin: 0.2rem 0 0 0;
-    }
+        .checkbox-group input[type="checkbox"] {
+            margin: 0.2rem 0 0 0;
+        }
 
-    .checkbox-group label {
-        font-size: 0.9rem;
-        line-height: 1.4;
-        margin: 0;
-        cursor: pointer;
-    }
+        .checkbox-group label {
+            font-size: 0.9rem;
+            line-height: 1.4;
+            margin: 0;
+            cursor: pointer;
+        }
 
     .password-strength {
         margin-top: 0.5rem;
         font-size: 0.8rem;
     }
 
-    .strength-weak { color: #dc3545; }
-    .strength-medium { color: #ffc107; }
-    .strength-strong { color: #28a745; }
+    .strength-weak {
+        color: #dc3545;
+    }
+
+    .strength-medium {
+        color: #ffc107;
+    }
+
+    .strength-strong {
+        color: #28a745;
+    }
 
     /* Loading state */
     .btn:disabled {
@@ -281,7 +289,7 @@
 <div class="register-wrapper">
     <div class="register-card">
         <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
-        
+
         <h2>Tạo tài khoản mới</h2>
 
         @* Display validation summary *@
@@ -295,11 +303,16 @@
                         <li>@error.ErrorMessage</li>
                     }
                 </ul>
+                @* Show detailed server error if present *@
+                @if (TempData["ErrorMessage"] != null)
+                {
+                    <div class="mt-2"><strong>Chi tiết lỗi:</strong> @TempData["ErrorMessage"]</div>
+                }
             </div>
         }
 
         @* Display general error messages *@
-        @if (TempData["ErrorMessage"] != null)
+        @if (TempData["ErrorMessage"] != null && ViewData.ModelState.IsValid)
         {
             <div class="alert alert-danger">
                 <strong>Lỗi:</strong> @TempData["ErrorMessage"]
@@ -340,7 +353,8 @@
 
             <div class="form-group">
                 <label asp-for="DateOfBirth">Ngày sinh <span style="color: red;">*</span></label>
-                <input asp-for="DateOfBirth" class="form-control" type="date" min="1900-01-01" max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                @* Đặt ngày tối đa là 13 năm trước để đảm bảo tuổi hợp lệ *@
+                <input asp-for="DateOfBirth" class="form-control" type="date" min="1900-01-01" max="@DateTime.Now.AddYears(-13).ToString("yyyy-MM-dd")" />
                 <span asp-validation-for="DateOfBirth" class="text-danger"></span>
             </div>
 
@@ -360,7 +374,7 @@
             <div class="checkbox-group">
                 <input asp-for="AcceptTerms" type="checkbox" />
                 <label asp-for="AcceptTerms">
-                    Tôi đồng ý với <a href="#" style="color: var(--btn-bg);">Điều khoản dịch vụ</a> 
+                    Tôi đồng ý với <a href="#" style="color: var(--btn-bg);">Điều khoản dịch vụ</a>
                     và <a href="#" style="color: var(--btn-bg);">Chính sách bảo mật</a> <span style="color: red;">*</span>
                 </label>
             </div>
@@ -400,7 +414,7 @@
         clearTimeout(emailTimeout);
         const email = this.value;
         const emailCheck = document.getElementById('emailCheck');
-        
+
         if (email.length > 0 && email.indexOf('@@') > -1) {
             emailTimeout = setTimeout(function() {
                 fetch('/Account/CheckEmailExists', {
@@ -436,11 +450,11 @@
         clearTimeout(phoneTimeout);
         const phone = this.value;
         const phoneCheck = document.getElementById('phoneCheck');
-        
+
         // Vietnamese phone number validation
         const vietnamesePhonePattern = /^(0[3|5|7|8|9])[0-9]{8}$/;
         const isValidVietnamesePhone = vietnamesePhonePattern.test(phone);
-        
+
         if (phone.length >= 10) {
             if (!isValidVietnamesePhone) {
                 phoneCheck.textContent = 'Số điện thoại phải có 10 chữ số và bắt đầu bằng 03, 05, 07, 08, hoặc 09';
@@ -448,7 +462,7 @@
                 document.getElementById('PhoneNumber').classList.add('is-invalid');
                 return;
             }
-            
+
             phoneTimeout = setTimeout(function() {
                 fetch('/Account/CheckPhoneExists', {
                     method: 'POST',
@@ -485,7 +499,7 @@
     document.getElementById('password').addEventListener('input', function() {
         const password = this.value;
         const strengthDiv = document.getElementById('passwordStrength');
-        
+
         if (password.length === 0) {
             strengthDiv.textContent = '';
             return;
@@ -527,15 +541,15 @@
     document.getElementById('DateOfBirth').addEventListener('change', function() {
         const inputValue = this.value;
         console.log(`🔍 Date input changed: "${inputValue}"`);
-        
+
         // Clear any previous custom validity first
         this.setCustomValidity('');
-        
+
         if (!inputValue) {
             console.log('📝 Empty date input, will be caught by required validation');
             return; // Let the required attribute handle empty values
         }
-        
+
         let birthDate;
         try {
             // HTML5 date input always returns yyyy-mm-dd format
@@ -546,9 +560,9 @@
             this.reportValidity();
             return;
         }
-        
+
         const today = new Date();
-        
+
         // Check if date parsing was successful
         if (isNaN(birthDate.getTime())) {
             console.error('❌ Invalid date parsed');
@@ -556,7 +570,7 @@
             this.reportValidity();
             return;
         }
-        
+
         // Check if date is in the future
         if (birthDate > today) {
             console.warn('⚠️ Future date selected');
@@ -564,7 +578,7 @@
             this.reportValidity();
             return;
         }
-        
+
         // Check if date is too old (before 1900)
         if (birthDate.getFullYear() < 1900) {
             console.warn('⚠️ Date too old');
@@ -572,17 +586,17 @@
             this.reportValidity();
             return;
         }
-        
+
         // Calculate age more accurately
         let age = today.getFullYear() - birthDate.getFullYear();
         const monthDiff = today.getMonth() - birthDate.getMonth();
-        
+
         if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
             age--;
         }
-        
+
         console.log(`🔍 Age calculated: ${age} years`);
-        
+
         if (age < 13) {
             console.warn('⚠️ Age too young');
             this.setCustomValidity('Bạn phải trên 13 tuổi để đăng ký');
@@ -601,10 +615,10 @@
     document.getElementById('DateOfBirth').addEventListener('input', function() {
         // Clear validation styling during input to provide better UX
         this.classList.remove('is-invalid', 'is-valid');
-        
+
         const value = this.value;
         console.log(`🔄 Date input changing: "${value}"`);
-        
+
         // Only show real-time validation for complete dates
         if (value && value.length === 10) { // yyyy-mm-dd format
             // Trigger change event to validate
@@ -615,30 +629,30 @@
     // Enhanced form submission with detailed logging
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         console.log('📋 Form submission started...');
-        
+
         // Check all validations before submitting
         const form = this;
         const inputs = form.querySelectorAll('input[required], input[type="date"]');
         let hasErrors = false;
         const validationErrors = [];
-        
+
         // Clear any existing alert
         const existingAlert = form.querySelector('.alert-danger:first-child');
         if (existingAlert && existingAlert.innerHTML.includes('Vui lòng kiểm tra')) {
             existingAlert.remove();
         }
-        
+
         // Special validation for date input
         const dateInput = document.getElementById('DateOfBirth');
         const dateValue = dateInput.value;
         console.log(`🔍 Date validation: raw value="${dateValue}", parsed=${new Date(dateValue)}, valid=${dateInput.checkValidity()}`);
-        
+
         if (dateValue) {
             const parsedDate = new Date(dateValue);
             const today = new Date();
             const age = today.getFullYear() - parsedDate.getFullYear();
             console.log(`🔍 Age calculation: born=${parsedDate.getFullYear()}, now=${today.getFullYear()}, age=${age}`);
-            
+
             if (isNaN(parsedDate.getTime())) {
                 console.error('❌ Invalid date format');
                 hasErrors = true;
@@ -649,14 +663,14 @@
                 });
             }
         }
-        
+
         // Check each required field and date field
         inputs.forEach(function(input) {
             const value = input.type === 'password' ? '[REDACTED]' : input.value;
             const valid = input.checkValidity();
-            
+
             console.log(`Validating field: ${input.name}, value: "${value}", valid: ${valid}, customValidity: "${input.validationMessage}"`);
-            
+
             if (!valid) {
                 hasErrors = true;
                 input.classList.add('is-invalid');
@@ -675,7 +689,7 @@
                 input.classList.remove('is-invalid');
             }
         });
-        
+
         // Check terms acceptance
         const termsCheckbox = document.getElementById('AcceptTerms');
         console.log(`Terms accepted: ${termsCheckbox.checked}`);
@@ -688,12 +702,12 @@
                 validationMessage: 'Terms must be accepted'
             });
         }
-        
+
         // Log all validation results
         if (validationErrors.length > 0) {
             console.error('❌ Client-side validation errors:', validationErrors);
         }
-        
+
         // If there are validation errors, prevent submission
         if (hasErrors) {
             e.preventDefault();
@@ -701,17 +715,17 @@
             showValidationAlert('Vui lòng kiểm tra và sửa các lỗi trong form');
             return false;
         }
-        
+
         console.log('✅ Client-side validation passed, submitting form...');
-        
+
         // Disable submit button to prevent double submission
         const submitBtn = document.getElementById('submitBtn');
         submitBtn.disabled = true;
-        
+
         // Show loading state
         submitBtn.querySelector('.normal-text').style.display = 'none';
         submitBtn.querySelector('.loading-text').style.display = 'inline';
-        
+
         // Log form data being submitted (excluding sensitive fields)
         const formData = new FormData(form);
         const submissionData = {};
@@ -723,7 +737,7 @@
             }
         }
         console.log('🚀 Submitting form data:', submissionData);
-        
+
         // Re-enable button after a timeout in case of errors
         setTimeout(function() {
             submitBtn.disabled = false;
@@ -731,40 +745,40 @@
             submitBtn.querySelector('.loading-text').style.display = 'none';
         }, 10000); // 10 seconds timeout
     });
-    
+
     // Helper function to show validation alert
     function showValidationAlert(message) {
         const alertDiv = document.createElement('div');
         alertDiv.className = 'alert alert-danger';
         alertDiv.innerHTML = `<strong>Lỗi:</strong> ${message}`;
         alertDiv.style.marginBottom = '1rem';
-        
+
         // Insert at the top of the form
         const form = document.getElementById('registerForm');
         form.insertBefore(alertDiv, form.firstChild);
-        
+
         // Remove after 5 seconds
         setTimeout(function() {
             if (alertDiv.parentNode) {
                 alertDiv.parentNode.removeChild(alertDiv);
             }
         }, 5000);
-        
+
         // Scroll to top of form
         alertDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
-    
+
     // 🔧 DEBUG: Enhanced client-side debug function with date format testing
     window.debugRegistration = function() {
         console.log('🔧 DEBUG: Starting comprehensive client-side registration test...');
-        
+
         const form = document.getElementById('registerForm');
         const formData = new FormData(form);
-        
+
         // Get the actual date value from the form
         const dateInput = document.getElementById('DateOfBirth');
         const rawDateValue = dateInput.value;
-        
+
         console.log('🔧 DEBUG: Date input analysis:', {
             rawValue: rawDateValue,
             inputType: dateInput.type,
@@ -773,10 +787,10 @@
             parsedDate: rawDateValue ? new Date(rawDateValue) : null,
             isValidDate: rawDateValue ? !isNaN(new Date(rawDateValue).getTime()) : false
         });
-        
+
         const testData = {
             FirstName: formData.get('FirstName') || 'Test',
-            LastName: formData.get('LastName') || 'User', 
+            LastName: formData.get('LastName') || 'User',
             Email: formData.get('Email') || ('test' + Math.random().toString(36).substring(7) + '@@example.com'), // Random email to avoid conflicts
             PhoneNumber: formData.get('PhoneNumber') || '0901234567',
             DateOfBirth: rawDateValue || '1990-01-01', // Ensure yyyy-MM-dd format
@@ -784,10 +798,10 @@
             ConfirmPassword: formData.get('ConfirmPassword') || 'Test123!',
             AcceptTerms: true // Force to true for testing
         };
-        
+
         console.log('🔧 DEBUG: Sending test data:', testData);
         console.log('🔧 DEBUG: Date format being sent:', testData.DateOfBirth, 'Type:', typeof testData.DateOfBirth);
-        
+
         // Test both the debug endpoint and actual registration
         Promise.all([
             // Test debug endpoint
@@ -799,7 +813,7 @@
                 },
                 body: JSON.stringify(testData)
             }).then(response => response.json()),
-            
+
             // Test model binding directly
             fetch('/Account/DebugModel', {
                 method: 'POST',
@@ -812,7 +826,7 @@
         .then(([debugResult, modelResult]) => {
             console.log('🔧 DEBUG: Debug registration result:', debugResult);
             console.log('🔧 DEBUG: Model binding result:', modelResult);
-            
+
             // Analyze results
             const analysis = {
                 debugEndpoint: {
@@ -827,14 +841,14 @@
                     modelDateOfBirth: modelResult?.Model?.DateOfBirth
                 }
             };
-            
+
             console.log('🔧 DEBUG: Analysis:', analysis);
-            
+
             if (debugResult?.exception) {
                 console.error('🔧 DEBUG: Exception occurred:', debugResult.exception);
                 alert('Debug Error: ' + debugResult.exception.Message + '\n\nCheck console for detailed information.');
             } else {
-                alert('Debug completed successfully!\n\n' + 
+                alert('Debug completed successfully!\n\n' +
                       'Debug Step: ' + (debugResult?.step || 'unknown') + '\n' +
                       'Model Valid: ' + (modelResult?.IsValid || false) + '\n' +
                       'Date Value: ' + testData.DateOfBirth + '\n\n' +
@@ -846,7 +860,7 @@
             alert('Debug network error: ' + error.message);
         });
     };
-    
+
     // Add debug button (only in development)
     if (window.location.hostname === 'localhost') {
         const debugBtn = document.createElement('button');
@@ -855,7 +869,7 @@
         debugBtn.className = 'btn btn-secondary';
         debugBtn.style.marginTop = '10px';
         debugBtn.onclick = window.debugRegistration;
-        
+
         const form = document.getElementById('registerForm');
         form.appendChild(debugBtn);
     }
