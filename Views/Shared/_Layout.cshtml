@@ -1,8 +1,0 @@
-                    @* Show admin link for staff and admin users *@
-                    @if (User.IsInRole("Admin") || User.IsInRole("Staff"))
-                    {
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index">
-                            <i class="fas fa-cog me-2"></i>Qu?n tr? h? th?ng
-                        </a></li>
-                    }

@@ -7,14 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="DTO\**" />
     <Compile Remove="Services\Implementations\**" />
+    <Content Remove="DTO\**" />
     <Content Remove="Services\Implementations\**" />
+    <EmbeddedResource Remove="DTO\**" />
     <EmbeddedResource Remove="Services\Implementations\**" />
+    <None Remove="DTO\**" />
     <None Remove="Services\Implementations\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="DTO\" />
     <Folder Include="wwwroot\images\product-variants\" />
   </ItemGroup>
 

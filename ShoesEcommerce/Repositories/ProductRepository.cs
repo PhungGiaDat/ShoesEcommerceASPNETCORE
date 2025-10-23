@@ -469,7 +469,7 @@ namespace ShoesEcommerce.Repositories
                     .ThenInclude(p => p.Brand)
                 .AsQueryable();
 
-            // Apply same filters as GetPaginatedProductVariantsAsync
+            
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();
@@ -506,8 +506,8 @@ namespace ShoesEcommerce.Repositories
                 .Include(v => v.Product)
                     .ThenInclude(p => p.DiscountProducts)
                         .ThenInclude(dp => dp.Discount)
-                .Where(v => v.CurrentStock != null && v.CurrentStock.AvailableQuantity > 0) // Only in-stock variants
-                .OrderByDescending(v => v.Id) // Newest variants first (assuming higher ID = newer)
+                .Where(v => v.CurrentStock != null && v.CurrentStock.AvailableQuantity > 0) 
+                .OrderByDescending(v => v.Id) 
                 .Take(count)
                 .ToListAsync();
         }
