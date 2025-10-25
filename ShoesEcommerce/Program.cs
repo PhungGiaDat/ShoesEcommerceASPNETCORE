@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Npgsql.EntityFrameworkCore.PostgreSQL;
 using ShoesEcommerce.Data;
 using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.Services;
@@ -65,7 +66,7 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
     
     // Enable detailed errors in development
     if (builder.Environment.IsDevelopment())
@@ -186,20 +187,20 @@ try
         logger.LogInformation("Developer exception page enabled");
     }
 
-    // Initialize Firebase Admin SDK load file firebase-adminsdk.json
-    try
-    {
-        FirebaseApp.Create(new AppOptions()
-        {
-            Credential = GoogleCredential.FromFile("wwwroot/credentials/shoes-ecommerce-fd0cb-firebase-adminsdk-fbsvc-b9bf519edf.json"),
-        });
-        logger.LogInformation("Firebase Admin SDK initialized successfully");
-    }
-    catch (Exception ex)
-    {
-        logger.LogError(ex, "Failed to initialize Firebase Admin SDK");
-        // Continue without Firebase if initialization fails
-    }
+    //// Initialize Firebase Admin SDK load file firebase-adminsdk.json
+    //try
+    //{
+    //    FirebaseApp.Create(new AppOptions()
+    //    {
+    //        Credential = GoogleCredential.FromFile("wwwroot/credentials/shoes-ecommerce-fd0cb-firebase-adminsdk-fbsvc-b9bf519edf.json"),
+    //    });
+    //    logger.LogInformation("Firebase Admin SDK initialized successfully");
+    //}
+    //catch (Exception ex)
+    //{
+    //    logger.LogError(ex, "Failed to initialize Firebase Admin SDK");
+    //    // Continue without Firebase if initialization fails
+    //}
 
     //Add Sessions 
     app.UseSession(); // Enable session middleware
