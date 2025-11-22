@@ -46,8 +46,12 @@
                         <i class="fas fa-user"></i> Tài khoản
                     </a>
                     <ul class="dropdown-menu" aria-labelledby="accountDropdown">
-                        <li><a class="dropdown-item" href="/Admin/Staff">Nhân viên</a></li>
-                        <li><a class="dropdown-item" href="/Admin/Customer">Khách hàng</a></li>
+                        <li><a class="dropdown-item" asp-controller="AdminStaff" asp-action="Index">
+                            <i class="fas fa-users me-2"></i>Nhân viên
+                        </a></li>
+                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Customer">
+                            <i class="fas fa-user-friends me-2"></i>Khách hàng
+                        </a></li>
                     </ul>
                 </li>
 

@@ -15,6 +15,9 @@ namespace ShoesEcommerce.Repositories.Interfaces
         Task<bool> EmailExistsAsync(string email);
         Task<bool> PhoneExistsAsync(string phoneNumber);
 
+        // Registration with Transaction
+        Task<Customer?> RegisterCustomerWithCartAndRoleAsync(Customer customer, string roleName = "Customer");
+
         // Role Management
         Task<IEnumerable<Role>> GetCustomerRolesAsync(int customerId);
         Task<bool> AssignRoleToCustomerAsync(int customerId, int roleId);

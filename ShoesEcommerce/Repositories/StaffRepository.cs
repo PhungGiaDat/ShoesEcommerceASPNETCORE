@@ -235,5 +235,110 @@ namespace ShoesEcommerce.Repositories
                 .Take(pageSize)
                 .ToListAsync();
         }
+
+        // ===== CLEAN ARCHITECTURE: Registration with Transaction =====
+        // All data operations in Repository layer (following Repository Pattern)
+        // No business logic in Service - Service only validates and orchestrates
+
+        /// <summary>
+        /// Complete staff registration with transaction support
+        /// Implements Single Responsibility: Handles all data operations for staff registration
+        /// Implements Atomicity: All operations succeed or all fail (transaction)
+        /// </summary>
+        public async Task<Staff?> RegisterStaffWithRoleAsync(Staff staff, string roleName)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                _logger.LogInformation("?? Starting staff registration for {Email} with role {RoleName}", 
+                    staff.Email, roleName);
+
+                // Step 1: Add Staff to DbContext
+                _context.Staffs.Add(staff);
+
+                // Step 2: Save to generate Staff ID
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("? Staff created with ID: {StaffId}", staff.Id);
+
+                // Step 3: Get or create the role
+                var role = await _context.Roles
+                    .FirstOrDefaultAsync(r => r.Name == roleName && r.UserType == UserType.Staff);
+
+                if (role == null)
+                {
+                    _logger.LogInformation("? Creating new staff role: {RoleName}", roleName);
+                    role = new Role
+                    {
+                        Name = roleName,
+                        UserType = UserType.Staff
+                    };
+                    _context.Roles.Add(role);
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("? Role created with ID: {RoleId}", role.Id);
+                }
+
+                // Step 4: Assign role to staff
+                var userRole = new UserRole
+                {
+                    StaffId = staff.Id,
+                    RoleId = role.Id
+                };
+                _context.UserRoles.Add(userRole);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("?? Role {RoleName} (ID: {RoleId}) assigned to Staff {StaffId}", 
+                    roleName, role.Id, staff.Id);
+
+                // Step 5: Commit transaction
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("?? Staff registration completed successfully for {Email}", staff.Email);
+
+                return staff;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "? Error in staff registration for {Email}", staff.Email);
+                throw; // Re-throw to let service layer handle
+            }
+        }
+
+        // ===== Validation Methods (Data Layer) =====
+
+        public async Task<Staff?> GetStaffByEmailAsync(string email)
+        {
+            return await _context.Staffs
+                .Include(s => s.Department)
+                .Include(s => s.Roles)
+                    .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(s => s.Email.ToLower() == email.ToLower());
+        }
+
+        public async Task<bool> EmailExistsAsync(string email)
+        {
+            return await _context.Staffs
+                .AnyAsync(s => s.Email.ToLower() == email.ToLower());
+        }
+
+        public async Task<bool> PhoneExistsAsync(string phoneNumber)
+        {
+            return await _context.Staffs
+                .AnyAsync(s => s.PhoneNumber == phoneNumber);
+        }
+
+        // ===== Password Management =====
+
+        public async Task<bool> UpdatePasswordAsync(int staffId, string passwordHash)
+        {
+            var staff = await _context.Staffs.FindAsync(staffId);
+            if (staff == null)
+                return false;
+
+            staff.PasswordHash = passwordHash;
+            await _context.SaveChangesAsync();
+            return true;
+        }
     }
 }

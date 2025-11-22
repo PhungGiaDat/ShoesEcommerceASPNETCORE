@@ -39,14 +39,4 @@ namespace ShoesEcommerce.Services.Interfaces
         Task<bool> ValidateStaffUpdateAsync(int id, EditStaffViewModel model);
         Task<bool> CanDeleteStaffAsync(int id);
     }
-
-    // Staff Login Result
-    public class StaffLoginResult
-    {
-        public bool Success { get; set; }
-        public Staff? Staff { get; set; }
-        public string ErrorMessage { get; set; } = string.Empty;
-        public bool RequiresTwoFactor { get; set; } = false;
-        public bool IsLockedOut { get; set; } = false;
-    }
 }

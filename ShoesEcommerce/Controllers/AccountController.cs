@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.ViewModels.Account;
 using System.Security.Claims;
+using ShoesEcommerce.Models.ViewModels;
 
 namespace ShoesEcommerce.Controllers
 {
@@ -13,15 +14,18 @@ namespace ShoesEcommerce.Controllers
         private readonly IAuthService _authService;
         private readonly ICustomerService _customerService;
         private readonly ILogger<AccountController> _logger;
+        private readonly ICustomerRegistrationService _registrationService;
 
         public AccountController(
             IAuthService authService,
             ICustomerService customerService,
-            ILogger<AccountController> logger)
+            ILogger<AccountController> logger,
+            ICustomerRegistrationService registrationService)
         {
             _authService = authService;
             _customerService = customerService;
             _logger = logger;
+            _registrationService = registrationService;
         }
 
         // GET: /Account/Login

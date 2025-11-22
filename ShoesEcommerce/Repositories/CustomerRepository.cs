@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Accounts;
+using ShoesEcommerce.Models.Carts;
 using ShoesEcommerce.Repositories.Interfaces;
+using System.Threading.Tasks;
 
 namespace ShoesEcommerce.Repositories
 {
@@ -12,6 +14,60 @@ namespace ShoesEcommerce.Repositories
         public CustomerRepository(AppDbContext context)
         {
             _context = context;
+        }
+
+        // ? NEW: Complete customer registration with cart and role in a single transaction
+        public async Task<Customer?> RegisterCustomerWithCartAndRoleAsync(Customer customer, string roleName = "Customer")
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Step 1: Add customer
+                customer.CreatedAt = DateTime.UtcNow;
+                customer.UpdatedAt = DateTime.UtcNow;
+                _context.Customers.Add(customer);
+                
+                // Step 2: Create cart
+                var cart = new Cart
+                {
+                    SessionId = Guid.NewGuid().ToString(),
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    CartItems = new List<CartItem>()
+                };
+                _context.Carts.Add(cart);
+                
+                // Step 3: Save to generate IDs
+                await _context.SaveChangesAsync();
+                
+                // Step 4: Link cart to customer
+                customer.CartId = cart.Id;
+                customer.Cart = cart;
+                await _context.SaveChangesAsync();
+                
+                // Step 5: Assign role
+                var role = await _context.Roles
+                    .FirstOrDefaultAsync(r => r.Name == roleName && r.UserType == UserType.Customer);
+                
+                if (role != null)
+                {
+                    var userRole = new UserRole
+                    {
+                        CustomerId = customer.Id,
+                        RoleId = role.Id
+                    };
+                    _context.UserRoles.Add(userRole);
+                    await _context.SaveChangesAsync();
+                }
+                
+                await transaction.CommitAsync();
+                return customer;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         // CRUD Operations
@@ -221,6 +277,12 @@ namespace ShoesEcommerce.Repositories
 
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task AddCustomerAsync(Customer customer)
+        {
+            await _context.Customers.AddAsync(customer);
+            await _context.SaveChangesAsync();
         }
     }
 }

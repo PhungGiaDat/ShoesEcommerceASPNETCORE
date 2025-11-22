@@ -353,9 +353,15 @@
 
             <div class="form-group">
                 <label asp-for="DateOfBirth">Ngày sinh <span style="color: red;">*</span></label>
-                @* Đặt ngày tối đa là 13 năm trước để đảm bảo tuổi hợp lệ *@
-                <input asp-for="DateOfBirth" class="form-control" type="date" min="1900-01-01" max="@DateTime.Now.AddYears(-13).ToString("yyyy-MM-dd")" />
+                @* Set value explicitly to avoid MinValue issues *@
+                <input asp-for="DateOfBirth" 
+                       class="form-control" 
+                       type="date" 
+                       value="@Model.DateOfBirth.ToString("yyyy-MM-dd")"
+                       min="1900-01-01" 
+                       max="@DateTime.Now.AddYears(-13).ToString("yyyy-MM-dd")" />
                 <span asp-validation-for="DateOfBirth" class="text-danger"></span>
+                <small class="form-text text-muted">Bạn phải trên 13 tuổi để đăng ký</small>
             </div>
 
             <div class="form-group">

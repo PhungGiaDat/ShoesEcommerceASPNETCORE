@@ -38,5 +38,6 @@ namespace ShoesEcommerce.Services.Interfaces
         /// <param name="customerId">Customer ID</param>
         /// <returns>True if successful</returns>
         Task<bool> AssignDefaultCustomerRoleAsync(int customerId);
+        
     }
 }

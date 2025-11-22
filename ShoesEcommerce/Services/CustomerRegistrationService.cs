@@ -3,7 +3,9 @@ using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Accounts;
 using ShoesEcommerce.Models.Carts;
 using ShoesEcommerce.Services.Interfaces;
+using ShoesEcommerce.Repositories.Interfaces;
 using ShoesEcommerce.ViewModels.Account;
+using System.Threading.Tasks;
 
 namespace ShoesEcommerce.Services
 {
@@ -16,73 +18,82 @@ namespace ShoesEcommerce.Services
         private readonly AppDbContext _context;
         private readonly ICustomerService _customerService;
         private readonly ILogger<CustomerRegistrationService> _logger;
+        private readonly ICustomerRepository _customerRepository;
 
         public CustomerRegistrationService(
             AppDbContext context,
             ICustomerService customerService,
-            ILogger<CustomerRegistrationService> logger)
+            ILogger<CustomerRegistrationService> logger,
+            ICustomerRepository customerRepository)
         {
             _context = context;
             _customerService = customerService;
             _logger = logger;
+            _customerRepository = customerRepository;
         }
 
         public async Task<CustomerRegistrationResult> RegisterCustomerWithCartAsync(RegisterViewModel model)
         {
             var result = new CustomerRegistrationResult();
 
-            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 _logger.LogInformation("🚀 Starting complete customer registration for {Email}", model.Email);
 
-                // Step 1: Create Customer from ViewModel
+                // Step 1: Check if email already exists
+                var existingCustomer = await _customerRepository.GetCustomerByEmailAsync(model.Email);
+                if (existingCustomer != null)
+                {
+                    _logger.LogWarning("⚠️ Email already exists: {Email}", model.Email);
+                    result.Success = false;
+                    result.ErrorMessage = "Email đã được sử dụng.";
+                    return result;
+                }
+
+                // Step 2: Check if phone already exists
+                if (await _customerRepository.PhoneExistsAsync(model.PhoneNumber))
+                {
+                    _logger.LogWarning("⚠️ Phone already exists: {Phone}", model.PhoneNumber);
+                    result.Success = false;
+                    result.ErrorMessage = "Số điện thoại đã được sử dụng.";
+                    result.ValidationErrors["PhoneNumber"] = "Số điện thoại đã được sử dụng.";
+                    return result;
+                }
+
+                // Step 3: Create Customer entity from ViewModel with proper date handling
                 var customer = new Customer
                 {
-                    FirstName = model.FirstName,
-                    LastName = model.LastName,
-                    Email = model.Email,
-                    PhoneNumber = model.PhoneNumber,
-                    DateOfBirth = model.DateOfBirth,
+                    FirstName = model.FirstName.Trim(),
+                    LastName = model.LastName.Trim(),
+                    Email = model.Email.Trim().ToLower(),
+                    PhoneNumber = model.PhoneNumber.Trim(),
                     PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
-                    CreatedAt = DateTime.UtcNow,
-                };
-
-                // Step 2: Create Cart for Customer
-                var cart = new Cart
-                {
-                    SessionId = Guid.NewGuid().ToString(),
+                    DateOfBirth = DateTime.SpecifyKind(model.DateOfBirth.Date, DateTimeKind.Utc), // ✅ FIX: Ensure UTC
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
                 };
 
-                // Step 3: Link Cart to Customer in memory
-                customer.Cart = cart;
+                _logger.LogDebug("📅 DateOfBirth processing: Input={Input}, UTC={UTC}", 
+                    model.DateOfBirth, customer.DateOfBirth);
 
-                // Step 4: Add Customer to DbContext
-                _context.Customers.Add(customer);
+                // Step 4: Use repository method to handle transaction (creates customer, cart, and assigns role)
+                var createdCustomer = await _customerRepository.RegisterCustomerWithCartAndRoleAsync(customer, "Customer");
 
-                // Step 5: Save all changes in one go
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("✅ Customer (ID: {CustomerId}) and Cart (ID: {CartId}) created and linked successfully.",
-                    customer.Id, cart.Id);
-
-                // Step 6: Assign default role
-                await AssignDefaultCustomerRoleAsync(customer.Id);
-
-                await transaction.CommitAsync();
+                if (createdCustomer == null)
+                {
+                    throw new Exception("Repository failed to create customer");
+                }
 
                 result.Success = true;
-                result.Customer = customer;
+                result.Customer = createdCustomer;
 
-                _logger.LogInformation("🎉 Complete customer registration successful for {Email}", model.Email);
+                _logger.LogInformation("🎉 Complete customer registration successful for {Email} - Customer ID: {CustomerId}, Cart ID: {CartId}, Role: Assigned", 
+                    model.Email, createdCustomer.Id, createdCustomer.CartId);
 
                 return result;
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
                 _logger.LogError(ex, "❌ Error in complete customer registration for {Email}", model.Email);
 
                 result.Success = false;
@@ -95,14 +106,14 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                _logger.LogDebug("?? Checking if Customer role exists...");
+                _logger.LogDebug("🔍 Checking if Customer role exists...");
 
                 var role = await _context.Roles
                     .FirstOrDefaultAsync(r => r.Name == "Customer" && r.UserType == UserType.Customer);
 
                 if (role == null)
                 {
-                    _logger.LogInformation("??? Creating Customer role...");
+                    _logger.LogInformation("➕ Creating Customer role...");
                     role = new Role
                     {
                         Name = "Customer",
@@ -110,18 +121,18 @@ namespace ShoesEcommerce.Services
                     };
                     _context.Roles.Add(role);
                     await _context.SaveChangesAsync();
-                    _logger.LogInformation("? Customer role created with ID: {RoleId}", role.Id);
+                    _logger.LogInformation("✅ Customer role created with ID: {RoleId}", role.Id);
                 }
                 else
                 {
-                    _logger.LogDebug("? Customer role already exists with ID: {RoleId}", role.Id);
+                    _logger.LogDebug("✅ Customer role already exists with ID: {RoleId}", role.Id);
                 }
 
                 return role;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "?? Error ensuring Customer role exists");
+                _logger.LogError(ex, "❌ Error ensuring Customer role exists");
                 throw;
             }
         }
@@ -130,7 +141,7 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                _logger.LogDebug("?? Creating cart for customer {CustomerId}...", customerId);
+                _logger.LogDebug("🛒 Creating cart for customer {CustomerId}...", customerId);
 
                 var cart = new Cart
                 {
@@ -143,12 +154,12 @@ namespace ShoesEcommerce.Services
                 _context.Carts.Add(cart);
                 await _context.SaveChangesAsync();
 
-                _logger.LogDebug("? Cart created with ID: {CartId} for customer {CustomerId}", cart.Id, customerId);
+                _logger.LogInformation("✅ Cart created with ID: {CartId} for customer {CustomerId}", cart.Id, customerId);
                 return cart;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "? Error creating cart for customer {CustomerId}", customerId);
+                _logger.LogError(ex, "❌ Error creating cart for customer {CustomerId}", customerId);
                 throw;
             }
         }
@@ -157,7 +168,7 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                _logger.LogDebug("?? Assigning customer role to customer {CustomerId}...", customerId);
+                _logger.LogDebug("🔐 Assigning customer role to customer {CustomerId}...", customerId);
 
                 // Ensure Customer role exists
                 var customerRole = await EnsureCustomerRoleExistsAsync();
@@ -168,7 +179,7 @@ namespace ShoesEcommerce.Services
 
                 if (existingAssignment)
                 {
-                    _logger.LogDebug("? Customer role already assigned to customer {CustomerId}", customerId);
+                    _logger.LogDebug("✅ Customer role already assigned to customer {CustomerId}", customerId);
                     return true;
                 }
 
@@ -182,13 +193,14 @@ namespace ShoesEcommerce.Services
                 _context.UserRoles.Add(userRole);
                 await _context.SaveChangesAsync();
 
-                _logger.LogDebug("? Customer role assigned to customer {CustomerId} successfully", customerId);
+                _logger.LogInformation("✅ Customer role (ID: {RoleId}) assigned to customer {CustomerId} successfully", 
+                    customerRole.Id, customerId);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "?? Error assigning customer role to customer {CustomerId}", customerId);
-                return false;
+                _logger.LogError(ex, "❌ Error assigning customer role to customer {CustomerId}", customerId);
+                throw; // Re-throw to trigger transaction rollback
             }
         }
     }
