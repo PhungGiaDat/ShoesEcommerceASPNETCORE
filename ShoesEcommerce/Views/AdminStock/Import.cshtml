@@ -177,10 +177,7 @@
         let currentImportId = null;
 
         function showImportDetails(importId) {
-            currentImportId = importId;
-
-            // Show simple alert for now - can be enhanced later
-            alert('Chi tiết phiếu nhập: NH' + importId.toString().padStart(3, '0'));
+            window.location.href = '/Admin/Stock/ImportDetails/' + importId;
         }
 
         function exportImports() {

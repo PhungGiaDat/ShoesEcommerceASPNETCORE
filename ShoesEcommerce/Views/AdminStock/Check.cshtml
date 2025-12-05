@@ -176,11 +176,11 @@
 @section Scripts {
     <script>
         function performAudit(productVariantId) {
-            window.location.href = '/Admin/Stock/PerformAudit/' + productVariantId;
+            window.location.href = '/Admin/Stock/PerformAudit?productVariantId=' + productVariantId;
         }
 
         function viewAuditHistory(productVariantId) {
-            window.location.href = '/Admin/Stock/AuditHistory/' + productVariantId;
+            window.location.href = '/Admin/Stock/AuditHistory?productVariantId=' + productVariantId;
         }
     </script>
 }

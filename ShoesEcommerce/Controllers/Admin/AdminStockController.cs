@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using ShoesEcommerce.Services.Interfaces;
+using ShoesEcommerce.Repositories.Interfaces;
 using ShoesEcommerce.ViewModels.Stock;
 using ShoesEcommerce.Models.Stocks;
 
@@ -10,11 +11,13 @@ namespace ShoesEcommerce.Controllers.Admin
     public class AdminStockController : Controller
     {
         private readonly IStockService _stockService;
+        private readonly IStockRepository _stockRepository;
         private readonly ILogger<AdminStockController> _logger;
 
-        public AdminStockController(IStockService stockService, ILogger<AdminStockController> logger)
+        public AdminStockController(IStockService stockService, IStockRepository stockRepository, ILogger<AdminStockController> logger)
         {
             _stockService = stockService;
+            _stockRepository = stockRepository;
             _logger = logger;
         }
 
@@ -225,59 +228,175 @@ namespace ShoesEcommerce.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateImport(CreateStockImportViewModel model)
         {
+            _logger.LogInformation("=== CREATE IMPORT POST STARTED ===");
+            _logger.LogInformation("ProductVariantId: {ProductVariantId}, SupplierId: {SupplierId}, Quantity: {Quantity}, UnitCost: {UnitCost}", 
+                model.ProductVariantId, model.SupplierId, model.QuantityReceived, model.UnitCost);
+
             if (!ModelState.IsValid)
             {
+                _logger.LogWarning("ModelState is INVALID");
+                foreach (var error in ModelState.Values.SelectMany(v => v.Errors))
+                {
+                    _logger.LogWarning("Validation Error: {ErrorMessage}", error.ErrorMessage);
+                }
+
                 // Reload dropdowns
                 var suppliers = await _stockService.GetSuppliersForDropdownAsync();
                 var productVariants = await _stockService.GetProductVariantsForDropdownAsync();
 
+                _logger.LogInformation("Reloaded {SupplierCount} suppliers and {VariantCount} product variants", 
+                    suppliers.Count(), productVariants.Count());
+
                 model.Suppliers = suppliers.Select(s => new SupplierSelectViewModel
                 {
                     Id = (int)s.GetType().GetProperty("Id").GetValue(s),
-                    Name = s.GetType().GetProperty("Name").GetValue(s)?.ToString() ?? ""
+                    Name = s.GetType().GetProperty("Name").GetValue(s)?.ToString() ?? "",
+                    ContactInfo = s.GetType().GetProperty("ContactInfo")?.GetValue(s)?.ToString() ?? ""
                 });
                 model.ProductVariants = productVariants.Select(pv => new ProductVariantSelectViewModel
                 {
                     Id = (int)pv.GetType().GetProperty("Id").GetValue(pv),
                     DisplayName = pv.GetType().GetProperty("DisplayName")?.GetValue(pv)?.ToString() ?? ""
                 });
+
+                TempData["ErrorMessage"] = "Vui lòng kiểm tra lại thông tin nhập vào.";
                 return View(model);
             }
 
             try
             {
+                _logger.LogInformation("Creating stock entry via service...");
+
                 var stockEntry = await _stockService.CreateStockEntryAsync(
                     model.ProductVariantId,
                     model.SupplierId,
                     model.QuantityReceived,
                     model.UnitCost,
-                    model.BatchNumber,
-                    model.Notes,
+                    model.BatchNumber ?? string.Empty,
+                    model.Notes ?? string.Empty,
                     model.ReceivedBy);
 
-                TempData["SuccessMessage"] = "Tạo phiếu nhập hàng thành công";
+                _logger.LogInformation("Stock entry created successfully with ID: {StockEntryId}", stockEntry.Id);
+
+                TempData["SuccessMessage"] = $"Tạo phiếu nhập hàng thành công! Mã phiếu: NH{stockEntry.Id:000}";
                 return RedirectToAction(nameof(Import));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating stock import");
+                _logger.LogError(ex, "EXCEPTION while creating stock import. Message: {ErrorMessage}, StackTrace: {StackTrace}", 
+                    ex.Message, ex.StackTrace);
+
                 ModelState.AddModelError("", "Lỗi tạo phiếu nhập hàng: " + ex.Message);
 
                 // Reload dropdowns
                 var suppliers = await _stockService.GetSuppliersForDropdownAsync();
                 var productVariants = await _stockService.GetProductVariantsForDropdownAsync();
 
+                _logger.LogInformation("Exception occurred. Reloaded {SupplierCount} suppliers and {VariantCount} product variants", 
+                    suppliers.Count(), productVariants.Count());
+
                 model.Suppliers = suppliers.Select(s => new SupplierSelectViewModel
                 {
                     Id = (int)s.GetType().GetProperty("Id").GetValue(s),
-                    Name = s.GetType().GetProperty("Name").GetValue(s)?.ToString() ?? ""
+                    Name = s.GetType().GetProperty("Name").GetValue(s)?.ToString() ?? "",
+                    ContactInfo = s.GetType().GetProperty("ContactInfo")?.GetValue(s)?.ToString() ?? ""
                 });
                 model.ProductVariants = productVariants.Select(pv => new ProductVariantSelectViewModel
                 {
                     Id = (int)pv.GetType().GetProperty("Id").GetValue(pv),
                     DisplayName = pv.GetType().GetProperty("DisplayName")?.GetValue(pv)?.ToString() ?? ""
                 });
+
+                TempData["ErrorMessage"] = $"Có lỗi xảy ra: {ex.Message}";
                 return View(model);
+            }
+        }
+
+        // ===== IMPORT DETAILS =====
+        [HttpGet]
+        public async Task<IActionResult> ImportDetails(int id)
+        {
+            ViewData["Title"] = "Chi tiết phiếu nhập hàng";
+            
+            try
+            {
+                var stockEntry = await _stockRepository.GetStockEntryByIdAsync(id);
+                if (stockEntry == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy phiếu nhập hàng";
+                    return RedirectToAction(nameof(Import));
+                }
+                
+                return View(stockEntry);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading import details for entry {Id}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
+                return RedirectToAction(nameof(Import));
+            }
+        }
+
+        // ===== AUDIT HISTORY =====
+        [HttpGet]
+        public async Task<IActionResult> AuditHistory(int productVariantId)
+        {
+            ViewData["Title"] = "Lịch sử kiểm kho";
+            
+            try
+            {
+                var stock = await _stockRepository.GetStockByProductVariantIdAsync(productVariantId);
+                if (stock == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy thông tin tồn kho";
+                    return RedirectToAction(nameof(Check));
+                }
+
+                var auditHistory = await _stockRepository.GetStockTransactionsByProductVariantAsync(productVariantId);
+                var audits = auditHistory
+                    .Where(t => t.Type == StockTransactionType.Adjustment && t.ReferenceType == "StockAudit")
+                    .OrderByDescending(t => t.TransactionDate)
+                    .ToList();
+
+                ViewBag.Stock = stock;
+                return View(audits);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading audit history for ProductVariant {ProductVariantId}", productVariantId);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
+                return RedirectToAction(nameof(Check));
+            }
+        }
+
+        // ===== STOCK DETAILS =====
+        [HttpGet]
+        public async Task<IActionResult> Details(int id)
+        {
+            ViewData["Title"] = "Chi tiết tồn kho";
+            
+            try
+            {
+                var stock = await _stockRepository.GetStockByIdAsync(id);
+                if (stock == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy thông tin tồn kho";
+                    return RedirectToAction(nameof(Inventory));
+                }
+
+                var history = await _stockRepository.GetStockTransactionsByProductVariantAsync(stock.ProductVariantId);
+                ViewBag.History = history
+                    .OrderByDescending(h => h.TransactionDate)
+                    .Take(50)
+                    .ToList();
+                
+                return View(stock);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading stock details for Stock {Id}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
+                return RedirectToAction(nameof(Inventory));
             }
         }
 
@@ -301,17 +420,49 @@ namespace ShoesEcommerce.Controllers.Admin
         // ===== PERFORM STOCK AUDIT =====
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> PerformAudit(int productVariantId, int actualQuantity, string notes)
+        public async Task<IActionResult> PerformAudit(PerformAuditViewModel model)
         {
-            var success = await _stockService.PerformStockAuditAsync(productVariantId, actualQuantity, User.Identity.Name ?? "Admin", notes);
-            if (success)
+            try
             {
-                TempData["SuccessMessage"] = "Kiểm kho thành công. Tồn kho đã được điều chỉnh.";
+                _logger.LogInformation("Starting stock audit for ProductVariant {ProductVariantId}. Actual Quantity: {ActualQuantity}, Audited By: {AuditedBy}", 
+                    model.ProductVariantId, model.ActualQuantity, model.AuditedBy);
+
+                if (!ModelState.IsValid)
+                {
+                    _logger.LogWarning("Model validation failed for stock audit");
+                    TempData["ErrorMessage"] = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại.";
+                    return RedirectToAction(nameof(PerformAudit), new { productVariantId = model.ProductVariantId });
+                }
+
+                // Use AuditedBy from form if provided, otherwise use current user
+                string auditedBy = !string.IsNullOrWhiteSpace(model.AuditedBy) 
+                    ? model.AuditedBy 
+                    : (User.Identity?.Name ?? "Admin");
+
+                var success = await _stockService.PerformStockAuditAsync(
+                    model.ProductVariantId, 
+                    model.ActualQuantity, 
+                    auditedBy, 
+                    model.Notes ?? string.Empty);
+
+                if (success)
+                {
+                    _logger.LogInformation("Stock audit completed successfully for ProductVariant {ProductVariantId}", model.ProductVariantId);
+                    TempData["SuccessMessage"] = "Kiểm kho thành công. Tồn kho đã được điều chỉnh.";
+                }
+                else
+                {
+                    _logger.LogWarning("Stock audit failed for ProductVariant {ProductVariantId}", model.ProductVariantId);
+                    TempData["ErrorMessage"] = "Kiểm kho thất bại. Vui lòng thử lại.";
+                }
             }
-            else
+            catch (Exception ex)
             {
-                TempData["ErrorMessage"] = "Kiểm kho thất bại.";
+                _logger.LogError(ex, "Exception during stock audit for ProductVariant {ProductVariantId}. Error: {ErrorMessage}", 
+                    model.ProductVariantId, ex.Message);
+                TempData["ErrorMessage"] = $"Có lỗi xảy ra: {ex.Message}";
             }
+
             return RedirectToAction("Check");
         }
 

@@ -451,24 +451,35 @@ namespace ShoesEcommerce.Services
         {
             try
             {
+                _logger.LogInformation("=== CREATE STOCK ENTRY SERVICE STARTED ===");
+                _logger.LogInformation("Parameters - ProductVariantId: {ProductVariantId}, SupplierId: {SupplierId}, Quantity: {Quantity}, UnitCost: {UnitCost}, BatchNumber: {BatchNumber}, ReceivedBy: {ReceivedBy}", 
+                    productVariantId, supplierId, quantity, unitCost, batchNumber ?? "NULL", receivedBy);
+
                 var stockEntry = new StockEntry
                 {
                     ProductVariantId = productVariantId,
                     SupplierId = supplierId,
                     QuantityReceived = quantity,
                     UnitCost = unitCost,
-                    BatchNumber = batchNumber,
-                    Notes = notes,
+                    BatchNumber = batchNumber ?? string.Empty,
+                    Notes = notes ?? string.Empty,
                     ReceivedBy = receivedBy,
-                    EntryDate = DateTime.Now,
+                    EntryDate = DateTime.UtcNow, // Use UTC for PostgreSQL
                     IsProcessed = false
                 };
 
-                return await _stockRepository.CreateStockEntryAsync(stockEntry);
+                _logger.LogDebug("StockEntry object created. Calling repository...");
+
+                var createdEntry = await _stockRepository.CreateStockEntryAsync(stockEntry);
+
+                _logger.LogInformation("Stock entry created successfully in database with ID: {StockEntryId}", createdEntry.Id);
+
+                return createdEntry;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating stock entry");
+                _logger.LogError(ex, "ERROR in CreateStockEntryAsync. ProductVariantId: {ProductVariantId}, SupplierId: {SupplierId}. Exception: {ExceptionMessage}, InnerException: {InnerException}", 
+                    productVariantId, supplierId, ex.Message, ex.InnerException?.Message ?? "NONE");
                 throw;
             }
         }
@@ -530,31 +541,61 @@ namespace ShoesEcommerce.Services
 
         public async Task<bool> PerformStockAuditAsync(int productVariantId, int actualQuantity, string auditedBy, string notes)
         {
-            var stock = await _stockRepository.GetStockByProductVariantIdAsync(productVariantId);
-            if (stock == null) return false;
-            int beforeQty = stock.AvailableQuantity;
-            int diff = actualQuantity - beforeQty;
-            stock.AvailableQuantity = actualQuantity;
-            stock.LastUpdated = DateTime.Now;
-            stock.LastUpdatedBy = auditedBy;
-            await _stockRepository.CreateOrUpdateStockAsync(stock);
-            var transaction = new StockTransaction
+            try
             {
-                ProductVariantId = productVariantId,
-                Type = StockTransactionType.Adjustment,
-                QuantityChange = diff,
-                AvailableQuantityBefore = beforeQty,
-                AvailableQuantityAfter = actualQuantity,
-                ReservedQuantityBefore = stock.ReservedQuantity,
-                ReservedQuantityAfter = stock.ReservedQuantity,
-                TransactionDate = DateTime.Now,
-                Reason = "Ki?m kho - ?i?u ch?nh t?n kho th?c t?",
-                Notes = notes,
-                CreatedBy = auditedBy,
-                ReferenceType = "StockAudit"
-            };
-            await _stockRepository.CreateStockTransactionAsync(transaction);
-            return true;
+                _logger.LogInformation("Performing stock audit for ProductVariant {ProductVariantId}. Actual: {ActualQuantity}, By: {AuditedBy}", 
+                    productVariantId, actualQuantity, auditedBy);
+
+                var stock = await _stockRepository.GetStockByProductVariantIdAsync(productVariantId);
+                if (stock == null)
+                {
+                    _logger.LogWarning("Stock not found for ProductVariant {ProductVariantId}", productVariantId);
+                    return false;
+                }
+
+                int beforeQty = stock.AvailableQuantity;
+                int diff = actualQuantity - beforeQty;
+
+                _logger.LogDebug("Stock audit calculation - Before: {Before}, After: {After}, Difference: {Diff}", 
+                    beforeQty, actualQuantity, diff);
+
+                // Update stock quantity
+                stock.AvailableQuantity = actualQuantity;
+                stock.LastUpdated = DateTime.UtcNow; // Use UTC for PostgreSQL
+                stock.LastUpdatedBy = auditedBy;
+
+                await _stockRepository.CreateOrUpdateStockAsync(stock);
+
+                // Create audit transaction
+                var transaction = new StockTransaction
+                {
+                    ProductVariantId = productVariantId,
+                    Type = StockTransactionType.Adjustment,
+                    QuantityChange = diff,
+                    AvailableQuantityBefore = beforeQty,
+                    AvailableQuantityAfter = actualQuantity,
+                    ReservedQuantityBefore = stock.ReservedQuantity,
+                    ReservedQuantityAfter = stock.ReservedQuantity,
+                    TransactionDate = DateTime.UtcNow, // Use UTC for PostgreSQL
+                    Reason = "Ki?m kho - ?i?u ch?nh t?n kho th?c t?",
+                    Notes = notes ?? string.Empty,
+                    CreatedBy = auditedBy,
+                    ReferenceType = "StockAudit"
+                };
+
+                await _stockRepository.CreateStockTransactionAsync(transaction);
+
+                _logger.LogInformation("Stock audit completed successfully for ProductVariant {ProductVariantId}. Difference: {Diff}", 
+                    productVariantId, diff);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error performing stock audit for ProductVariant {ProductVariantId}. Error: {ErrorMessage}", 
+                    productVariantId, ex.Message);
+                throw; // Re-throw to allow controller to handle
+            }
         }
 
         public async Task<bool> UpdateStockEntryAsync(int id, int quantity, decimal unitCost, string batchNumber, string notes)

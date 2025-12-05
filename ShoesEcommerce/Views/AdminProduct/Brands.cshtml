@@ -4,19 +4,21 @@
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<div class="brands-index">
-    <!-- Page Header -->
-    <div class="page-header bg-gradient-success text-white rounded-3 mb-4 p-4">
-        <div class="d-flex justify-content-between align-items-center">
+<!-- Minimalist Brand Management -->
+<div class="minimalist-brand-management">
+    <!-- Clean Header -->
+    <div class="page-header-minimal">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
             <div>
-                <h2 class="page-title mb-2">
-                    <i class="fas fa-award me-2"></i>
-                    Quản lý Thương hiệu
-                </h2>
-                <p class="page-subtitle mb-0 opacity-75">Quản lý danh sách các thương hiệu sản phẩm</p>
+                <h1 class="page-title-minimal">Quản lý Thương hiệu</h1>
+                <p class="page-subtitle-minimal">Danh sách các thương hiệu sản phẩm trong hệ thống</p>
             </div>
-            <div class="page-actions">
-                <a asp-action="CreateBrand" class="btn btn-light btn-lg">
+            <div class="header-actions">
+                <button onclick="exportBrands()" class="btn-minimal-outline">
+                    <i class="fas fa-download me-2"></i>
+                    Xuất Excel
+                </button>
+                <a asp-action="CreateBrand" class="btn-minimal-primary">
                     <i class="fas fa-plus me-2"></i>
                     Thêm thương hiệu
                 </a>
@@ -24,50 +26,45 @@
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm quick-stat-card bg-primary text-white">
-                <div class="card-body text-center py-3">
-                    <div class="quick-stat-icon">
-                        <i class="fas fa-award fa-2x mb-2"></i>
-                    </div>
-                    <h4 class="quick-stat-number mb-1">@Model.Count()</h4>
-                    <p class="quick-stat-label mb-0">Tổng thương hiệu</p>
-                </div>
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">
+                <i class="fas fa-award"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@Model.Count()</div>
+                <div class="stat-label">Tổng thương hiệu</div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm quick-stat-card bg-success text-white">
-                <div class="card-body text-center py-3">
-                    <div class="quick-stat-icon">
-                        <i class="fas fa-cube fa-2x mb-2"></i>
-                    </div>
-                    <h4 class="quick-stat-number mb-1">@Model.Sum(b => b.ProductCount)</h4>
-                    <p class="quick-stat-label mb-0">Tổng sản phẩm</p>
-                </div>
+
+        <div class="stat-card">
+            <div class="stat-icon success">
+                <i class="fas fa-cube"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@Model.Sum(b => b.ProductCount)</div>
+                <div class="stat-label">Tổng sản phẩm</div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm quick-stat-card bg-info text-white">
-                <div class="card-body text-center py-3">
-                    <div class="quick-stat-icon">
-                        <i class="fas fa-chart-line fa-2x mb-2"></i>
-                    </div>
-                    <h4 class="quick-stat-number mb-1">@(Model.Any() ? Model.Max(b => b.ProductCount) : 0)</h4>
-                    <p class="quick-stat-label mb-0">Nhiều sản phẩm nhất</p>
-                </div>
+
+        <div class="stat-card">
+            <div class="stat-icon info">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@(Model.Any() ? Model.Max(b => b.ProductCount) : 0)</div>
+                <div class="stat-label">Nhiều sản phẩm nhất</div>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 mb-3">
-            <div class="card border-0 shadow-sm quick-stat-card bg-warning text-white">
-                <div class="card-body text-center py-3">
-                    <div class="quick-stat-icon">
-                        <i class="fas fa-star fa-2x mb-2"></i>
-                    </div>
-                    <h4 class="quick-stat-number mb-1">@Model.Count(b => b.ProductCount > 0)</h4>
-                    <p class="quick-stat-label mb-0">Có sản phẩm</p>
-                </div>
+
+        <div class="stat-card">
+            <div class="stat-icon warning">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-value">@Model.Count(b => b.ProductCount > 0)</div>
+                <div class="stat-label">Có sản phẩm</div>
             </div>
         </div>
     </div>
@@ -75,201 +72,209 @@
     <!-- Alerts -->
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert-minimal alert-minimal-success">
+            <i class="fas fa-check-circle"></i>
+            <span>@TempData["SuccessMessage"]</span>
+            <button onclick="this.parentElement.remove()" class="alert-close">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-circle me-2"></i>
-            @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="alert-minimal alert-minimal-danger">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>@TempData["ErrorMessage"]</span>
+            <button onclick="this.parentElement.remove()" class="alert-close">
+                <i class="fas fa-times"></i>
+            </button>
         </div>
     }
 
-    <!-- Brands List -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white border-0 py-3">
-            <div class="d-flex justify-content-between align-items-center">
-                <h5 class="card-title mb-0">
-                    <i class="fas fa-list me-2 text-success"></i>
-                    Danh sách thương hiệu
-                </h5>
-                <div class="card-actions">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="exportData()">
-                        <i class="fas fa-download me-1"></i>
-                        Xuất Excel
-                    </button>
-                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="refreshData()">
-                        <i class="fas fa-refresh me-1"></i>
-                        Làm mới
-                    </button>
-                </div>
-            </div>
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" id="searchInput" class="search-input" 
+                   placeholder="Tìm kiếm thương hiệu theo tên..." 
+                   onkeyup="filterBrands()">
         </div>
-        <div class="card-body p-0">
-            @if (Model.Any())
-            {
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 50px;">
-                                    <input type="checkbox" class="form-check-input" id="selectAll" onchange="toggleSelectAll()">
-                                </th>
-                                <th>ID</th>
-                                <th>Tên thương hiệu</th>
-                                <th>Số sản phẩm</th>
-                                <th>Trạng thái</th>
-                                <th style="width: 120px;">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var brand in Model)
-                            {
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" class="form-check-input brand-checkbox" value="@brand.Id">
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-light text-dark">#@brand.Id</span>
-                                    </td>
-                                    <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="brand-avatar bg-success text-white rounded-circle me-3" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">
-                                                <i class="fas fa-award"></i>
-                                            </div>
-                                            <div>
-                                                <h6 class="mb-0">@brand.Name</h6>
-                                                <small class="text-muted">Thương hiệu #@brand.Id</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        @if (brand.ProductCount > 0)
-                                        {
-                                            <span class="badge bg-primary">
-                                                <i class="fas fa-cube me-1"></i>
-                                                @brand.ProductCount sản phẩm
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-secondary">
-                                                <i class="fas fa-minus me-1"></i>
-                                                Chưa có sản phẩm
-                                            </span>
-                                        }
-                                    </td>
-                                    <td>
-                                        @if (brand.ProductCount > 0)
-                                        {
-                                            <span class="badge bg-success">
-                                                <i class="fas fa-check me-1"></i>
-                                                Đang sử dụng
-                                            </span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-warning">
-                                                <i class="fas fa-clock me-1"></i>
-                                                Chờ sản phẩm
-                                            </span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <div class="btn-group" role="group">
-                                            <a href="@Url.Action("Index", new { brandId = brand.Id })"
-                                               class="btn btn-outline-primary btn-sm"
-                                               title="Xem sản phẩm">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <button type="button"
-                                                    class="btn btn-outline-warning btn-sm"
-                                                    title="Chỉnh sửa (Sắp có)"
-                                                    onclick="alert('Tính năng chỉnh sửa thương hiệu sẽ được phát triển sớm!')">
-                                                <i class="fas fa-edit"></i>
-                                            </button>
-                                            @if (brand.ProductCount == 0)
-                                            {
-                                                <button type="button"
-                                                        class="btn btn-outline-danger btn-sm"
-                                                        title="Xoá thương hiệu (Sắp có)"
-                                                        onclick="alert('Tính năng xoá thương hiệu sẽ được phát triển sớm!')">
-                                                    <i class="fas fa-trash"></i>
-                                                </button>
-                                            }
-                                        </div>
-                                    </td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            }
-            else
-            {
-                <div class="text-center py-5">
-                    <div class="empty-state">
-                        <i class="fas fa-award fa-4x text-muted mb-3"></i>
-                        <h4>Chưa có thương hiệu nào</h4>
-                        <p class="text-muted mb-4">Hệ thống chưa có thương hiệu nào. Hãy tạo thương hiệu đầu tiên để bắt đầu quản lý sản phẩm.</p>
-                        <div class="d-flex gap-2 justify-content-center">
-                            <a asp-action="CreateBrand" class="btn btn-success btn-lg">
-                                <i class="fas fa-plus me-2"></i>
-                                Thêm thương hiệu đầu tiên
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            }
+
+        <div class="filter-actions">
+            <button onclick="filterByStatus('all')" class="filter-btn active" data-filter="all">
+                Tất cả (@Model.Count())
+            </button>
+            <button onclick="filterByStatus('active')" class="filter-btn" data-filter="active">
+                Có sản phẩm (@Model.Count(b => b.ProductCount > 0))
+            </button>
+            <button onclick="filterByStatus('inactive')" class="filter-btn" data-filter="inactive">
+                Chưa có sản phẩm (@Model.Count(b => b.ProductCount == 0))
+            </button>
         </div>
     </div>
 
-    <!-- Quick Actions Panel -->
+    <!-- Brands Table -->
+    <div class="table-container">
+        <div class="table-header">
+            <h3 class="table-title">
+                <i class="fas fa-award me-2"></i>
+                Danh sách thương hiệu
+            </h3>
+            <div class="table-tools">
+                <button onclick="refreshData()" class="btn-tool">
+                    <i class="fas fa-redo me-1"></i>
+                    Làm mới
+                </button>
+            </div>
+        </div>
+
+        @if (Model.Any())
+        {
+            <table class="minimalist-table" id="brandsTable">
+                <thead>
+                    <tr>
+                        <th width="50">
+                            <input type="checkbox" class="checkbox-minimal" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th width="80">ID</th>
+                        <th>Thương hiệu</th>
+                        <th class="text-center" width="150">Số sản phẩm</th>
+                        <th class="text-center" width="120">Trạng thái</th>
+                        <th class="text-center" width="120">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="brandTableBody">
+                    @foreach (var brand in Model)
+                    {
+                        <tr class="brand-row" data-status="@(brand.ProductCount > 0 ? "active" : "inactive")">
+                            <td>
+                                <input type="checkbox" class="checkbox-minimal brand-checkbox" value="@brand.Id">
+                            </td>
+                            <td>
+                                <span class="id-badge">#@brand.Id</span>
+                            </td>
+                            <td>
+                                <div class="brand-info">
+                                    <div class="brand-icon">
+                                        <i class="fas fa-award"></i>
+                                    </div>
+                                    <div class="brand-details">
+                                        <div class="brand-name">@brand.Name</div>
+                                        <div class="brand-subtitle">Thương hiệu #@brand.Id</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                @if (brand.ProductCount > 0)
+                                {
+                                    <span class="count-badge success">
+                                        <i class="fas fa-cube me-1"></i>
+                                        @brand.ProductCount
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="count-badge muted">
+                                        <i class="fas fa-minus me-1"></i>
+                                        0
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                @if (brand.ProductCount > 0)
+                                {
+                                    <span class="status-badge active">
+                                        <i class="fas fa-check-circle"></i>
+                                        Đang sử dụng
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge inactive">
+                                        <i class="fas fa-clock"></i>
+                                        Chờ sản phẩm
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-center">
+                                <div class="action-buttons">
+                                    <a href="@Url.Action("Index", new { brandId = brand.Id })" 
+                                       class="btn-action" 
+                                       title="Xem sản phẩm">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button onclick="editBrand(@brand.Id)" 
+                                            class="btn-action" 
+                                            title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    @if (brand.ProductCount == 0)
+                                    {
+                                        <button onclick="deleteBrand(@brand.Id)" 
+                                                class="btn-action danger" 
+                                                title="Xóa">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+
+            <!-- Empty State (hidden by default) -->
+            <div id="emptyState" class="empty-state" style="display: none;">
+                <i class="fas fa-search fa-3x"></i>
+                <h3>Không tìm thấy thương hiệu</h3>
+                <p>Thử thay đổi bộ lọc hoặc từ khóa tìm kiếm</p>
+            </div>
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="fas fa-award fa-3x"></i>
+                <h3>Chưa có thương hiệu nào</h3>
+                <p>Hệ thống chưa có thương hiệu nào. Hãy tạo thương hiệu đầu tiên để bắt đầu.</p>
+                <div class="empty-actions">
+                    <a asp-action="CreateBrand" class="btn-minimal-primary">
+                        <i class="fas fa-plus me-2"></i>
+                        Thêm thương hiệu đầu tiên
+                    </a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Quick Actions (Only show if there are brands) -->
     @if (Model.Any())
     {
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-light">
-                        <h6 class="card-title mb-0">
-                            <i class="fas fa-bolt me-2"></i>
-                            Thao tác nhanh
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-lg-3 col-md-6 mb-2">
-                                <button type="button" class="btn btn-outline-primary w-100" onclick="bulkEdit()">
-                                    <i class="fas fa-edit me-2"></i>
-                                    Chỉnh sửa hàng loạt
-                                </button>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-2">
-                                <button type="button" class="btn btn-outline-danger w-100" onclick="bulkDelete()">
-                                    <i class="fas fa-trash me-2"></i>
-                                    Xoá đã chọn
-                                </button>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-2">
-                                <a asp-action="Create" class="btn btn-outline-success w-100">
-                                    <i class="fas fa-plus me-2"></i>
-                                    Thêm sản phẩm mới
-                                </a>
-                            </div>
-                            <div class="col-lg-3 col-md-6 mb-2">
-                                <a asp-action="Categories" class="btn btn-outline-info w-100">
-                                    <i class="fas fa-tags me-2"></i>
-                                    Quản lý danh mục
-                                </a>
-                            </div>
-                        </div>
-                    </div>
+        <div class="quick-actions-panel">
+            <div class="panel-header">
+                <h3 class="panel-title">
+                    <i class="fas fa-bolt me-2"></i>
+                    Thao tác nhanh
+                </h3>
+            </div>
+            <div class="panel-body">
+                <div class="quick-actions-grid">
+                    <a asp-action="Create" class="quick-action-btn">
+                        <i class="fas fa-plus"></i>
+                        <span>Thêm sản phẩm mới</span>
+                    </a>
+                    <a asp-action="Categories" class="quick-action-btn">
+                        <i class="fas fa-tags"></i>
+                        <span>Quản lý danh mục</span>
+                    </a>
+                    <button onclick="bulkDelete()" class="quick-action-btn danger">
+                        <i class="fas fa-trash"></i>
+                        <span>Xóa đã chọn</span>
+                    </button>
+                    <a asp-action="Index" class="quick-action-btn">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>Quản lý sản phẩm</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -278,64 +283,623 @@
 
 @section Styles {
     <style>
-        .page-header {
-            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        /* ===== COLOR PALETTE ===== */
+        :root {
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #eeeeee;
+            --gray-300: #e0e0e0;
+            --gray-400: #bdbdbd;
+            --gray-500: #9e9e9e;
+            --gray-600: #757575;
+            --gray-700: #616161;
+            --gray-800: #424242;
+            --gray-900: #212121;
+            
+            --success: #27ae60;
+            --warning: #f39c12;
+            --info: #3498db;
+            --danger: #e74c3c;
+            
+            --border-radius: 8px;
+            --transition: all 0.2s ease;
         }
 
-        .quick-stat-card {
-            transition: transform 0.2s ease-in-out;
+        /* ===== CONTAINER ===== */
+        .minimalist-brand-management {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem 1rem;
         }
 
-            .quick-stat-card:hover {
-                transform: translateY(-3px);
-            }
-
-        .quick-stat-number {
-            font-size: 2rem;
-            font-weight: 700;
+        /* ===== PAGE HEADER ===== */
+        .page-header-minimal {
+            margin-bottom: 2rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
         }
 
-        .quick-stat-label {
+        .page-title-minimal {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0 0 0.5rem 0;
+            letter-spacing: -0.02em;
+        }
+
+        .page-subtitle-minimal {
+            font-size: 0.95rem;
+            color: var(--gray-600);
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn-minimal-primary {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.65rem 1.25rem;
+            background: var(--gray-900);
+            border: 1px solid var(--gray-900);
+            border-radius: var(--border-radius);
+            color: var(--white);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .btn-minimal-primary:hover {
+            background: var(--gray-800);
+            border-color: var(--gray-800);
+            color: var(--white);
+        }
+
+        .btn-minimal-outline {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.65rem 1.25rem;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            color: var(--gray-700);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .btn-minimal-outline:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+            color: var(--gray-900);
+        }
+
+        /* ===== STATS GRID ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            border-color: var(--gray-300);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--gray-100);
+            color: var(--gray-700);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success);
+        }
+
+        .stat-icon.warning {
+            background: rgba(243, 156, 18, 0.1);
+            color: var(--warning);
+        }
+
+        .stat-icon.info {
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--info);
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            line-height: 1;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
             font-size: 0.875rem;
-            opacity: 0.9;
+            color: var(--gray-600);
         }
 
-        .brand-avatar {
-            font-size: 1.2rem;
+        /* ===== ALERTS ===== */
+        .alert-minimal {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .alert-minimal i {
+            font-size: 1.1rem;
+        }
+
+        .alert-minimal-success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(39, 174, 96, 0.2);
+        }
+
+        .alert-minimal-danger {
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(231, 76, 60, 0.2);
+        }
+
+        .alert-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: inherit;
+            opacity: 0.7;
+            cursor: pointer;
+            padding: 0.25rem;
+        }
+
+        .alert-close:hover {
+            opacity: 1;
+        }
+
+        /* ===== FILTER SECTION ===== */
+        .filter-section {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .search-box {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-500);
+            font-size: 0.9rem;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            font-size: 0.95rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--gray-900);
+            box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-btn:hover {
+            background: var(--gray-50);
+        }
+
+        .filter-btn.active {
+            background: var(--gray-900);
+            border-color: var(--gray-900);
+            color: var(--white);
+        }
+
+        /* ===== TABLE ===== */
+        .table-container {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            overflow: hidden;
+        }
+
+        .table-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .table-tools {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-tool {
+            padding: 0.5rem 1rem;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            color: var(--gray-700);
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .btn-tool:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .minimalist-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .minimalist-table thead {
+            background: var(--gray-50);
+        }
+
+        .minimalist-table th {
+            padding: 1rem 1.25rem;
+            text-align: left;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .minimalist-table td {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--gray-100);
+            font-size: 0.9rem;
+            color: var(--gray-800);
+        }
+
+        .minimalist-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .minimalist-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* ===== BRAND INFO ===== */
+        .id-badge {
+            font-family: monospace;
+            color: var(--gray-600);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .brand-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gray-100);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gray-600);
+            flex-shrink: 0;
+        }
+
+        .brand-details {
+            flex: 1;
+        }
+
+        .brand-name {
+            font-weight: 500;
+            color: var(--gray-900);
+            margin-bottom: 0.25rem;
+        }
+
+        .brand-subtitle {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+        }
+
+        /* ===== BADGES ===== */
+        .count-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--border-radius);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .count-badge.success {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success);
+        }
+
+        .count-badge.muted {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--border-radius);
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success);
+        }
+
+        .status-badge.inactive {
+            background: var(--gray-100);
+            color: var(--gray-600);
+        }
+
+        .status-badge i {
+            font-size: 0.75rem;
+        }
+
+        /* ===== ACTION BUTTONS ===== */
+        .action-buttons {
+            display: flex;
+            gap: 0.375rem;
+            justify-content: center;
+        }
+
+        .btn-action {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            background: var(--white);
+            color: var(--gray-700);
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .btn-action:hover {
+            background: var(--gray-900);
+            border-color: var(--gray-900);
+            color: var(--white);
+        }
+
+        .btn-action.danger:hover {
+            background: var(--danger);
+            border-color: var(--danger);
+            color: var(--white);
+        }
+
+        .btn-action i {
+            font-size: 0.875rem;
+        }
+
+        /* ===== CHECKBOX ===== */
+        .checkbox-minimal {
+            width: 16px;
+            height: 16px;
+            border: 1px solid var(--gray-400);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* ===== EMPTY STATE ===== */
+        .empty-state {
+            padding: 4rem 2rem;
+            text-align: center;
         }
 
         .empty-state i {
-            opacity: 0.3;
+            color: var(--gray-300);
+            margin-bottom: 1.5rem;
         }
 
-        .table th {
+        .empty-state h3 {
+            font-size: 1.25rem;
             font-weight: 600;
-            border-bottom: 2px solid #dee2e6;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
         }
 
-        .card {
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        .empty-state p {
+            color: var(--gray-600);
+            margin: 0 0 1.5rem 0;
         }
 
-        .btn-group .btn {
-            border: 1px solid #dee2e6;
+        .empty-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: center;
+            flex-wrap: wrap;
         }
 
-        .badge {
-            font-size: 0.75em;
+        /* ===== QUICK ACTIONS PANEL ===== */
+        .quick-actions-panel {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            margin-top: 2rem;
+            overflow: hidden;
         }
 
+        .panel-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin: 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .panel-body {
+            padding: 1.5rem;
+        }
+
+        .quick-actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .quick-action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1.25rem 1rem;
+            background: var(--white);
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            color: var(--gray-700);
+            text-decoration: none;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        .quick-action-btn.danger:hover {
+            background: rgba(231, 76, 60, 0.05);
+            border-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .quick-action-btn i {
+            font-size: 1.5rem;
+        }
+
+        .quick-action-btn span {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        /* ===== RESPONSIVE ===== */
         @@media (max-width: 768px) {
-            .page-header .page-actions {
-                margin-top: 1rem;
+            .minimalist-brand-management {
+                padding: 1rem 0.5rem;
             }
 
-            .quick-stat-card {
-                margin-bottom: 1rem;
+            .page-header-minimal .d-flex {
+                flex-direction: column;
+                align-items: flex-start !important;
             }
 
-            .card-actions {
-                margin-top: 1rem;
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .table-container {
+                overflow-x: auto;
+            }
+
+            .minimalist-table {
+                min-width: 700px;
+            }
+
+            .filter-actions {
+                flex-direction: column;
+            }
+
+            .filter-btn {
+                width: 100%;
+            }
+
+            .quick-actions-grid {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
     </style>
@@ -343,6 +907,68 @@
 
 @section Scripts {
     <script>
+        // Filter brands by status
+        function filterByStatus(status) {
+            const rows = document.querySelectorAll('.brand-row');
+            const buttons = document.querySelectorAll('.filter-btn');
+            let visibleCount = 0;
+
+            // Update active button
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.filter === status) {
+                    btn.classList.add('active');
+                }
+            });
+
+            // Filter rows
+            rows.forEach(row => {
+                if (status === 'all' || row.dataset.status === status) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            // Show/hide empty state
+            showEmptyState(visibleCount === 0);
+        }
+
+        // Search brands
+        function filterBrands() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const rows = document.querySelectorAll('.brand-row');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                if (text.includes(filter)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            showEmptyState(visibleCount === 0);
+        }
+
+        // Show/hide empty state
+        function showEmptyState(show) {
+            const emptyState = document.getElementById('emptyState');
+            const tableBody = document.getElementById('brandTableBody');
+            if (show) {
+                emptyState.style.display = 'block';
+                tableBody.style.display = 'none';
+            } else {
+                emptyState.style.display = 'none';
+                tableBody.style.display = '';
+            }
+        }
+
+        // Toggle select all
         function toggleSelectAll() {
             const selectAll = document.getElementById('selectAll');
             const checkboxes = document.querySelectorAll('.brand-checkbox');
@@ -351,45 +977,49 @@
             });
         }
 
-        function bulkEdit() {
-            const checkedBoxes = document.querySelectorAll('.brand-checkbox:checked');
-            if (checkedBoxes.length === 0) {
-                alert('Vui lòng chọn ít nhất một thương hiệu để chỉnh sửa');
-                return;
-            }
-
-            // Implement bulk edit functionality
-            alert('Tính năng chỉnh sửa hàng loạt sẽ được phát triển trong tương lai');
+        // Edit brand
+        function editBrand(id) {
+            alert('Tính năng chỉnh sửa thương hiệu sẽ được phát triển sớm!');
+            // TODO: Navigate to edit page
+            // window.location.href = `/AdminProduct/EditBrand/${id}`;
         }
 
+        // Delete brand
+        function deleteBrand(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa thương hiệu này?')) {
+                alert('Tính năng xóa thương hiệu sẽ được phát triển sớm!');
+                // TODO: Implement delete
+            }
+        }
+
+        // Bulk delete
         function bulkDelete() {
             const checkedBoxes = document.querySelectorAll('.brand-checkbox:checked');
             if (checkedBoxes.length === 0) {
-                alert('Vui lòng chọn ít nhất một thương hiệu để xoá');
+                alert('Vui lòng chọn ít nhất một thương hiệu để xóa');
                 return;
             }
 
-            if (confirm(`Bạn có chắc chắn muốn xoá ${checkedBoxes.length} thương hiệu đã chọn?`)) {
-                // Implement bulk delete functionality
-                alert('Tính năng xoá hàng loạt sẽ được phát triển trong tương lai');
+            if (confirm(`Bạn có chắc chắn muốn xóa ${checkedBoxes.length} thương hiệu đã chọn?`)) {
+                alert('Tính năng xóa hàng loạt sẽ được phát triển trong tương lai');
             }
         }
 
-        function exportData() {
-            // Export functionality can be implemented here
+        // Export brands
+        function exportBrands() {
             alert('Tính năng xuất Excel sẽ được phát triển trong tương lai');
         }
 
+        // Refresh data
         function refreshData() {
             window.location.reload();
         }
 
         // Auto-hide success messages after 5 seconds
         setTimeout(function() {
-            const alerts = document.querySelectorAll('.alert-success');
+            const alerts = document.querySelectorAll('.alert-minimal-success');
             alerts.forEach(function(alert) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
+                alert.style.display = 'none';
             });
         }, 5000);
     </script>

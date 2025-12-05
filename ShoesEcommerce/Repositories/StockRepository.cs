@@ -111,26 +111,39 @@ namespace ShoesEcommerce.Repositories
                 
                 if (existingStock != null)
                 {
+                    _logger.LogDebug("Updating existing stock for ProductVariant {ProductVariantId}. Available: {Available}, Reserved: {Reserved}", 
+                        stock.ProductVariantId, stock.AvailableQuantity, stock.ReservedQuantity);
+
                     existingStock.AvailableQuantity = stock.AvailableQuantity;
                     existingStock.ReservedQuantity = stock.ReservedQuantity;
-                    existingStock.LastUpdated = DateTime.Now;
-                    existingStock.LastUpdatedBy = stock.LastUpdatedBy;
+                    existingStock.LastUpdated = DateTime.UtcNow; // Ensure UTC for PostgreSQL
+                    existingStock.LastUpdatedBy = stock.LastUpdatedBy ?? "System";
                     
                     _context.Stocks.Update(existingStock);
                     await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Stock updated successfully for ProductVariant {ProductVariantId}", stock.ProductVariantId);
                     return existingStock;
                 }
                 else
                 {
-                    stock.LastUpdated = DateTime.Now;
+                    _logger.LogDebug("Creating new stock for ProductVariant {ProductVariantId}. Available: {Available}, Reserved: {Reserved}", 
+                        stock.ProductVariantId, stock.AvailableQuantity, stock.ReservedQuantity);
+
+                    stock.LastUpdated = DateTime.UtcNow; // Ensure UTC for PostgreSQL
+                    stock.LastUpdatedBy = stock.LastUpdatedBy ?? "System";
+
                     _context.Stocks.Add(stock);
                     await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Stock created successfully for ProductVariant {ProductVariantId}", stock.ProductVariantId);
                     return stock;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating or updating stock");
+                _logger.LogError(ex, "Error creating or updating stock for ProductVariant {ProductVariantId}. Error: {ErrorMessage}", 
+                    stock.ProductVariantId, ex.Message);
                 throw;
             }
         }
@@ -184,6 +197,10 @@ namespace ShoesEcommerce.Repositories
                 return await _context.StockEntries
                     .Include(se => se.ProductVariant)
                         .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Category)
+                    .Include(se => se.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Brand)
                     .Include(se => se.Supplier)
                     .OrderByDescending(se => se.EntryDate)
                     .ToListAsync();
@@ -202,6 +219,10 @@ namespace ShoesEcommerce.Repositories
                 return await _context.StockEntries
                     .Include(se => se.ProductVariant)
                         .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Category)
+                    .Include(se => se.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Brand)
                     .Include(se => se.Supplier)
                     .Where(se => se.EntryDate >= startDate && se.EntryDate <= endDate)
                     .OrderByDescending(se => se.EntryDate)
@@ -221,6 +242,10 @@ namespace ShoesEcommerce.Repositories
                 return await _context.StockEntries
                     .Include(se => se.ProductVariant)
                         .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Category)
+                    .Include(se => se.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Brand)
                     .Include(se => se.Supplier)
                     .Where(se => se.SupplierId == supplierId)
                     .OrderByDescending(se => se.EntryDate)
@@ -240,6 +265,10 @@ namespace ShoesEcommerce.Repositories
                 return await _context.StockEntries
                     .Include(se => se.ProductVariant)
                         .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Category)
+                    .Include(se => se.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Brand)
                     .Include(se => se.Supplier)
                     .Where(se => !se.IsProcessed)
                     .OrderBy(se => se.EntryDate)
@@ -259,6 +288,10 @@ namespace ShoesEcommerce.Repositories
                 return await _context.StockEntries
                     .Include(se => se.ProductVariant)
                         .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Category)
+                    .Include(se => se.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Brand)
                     .Include(se => se.Supplier)
                     .FirstOrDefaultAsync(se => se.Id == id);
             }
@@ -273,16 +306,28 @@ namespace ShoesEcommerce.Repositories
         {
             try
             {
-                stockEntry.EntryDate = DateTime.Now;
+                _logger.LogDebug("=== CREATE STOCK ENTRY REPOSITORY STARTED ===");
+                _logger.LogDebug("ProductVariantId: {ProductVariantId}, SupplierId: {SupplierId}, Quantity: {Quantity}, UnitCost: {UnitCost}", 
+                    stockEntry.ProductVariantId, stockEntry.SupplierId, stockEntry.QuantityReceived, stockEntry.UnitCost);
+
+                // Ensure UTC timestamp for PostgreSQL
+                stockEntry.EntryDate = DateTime.UtcNow;
                 stockEntry.IsProcessed = false;
                 
+                _logger.LogDebug("Adding stock entry to context...");
                 _context.StockEntries.Add(stockEntry);
+
+                _logger.LogDebug("Saving changes to database...");
                 await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Stock entry saved successfully to database with ID: {StockEntryId}", stockEntry.Id);
+
                 return stockEntry;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating stock entry");
+                _logger.LogError(ex, "ERROR in CreateStockEntryAsync repository. ProductVariantId: {ProductVariantId}, SupplierId: {SupplierId}. Exception: {ExceptionMessage}, InnerException: {InnerException}", 
+                    stockEntry.ProductVariantId, stockEntry.SupplierId, ex.Message, ex.InnerException?.Message ?? "NONE");
                 throw;
             }
         }
@@ -466,14 +511,24 @@ namespace ShoesEcommerce.Repositories
         {
             try
             {
-                transaction.TransactionDate = DateTime.Now;
+                // Ensure UTC timestamp for PostgreSQL
+                transaction.TransactionDate = DateTime.UtcNow;
+                
+                _logger.LogDebug("Creating stock transaction for ProductVariant {ProductVariantId}. Type: {Type}, Quantity Change: {QuantityChange}", 
+                    transaction.ProductVariantId, transaction.Type, transaction.QuantityChange);
+
                 _context.StockTransactions.Add(transaction);
                 await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Stock transaction created successfully. ID: {TransactionId}, ProductVariant: {ProductVariantId}", 
+                    transaction.Id, transaction.ProductVariantId);
+
                 return transaction;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating stock transaction");
+                _logger.LogError(ex, "Error creating stock transaction for ProductVariant {ProductVariantId}. Type: {Type}, Error: {ErrorMessage}", 
+                    transaction.ProductVariantId, transaction.Type, ex.Message);
                 throw;
             }
         }
@@ -682,6 +737,10 @@ namespace ShoesEcommerce.Repositories
                 return await _context.StockEntries
                     .Include(se => se.ProductVariant)
                         .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Category)
+                    .Include(se => se.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
+                            .ThenInclude(p => p.Brand)
                     .Include(se => se.Supplier)
                     .Where(se => se.ProductVariant.Product.Name.ToLower().Contains(searchTerm) ||
                                 se.BatchNumber.ToLower().Contains(searchTerm) ||
