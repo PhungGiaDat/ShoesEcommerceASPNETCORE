@@ -1,0 +1,254 @@
+@model ShoesEcommerce.Models.Orders.Order
+
+@{
+    ViewData["Title"] = "Thanh toán thành công";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var paypalToken = ViewBag.PayPalToken as string;
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Success Header -->
+            <div class="text-center mb-5">
+                <div class="success-icon mb-3">
+                    <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="fw-bold text-success">Thanh toán thành công!</h2>
+                <p class="text-muted">C?m ?n b?n ?ã mua hàng t?i ShoesEcommerce</p>
+            </div>
+
+            <!-- Order Info Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-receipt text-primary"></i>
+                        Thông tin ??n hàng
+                    </h5>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1">
+                                <strong>Mã ??n hàng:</strong> #@Model.Id
+                            </p>
+                            <p class="mb-1">
+                                <strong>Ngày ??t:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <p class="mb-1">
+                                <strong>Ph??ng th?c:</strong> 
+                                <span class="badge bg-primary">
+                                    <i class="fab fa-paypal"></i> PayPal
+                                </span>
+                            </p>
+                            <p class="mb-1">
+                                <strong>Tr?ng thái:</strong> 
+                                <span class="badge bg-success">
+                                    @(Model.Payment?.Status ?? "Paid")
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(paypalToken))
+                    {
+                        <div class="alert alert-light border" role="alert">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Mã giao d?ch PayPal:</strong> @paypalToken
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Order Items Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-shopping-bag text-primary"></i>
+                        S?n ph?m ?ã ??t (@Model.OrderDetails.Count s?n ph?m)
+                    </h5>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>S?n ph?m</th>
+                                    <th class="text-center">S? l??ng</th>
+                                    <th class="text-end">??n giá</th>
+                                    <th class="text-end">Thành ti?n</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.OrderDetails)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(item.ProductVariant?.ImageUrl))
+                                                {
+                                                    <img src="@item.ProductVariant.ImageUrl" 
+                                                         alt="@item.ProductVariant.Product?.Name" 
+                                                         class="img-thumbnail me-3" 
+                                                         style="width: 60px; height: 60px; object-fit: cover;">
+                                                }
+                                                <div>
+                                                    <div class="fw-bold">@item.ProductVariant?.Product?.Name</div>
+                                                    <small class="text-muted">
+                                                        @item.ProductVariant?.Color - Size @item.ProductVariant?.Size
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <span class="badge bg-secondary">@item.Quantity</span>
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            @item.UnitPrice.ToString("N0") ?
+                                        </td>
+                                        <td class="text-end align-middle fw-bold">
+                                            @((item.UnitPrice * item.Quantity).ToString("N0")) ?
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Order Total -->
+                    <div class="border-top pt-3 mt-3">
+                        <div class="row">
+                            <div class="col-md-6 offset-md-6">
+                                @{
+                                    var subtotal = Model.OrderDetails.Sum(od => od.UnitPrice * od.Quantity);
+                                    var discountAmount = subtotal - Model.TotalAmount;
+                                }
+                                
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>T?m tính:</span>
+                                    <span>@subtotal.ToString("N0") ?</span>
+                                </div>
+                                
+                                @if (discountAmount > 0)
+                                {
+                                    <div class="d-flex justify-content-between mb-2 text-success">
+                                        <span>
+                                            <i class="fas fa-tag"></i> Gi?m giá:
+                                        </span>
+                                        <span>-@discountAmount.ToString("N0") ?</span>
+                                    </div>
+                                }
+                                
+                                <hr>
+                                
+                                <div class="d-flex justify-content-between">
+                                    <span class="fs-5 fw-bold">T?ng c?ng:</span>
+                                    <span class="fs-5 fw-bold text-primary">
+                                        @Model.TotalAmount.ToString("N0") ?
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Address Card -->
+            @if (Model.ShippingAddress != null)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-map-marker-alt text-primary"></i>
+                            ??a ch? giao hàng
+                        </h5>
+                        <p class="mb-1"><strong>@Model.ShippingAddress.FullName</strong></p>
+                        <p class="mb-1">
+                            <i class="fas fa-phone"></i> @Model.ShippingAddress.PhoneNumber
+                        </p>
+                        <p class="mb-0 text-muted">
+                            <i class="fas fa-home"></i> 
+                            @Model.ShippingAddress.Address, @Model.ShippingAddress.District, @Model.ShippingAddress.City
+                        </p>
+                    </div>
+                </div>
+            }
+
+            <!-- Action Buttons -->
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-home"></i>
+                        V? trang ch?
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="@Url.Action("Index", "Order")" class="btn btn-primary w-100">
+                        <i class="fas fa-list"></i>
+                        Xem ??n hàng c?a tôi
+                    </a>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="alert alert-info mt-4" role="alert">
+                <h6 class="alert-heading">
+                    <i class="fas fa-info-circle"></i>
+                    Thông tin quan tr?ng
+                </h6>
+                <ul class="mb-0">
+                    <li>??n hàng c?a b?n s? ???c x? lý trong vòng 1-2 ngày làm vi?c</li>
+                    <li>B?n s? nh?n ???c email xác nh?n khi ??n hàng ???c giao cho ??n v? v?n chuy?n</li>
+                    <li>Th?i gian giao hàng d? ki?n: 3-5 ngày làm vi?c</li>
+                    <li>B?n có th? theo dõi ??n hàng trong m?c "??n hàng c?a tôi"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .success-icon {
+            animation: scaleIn 0.5s ease-out;
+        }
+        
+        @@keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+        }
+        
+        .img-thumbnail {
+            border-radius: 8px;
+        }
+        
+        .table tbody tr {
+            transition: background-color 0.2s;
+        }
+        
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        // Confetti animation on success
+        console.log('Payment successful for order #@Model.Id');
+        
+        // Optional: Add confetti or celebration effect
+        // You can integrate a library like canvas-confetti here
+    </script>
+}

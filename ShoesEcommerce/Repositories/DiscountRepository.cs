@@ -51,8 +51,8 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<Discount> CreateDiscountAsync(Discount discount)
         {
-            discount.CreatedAt = DateTime.Now;
-            discount.UpdatedAt = DateTime.Now;
+            discount.CreatedAt = DateTime.UtcNow; // ? FIX: UTC
+            discount.UpdatedAt = DateTime.UtcNow; // ? FIX: UTC
             
             _context.Discounts.Add(discount);
             await _context.SaveChangesAsync();
@@ -61,7 +61,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<Discount> UpdateDiscountAsync(Discount discount)
         {
-            discount.UpdatedAt = DateTime.Now;
+            discount.UpdatedAt = DateTime.UtcNow; // ? FIX: UTC
             
             _context.Entry(discount).State = EntityState.Modified;
             await _context.SaveChangesAsync();
@@ -97,7 +97,7 @@ namespace ShoesEcommerce.Repositories
         // ===== Active & Featured Discounts =====
         public async Task<IEnumerable<Discount>> GetActiveDiscountsAsync()
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             return await _context.Discounts
                 .Where(d => d.IsActive && 
                            d.StartDate <= now && 
@@ -109,7 +109,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<IEnumerable<Discount>> GetFeaturedDiscountsAsync(int count = 5)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             return await _context.Discounts
                 .Where(d => d.IsActive && 
                            d.IsFeatured &&
@@ -122,7 +122,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<IEnumerable<Discount>> GetExpiredDiscountsAsync()
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             return await _context.Discounts
                 .Where(d => d.EndDate < now)
                 .OrderByDescending(d => d.EndDate)
@@ -131,7 +131,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<IEnumerable<Discount>> GetUpcomingDiscountsAsync()
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             return await _context.Discounts
                 .Where(d => d.IsActive && d.StartDate > now)
                 .OrderBy(d => d.StartDate)
@@ -141,7 +141,7 @@ namespace ShoesEcommerce.Repositories
         // ===== Product-Discount Relationships =====
         public async Task<IEnumerable<Discount>> GetDiscountsForProductAsync(int productId)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             
             // Get direct product discounts
             var productDiscounts = await _context.DiscountProducts
@@ -194,7 +194,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<IEnumerable<Product>> GetProductsWithDiscountsAsync(int page, int pageSize)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             
             return await _context.Products
                 .Include(p => p.Category)
@@ -225,7 +225,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<int> GetProductsWithDiscountsCountAsync()
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             
             return await _context.Products
                 .Where(p => 
@@ -249,7 +249,7 @@ namespace ShoesEcommerce.Repositories
         // ===== Category-Discount Relationships =====
         public async Task<IEnumerable<Discount>> GetDiscountsForCategoryAsync(int categoryId)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             
             return await _context.DiscountCategories
                 .Where(dc => dc.CategoryId == categoryId && 
@@ -264,7 +264,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<IEnumerable<Product>> GetProductsByCategoryDiscountsAsync(int categoryId)
         {
-            var now = DateTime.Now;
+            var now = DateTime.UtcNow; // ? FIX: UTC
             
             return await _context.Products
                 .Include(p => p.Category)
@@ -302,7 +302,7 @@ namespace ShoesEcommerce.Repositories
 
         public async Task<DiscountUsage> CreateDiscountUsageAsync(DiscountUsage usage)
         {
-            usage.UsedAt = DateTime.Now;
+            usage.UsedAt = DateTime.UtcNow; // ? FIX: UTC
             
             _context.DiscountUsages.Add(usage);
             await _context.SaveChangesAsync();
@@ -453,7 +453,7 @@ namespace ShoesEcommerce.Repositories
 
             if (isActive.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTime.UtcNow; // ? FIX: UTC
                 if (isActive.Value)
                 {
                     query = query.Where(d => d.IsActive && 
@@ -496,7 +496,7 @@ namespace ShoesEcommerce.Repositories
 
             if (isActive.HasValue)
             {
-                var now = DateTime.Now;
+                var now = DateTime.UtcNow; // ? FIX: UTC
                 if (isActive.Value)
                 {
                     query = query.Where(d => d.IsActive && 

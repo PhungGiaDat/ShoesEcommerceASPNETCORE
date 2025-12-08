@@ -230,7 +230,7 @@ namespace ShoesEcommerce.Services
                 {
                     CustomerId = customerId,
                     ShippingAddressId = model.ShippingAddressId,
-                    CreatedAt = DateTime.Now,
+                    CreatedAt = DateTime.UtcNow,
                     TotalAmount = totalAmount,
                     Status = "Pending", // Ensure Status is set
                     OrderDetails = new List<OrderDetail>()
@@ -249,7 +249,7 @@ namespace ShoesEcommerce.Services
                 }
 
                 // Tạo thanh toán
-                order.Payment = new Payment
+                order.Payment = new Models.Orders.Payment
                 {
                     Method = model.PaymentMethod,
                     Status = "Pending",
@@ -260,7 +260,7 @@ namespace ShoesEcommerce.Services
                 order.Invoice = new Invoice
                 {
                     InvoiceNumber = await GenerateOrderNumberAsync(),
-                    IssuedAt = DateTime.Now,
+                    IssuedAt = DateTime.UtcNow,
                     Amount = order.TotalAmount,
                     OrderId = order.Id
                 };
@@ -462,7 +462,7 @@ namespace ShoesEcommerce.Services
 
                 payment.Status = status;
                 if (status == "Paid")
-                    payment.PaidAt = DateTime.Now;
+                    payment.PaidAt = DateTime.UtcNow;
 
                 await _context.SaveChangesAsync();
 

@@ -170,8 +170,8 @@ namespace ShoesEcommerce.Controllers
                     cart = new Cart
                     {
                         SessionId = sessionId,
-                        CreatedAt = DateTime.Now,
-                        UpdatedAt = DateTime.Now
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
                     };
                     _context.Carts.Add(cart);
                     await _context.SaveChangesAsync();
@@ -208,7 +208,7 @@ namespace ShoesEcommerce.Controllers
                     _context.CartItems.Add(cartItem);
                 }
 
-                cart.UpdatedAt = DateTime.Now;
+                cart.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true, message = "Đã thêm sản phẩm vào giỏ hàng." });
@@ -257,7 +257,7 @@ namespace ShoesEcommerce.Controllers
 
                     if (cart != null)
                     {
-                        cart.UpdatedAt = DateTime.Now;
+                        cart.UpdatedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
                     }
 
@@ -315,7 +315,7 @@ namespace ShoesEcommerce.Controllers
                     var cart = await _context.Carts.FindAsync(cartItem.CartId);
                     if (cart != null)
                     {
-                        cart.UpdatedAt = DateTime.Now;
+                        cart.UpdatedAt = DateTime.UtcNow;
                         await _context.SaveChangesAsync();
                     }
 

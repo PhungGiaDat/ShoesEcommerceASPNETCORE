@@ -146,7 +146,10 @@
         errorData.context = context;
 
         if (CONFIG.enableConsoleLog) {
-            console[severity]('Application Error:', errorData);
+            // ? FIX: Validate severity is a valid console method
+            const validMethods = ['error', 'warn', 'info', 'log', 'debug'];
+            const consoleMethod = validMethods.includes(severity) ? severity : 'error';
+            console[consoleMethod]('Application Error:', errorData);
         }
 
         sendErrorToServer(errorData);

@@ -15,6 +15,9 @@
         window.sessionId = '@Context.Session.Id';
         window.environmentName = '@Html.Raw(ViewContext.HttpContext.RequestServices.GetService<IWebHostEnvironment>()?.EnvironmentName)';
     </script>
+
+    @* Render page-specific styles *@
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
     <!-- Minimalist Navigation Header -->

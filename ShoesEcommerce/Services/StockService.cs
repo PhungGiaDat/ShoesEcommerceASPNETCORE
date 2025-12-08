@@ -31,7 +31,7 @@ namespace ShoesEcommerce.Services
                     ProductVariantId = productVariantId,
                     SupplierId = supplierId,
                     QuantityReceived = quantity,
-                    EntryDate = DateTime.Now,
+                    EntryDate = DateTime.UtcNow,
                     ReceivedBy = receivedBy,
                     IsProcessed = true
                 };
@@ -46,7 +46,7 @@ namespace ShoesEcommerce.Services
                         ProductVariantId = productVariantId,
                         AvailableQuantity = quantity,
                         ReservedQuantity = 0,
-                        LastUpdated = DateTime.Now,
+                        LastUpdated = DateTime.UtcNow,
                         LastUpdatedBy = receivedBy
                     };
                 }
@@ -54,7 +54,7 @@ namespace ShoesEcommerce.Services
                 {
                     var availableBefore = stock.AvailableQuantity;
                     stock.AvailableQuantity += quantity;
-                    stock.LastUpdated = DateTime.Now;
+                    stock.LastUpdated = DateTime.UtcNow;
                     stock.LastUpdatedBy = receivedBy;
 
                     // Create transaction record
@@ -67,7 +67,7 @@ namespace ShoesEcommerce.Services
                         AvailableQuantityAfter = stock.AvailableQuantity,
                         ReservedQuantityBefore = stock.ReservedQuantity,
                         ReservedQuantityAfter = stock.ReservedQuantity,
-                        TransactionDate = DateTime.Now,
+                        TransactionDate = DateTime.UtcNow,
                         Reason = "Stock received from supplier",
                         CreatedBy = receivedBy,
                         ReferenceType = "StockEntry",
@@ -116,7 +116,7 @@ namespace ShoesEcommerce.Services
                         AvailableQuantityAfter = availableBefore - quantity,
                         ReservedQuantityBefore = reservedBefore,
                         ReservedQuantityAfter = reservedBefore + quantity,
-                        TransactionDate = DateTime.Now,
+                        TransactionDate = DateTime.UtcNow,
                         Reason = reason,
                         CreatedBy = "System"
                     };
@@ -160,7 +160,7 @@ namespace ShoesEcommerce.Services
                         AvailableQuantityAfter = availableBefore + quantity,
                         ReservedQuantityBefore = reservedBefore,
                         ReservedQuantityAfter = reservedBefore - quantity,
-                        TransactionDate = DateTime.Now,
+                        TransactionDate = DateTime.UtcNow,
                         Reason = reason,
                         CreatedBy = "System"
                     };
@@ -203,7 +203,7 @@ namespace ShoesEcommerce.Services
                         AvailableQuantityAfter = availableBefore - quantity,
                         ReservedQuantityBefore = stock.ReservedQuantity,
                         ReservedQuantityAfter = stock.ReservedQuantity,
-                        TransactionDate = DateTime.Now,
+                        TransactionDate = DateTime.UtcNow,
                         Reason = reason,
                         CreatedBy = "System"
                     };
@@ -245,7 +245,7 @@ namespace ShoesEcommerce.Services
                         AvailableQuantityAfter = newQuantity,
                         ReservedQuantityBefore = reservedBefore,
                         ReservedQuantityAfter = reservedBefore,
-                        TransactionDate = DateTime.Now,
+                        TransactionDate = DateTime.UtcNow,
                         Reason = reason,
                         CreatedBy = adjustedBy
                     };
@@ -501,7 +501,7 @@ namespace ShoesEcommerce.Services
                     ProductVariantId = entry.ProductVariantId,
                     AvailableQuantity = entry.QuantityReceived,
                     ReservedQuantity = 0,
-                    LastUpdated = DateTime.Now,
+                    LastUpdated = DateTime.UtcNow,
                     LastUpdatedBy = processedBy
                 };
                 await _stockRepository.CreateOrUpdateStockAsync(stock);
@@ -509,7 +509,7 @@ namespace ShoesEcommerce.Services
             else
             {
                 stock.AvailableQuantity += entry.QuantityReceived;
-                stock.LastUpdated = DateTime.Now;
+                stock.LastUpdated = DateTime.UtcNow;
                 stock.LastUpdatedBy = processedBy;
                 await _stockRepository.CreateOrUpdateStockAsync(stock);
             }
@@ -524,7 +524,7 @@ namespace ShoesEcommerce.Services
                 AvailableQuantityAfter = stock.AvailableQuantity,
                 ReservedQuantityBefore = stock.ReservedQuantity,
                 ReservedQuantityAfter = stock.ReservedQuantity,
-                TransactionDate = DateTime.Now,
+                TransactionDate = DateTime.UtcNow,
                 Reason = "Nh?p kho t? phi?u nh?p",
                 Notes = entry.Notes,
                 CreatedBy = processedBy,

@@ -1,0 +1,43 @@
+using ShoesEcommerce.Models.Payments.PayPal;
+
+namespace ShoesEcommerce.Services.Interfaces
+{
+    public interface IPaymentService
+    {
+        /// <summary>
+        /// Create PayPal order with discount support
+        /// </summary>
+        Task<CreateOrderResponse> CreatePayPalOrderAsync(
+            int orderId, 
+            decimal subtotal, 
+            decimal discountAmount, 
+            decimal totalAmount, 
+            string returnUrl, 
+            string cancelUrl);
+
+        /// <summary>
+        /// Capture PayPal payment and update order status
+        /// </summary>
+        Task<CaptureOrderResponse> CapturePayPalOrderAsync(string paypalOrderId);
+
+        /// <summary>
+        /// Update payment status in database
+        /// </summary>
+        Task<bool> UpdatePaymentStatusAsync(int orderId, string status, DateTime? paidAt = null, string? transactionId = null);
+
+        /// <summary>
+        /// Get payment details for an order
+        /// </summary>
+        Task<Models.Orders.Payment?> GetPaymentByOrderIdAsync(int orderId);
+
+        /// <summary>
+        /// Create payment record for an order
+        /// </summary>
+        Task<Models.Orders.Payment> CreatePaymentAsync(int orderId, string method, string status);
+
+        /// <summary>
+        /// Verify PayPal payment status
+        /// </summary>
+        Task<bool> VerifyPayPalPaymentAsync(string paypalOrderId);
+    }
+}

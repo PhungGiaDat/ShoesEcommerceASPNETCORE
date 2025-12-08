@@ -5,54 +5,253 @@
 }
 
 <style>
-    .order-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 16px;
-        border: 1px solid #e5e7eb;
-        transition: all 0.3s ease;
+    /* 🎨 ULTRA-MINIMALIST PENDING ORDERS - WHITE/GRAY THEME */
+    .pending-wrapper {
+        background: #ffffff;
+        min-height: 100vh;
+        padding: 2rem;
     }
-    .order-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        transform: translateY(-2px);
+
+    .page-header {
+        margin-bottom: 2rem;
     }
-    .order-header {
+
+    .header-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 16px;
-        padding-bottom: 16px;
-        border-bottom: 1px solid #f3f4f6;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin-bottom: 1rem;
     }
-    .order-number {
-        font-size: 18px;
+
+    .title-group h1 {
+        font-size: 1.875rem;
         font-weight: 700;
-        color: #1f2937;
+        color: #000;
+        margin: 0 0 0.5rem 0;
+        letter-spacing: -0.5px;
     }
-    .status-badge {
-        padding: 6px 16px;
-        border-radius: 20px;
-        font-size: 12px;
+
+    .title-group p {
+        color: #6b7280;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .stats-row {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .stat-card {
+        padding: 0.75rem 1.25rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        border: 1px solid;
     }
-    .status-pending {
-        background: #fef3c7;
-        color: #92400e;
+
+    .stat-card.total {
+        background: #f9fafb;
+        color: #374151;
+        border-color: #e5e7eb;
     }
-    .order-info {
+
+    .stat-card.paid {
+        background: #f0fdf4;
+        color: #166534;
+        border-color: #bbf7d0;
+    }
+
+    .stat-card.unpaid {
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #fecaca;
+    }
+
+    .btn-refresh {
+        padding: 0.75rem 1.25rem;
+        background: #000;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .btn-refresh:hover {
+        background: #1f2937;
+        transform: translateY(-1px);
+    }
+
+    /* Filter Bar */
+    .filter-bar {
+        background: #fafafa;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .filter-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 16px;
-        margin-bottom: 16px;
+        gap: 1rem;
     }
+
+    .filter-group label {
+        display: block;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+
+    .filter-input {
+        width: 100%;
+        padding: 0.625rem 0.875rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: border-color 0.2s;
+    }
+
+    .filter-input:focus {
+        outline: none;
+        border-color: #000;
+    }
+
+    .filter-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .filter-btn {
+        flex: 1;
+        padding: 0.625rem;
+        border: 1.5px solid #e5e7eb;
+        background: white;
+        border-radius: 6px;
+        font-size: 0.813rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .filter-btn.active {
+        background: #000;
+        color: white;
+        border-color: #000;
+    }
+
+    .filter-btn:hover:not(.active) {
+        border-color: #000;
+    }
+
+    /* Order Cards */
+    .order-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        transition: all 0.2s;
+    }
+
+    .order-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .order-card.paid {
+        border-left: 4px solid #22c55e;
+    }
+
+    .order-card.unpaid {
+        border-left: 4px solid #ef4444;
+    }
+
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        padding-bottom: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+        gap: 1rem;
+    }
+
+    .order-id {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #000;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.375rem 0.875rem;
+        border-radius: 100px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border: 1px solid;
+    }
+
+    .badge-pending {
+        background: #fef3c7;
+        color: #92400e;
+        border-color: #fbbf24;
+    }
+
+    .badge-paid {
+        background: #d1fae5;
+        color: #065f46;
+        border-color: #22c55e;
+    }
+
+    .badge-unpaid {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #ef4444;
+    }
+
+    .order-amount {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #000;
+        text-align: right;
+    }
+
+    .order-date {
+        font-size: 0.75rem;
+        color: #9ca3af;
+    }
+
+    .order-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
     .info-item {
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 0.75rem;
     }
+
     .info-icon {
         width: 36px;
         height: 36px;
@@ -60,134 +259,201 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 16px;
+        font-size: 1rem;
+        background: #f3f4f6;
+        color: #6b7280;
     }
+
     .info-content {
         flex: 1;
+        min-width: 0;
     }
+
     .info-label {
-        font-size: 11px;
-        color: #6b7280;
+        font-size: 0.688rem;
+        color: #9ca3af;
         text-transform: uppercase;
         letter-spacing: 0.5px;
         font-weight: 600;
     }
+
     .info-value {
-        font-size: 14px;
-        color: #1f2937;
+        font-size: 0.875rem;
+        color: #000;
         font-weight: 600;
-        margin-top: 2px;
+        margin-top: 0.125rem;
     }
+
+    .warning-box {
+        background: #fef3c7;
+        border: 1.5px solid #f59e0b;
+        border-radius: 8px;
+        padding: 0.875rem;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .warning-icon {
+        color: #d97706;
+        font-size: 1.25rem;
+        flex-shrink: 0;
+    }
+
+    .warning-content {
+        flex: 1;
+    }
+
+    .warning-title {
+        font-size: 0.813rem;
+        font-weight: 600;
+        color: #92400e;
+        margin-bottom: 0.125rem;
+    }
+
+    .warning-text {
+        font-size: 0.75rem;
+        color: #78350f;
+    }
+
     .order-actions {
         display: flex;
-        gap: 8px;
+        gap: 0.5rem;
         justify-content: flex-end;
+        flex-wrap: wrap;
     }
+
     .btn-action {
-        padding: 8px 16px;
+        padding: 0.625rem 1rem;
         border-radius: 6px;
-        font-size: 13px;
+        font-size: 0.813rem;
         font-weight: 600;
         border: none;
         cursor: pointer;
         transition: all 0.2s;
-        text-decoration: none;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 0.5rem;
+        text-decoration: none;
     }
+
     .btn-view {
         background: #f3f4f6;
         color: #374151;
     }
+
     .btn-view:hover {
         background: #e5e7eb;
     }
+
     .btn-approve {
-        background: #10b981;
+        background: #22c55e;
         color: white;
     }
+
     .btn-approve:hover {
-        background: #059669;
-        color: white;
+        background: #16a34a;
     }
+
     .btn-reject {
         background: #ef4444;
         color: white;
     }
+
     .btn-reject:hover {
         background: #dc2626;
+    }
+
+    .btn-verify {
+        background: #3b82f6;
         color: white;
     }
+
+    .btn-verify:hover {
+        background: #2563eb;
+    }
+
     .empty-state {
         text-align: center;
-        padding: 60px 20px;
-        background: white;
+        padding: 4rem 2rem;
+        background: #fafafa;
         border-radius: 12px;
         border: 1px solid #e5e7eb;
     }
+
     .empty-icon {
-        font-size: 48px;
-        color: #d1d5db;
-        margin-bottom: 16px;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 1rem;
+        background: #f3f4f6;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        color: #9ca3af;
     }
-    .filter-bar {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 24px;
-        border: 1px solid #e5e7eb;
+
+    @@media (max-width: 768px) {
+        .pending-wrapper {
+            padding: 1rem;
+        }
+
+        .order-header {
+            flex-direction: column;
+        }
+
+        .order-amount {
+            text-align: left;
+        }
     }
 </style>
 
-<div style="background: #f9fafb; min-height: 100vh; padding: 24px;">
+<div class="pending-wrapper">
     <!-- Page Header -->
-    <div style="background: white; border-radius: 12px; padding: 24px; margin-bottom: 24px; border: 1px solid #e5e7eb;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h4 style="margin: 0; color: #1f2937; font-weight: 700; font-size: 24px;">
-                    <i class="fas fa-clock" style="color: #f59e0b; margin-right: 8px;"></i>
-                    Đơn hàng Chờ Phê duyệt
-                </h4>
-                <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">
-                    Danh sách đơn hàng đang chờ xác nhận từ Admin
-                </p>
+    <div class="page-header">
+        <div class="header-row">
+            <div class="title-group">
+                <h1>Đơn hàng Chờ Phê duyệt</h1>
+                <p>Quản lý và xử lý đơn hàng chờ xác nhận</p>
             </div>
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: #fef3c7; padding: 8px 16px; border-radius: 8px;">
-                    <span style="color: #92400e; font-size: 13px; font-weight: 600;">
-                        <i class="fas fa-inbox"></i> @Model.Count đơn hàng
-                    </span>
-                </div>
-                <button onclick="refreshOrders()" class="btn-action btn-view">
-                    <i class="fas fa-sync-alt"></i> Làm mới
-                </button>
+            <button onclick="location.reload()" class="btn-refresh">
+                <i class="fas fa-sync-alt"></i>
+                Làm mới
+            </button>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-card total">
+                <i class="fas fa-shopping-bag"></i>
+                <span>@Model.Count đơn hàng</span>
+            </div>
+            <div class="stat-card paid">
+                <i class="fas fa-check-circle"></i>
+                <span>@Model.Count(o => o.PaymentStatus == "Paid") đã thanh toán</span>
+            </div>
+            <div class="stat-card unpaid">
+                <i class="fas fa-exclamation-circle"></i>
+                <span>@Model.Count(o => o.PaymentStatus != "Paid") chưa thanh toán</span>
             </div>
         </div>
     </div>
 
     <!-- Filter Bar -->
     <div class="filter-bar">
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px;">
-            <div>
-                <label style="font-size: 12px; color: #6b7280; font-weight: 600; margin-bottom: 6px; display: block;">TÌM KIẾM</label>
-                <input type="text" id="searchInput" placeholder="Tìm theo mã đơn, khách hàng..." 
-                       style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
+        <div class="filter-grid">
+            <div class="filter-group">
+                <label>Tìm kiếm</label>
+                <input type="text" id="searchInput" class="filter-input" placeholder="Mã đơn, khách hàng...">
             </div>
-            <div>
-                <label style="font-size: 12px; color: #6b7280; font-weight: 600; margin-bottom: 6px; display: block;">TỪ NGÀY</label>
-                <input type="date" id="startDate" 
-                       style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
-            </div>
-            <div>
-                <label style="font-size: 12px; color: #6b7280; font-weight: 600; margin-bottom: 6px; display: block;">ĐẾN NGÀY</label>
-                <input type="date" id="endDate" 
-                       style="width: 100%; padding: 10px 12px; border: 1px solid #e5e7eb; border-radius: 6px; font-size: 14px;">
-            </div>
-            <div style="display: flex; align-items: flex-end;">
-                <button onclick="filterOrders()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%;">
-                    <i class="fas fa-filter"></i> Lọc
-                </button>
+            <div class="filter-group">
+                <label>Trạng thái thanh toán</label>
+                <div class="filter-buttons">
+                    <button class="filter-btn active" onclick="filterByPayment('all')">Tất cả</button>
+                    <button class="filter-btn" onclick="filterByPayment('paid')">Đã TT</button>
+                    <button class="filter-btn" onclick="filterByPayment('unpaid')">Chưa TT</button>
+                </div>
             </div>
         </div>
     </div>
@@ -199,8 +465,8 @@
             <div class="empty-icon">
                 <i class="fas fa-inbox"></i>
             </div>
-            <h5 style="color: #1f2937; font-weight: 600; margin-bottom: 8px;">Không có đơn hàng chờ phê duyệt</h5>
-            <p style="color: #6b7280; font-size: 14px; margin: 0;">Tất cả đơn hàng đã được xử lý</p>
+            <h5 style="color: #000; font-weight: 700; margin: 0 0 0.5rem 0;">Không có đơn hàng chờ phê duyệt</h5>
+            <p style="color: #6b7280; margin: 0;">Tất cả đơn hàng đã được xử lý</p>
         </div>
     }
     else
@@ -208,29 +474,40 @@
         <div id="ordersList">
             @foreach (var order in Model)
             {
-                <div class="order-card" data-order-id="@order.Id" data-customer="@order.CustomerName.ToLower()" data-order-number="@order.OrderNumber.ToLower()">
+                <div class="order-card @(order.PaymentStatus == "Paid" ? "paid" : "unpaid")" 
+                     data-order-id="@order.Id"
+                     data-order-number="@order.OrderNumber.ToLower()"
+                     data-customer="@order.CustomerName.ToLower()"
+                     data-payment-status="@order.PaymentStatus">
+                    
                     <!-- Order Header -->
                     <div class="order-header">
                         <div>
-                            <span class="order-number">@order.OrderNumber</span>
-                            <span class="status-badge status-pending">
-                                <i class="fas fa-clock"></i> Chờ phê duyệt
-                            </span>
-                        </div>
-                        <div style="text-align: right;">
-                            <div style="font-size: 20px; font-weight: 700; color: #dc2626;">
-                                @order.TotalAmount.ToString("N0") đ
+                            <div class="order-id">#@order.OrderNumber</div>
+                            <div class="order-date">
+                                <i class="far fa-calendar"></i>
+                                @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                             </div>
-                            <div style="font-size: 12px; color: #6b7280;">
-                                <i class="far fa-clock"></i> @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                        </div>
+                        <div>
+                            <div class="order-amount">@order.TotalAmount.ToString("N0")₫</div>
+                            <div style="display: flex; gap: 0.5rem; justify-content: flex-end; margin-top: 0.5rem;">
+                                <span class="badge badge-pending">
+                                    <i class="fas fa-circle" style="font-size: 6px;"></i>
+                                    Chờ xử lý
+                                </span>
+                                <span class="badge @(order.PaymentStatus == "Paid" ? "badge-paid" : "badge-unpaid")">
+                                    <i class="fas fa-circle" style="font-size: 6px;"></i>
+                                    @(order.PaymentStatus == "Paid" ? "Đã TT" : "Chưa TT")
+                                </span>
                             </div>
                         </div>
                     </div>
 
                     <!-- Order Info -->
-                    <div class="order-info">
+                    <div class="order-info-grid">
                         <div class="info-item">
-                            <div class="info-icon" style="background: #dbeafe; color: #1e40af;">
+                            <div class="info-icon">
                                 <i class="fas fa-user"></i>
                             </div>
                             <div class="info-content">
@@ -240,46 +517,70 @@
                         </div>
 
                         <div class="info-item">
-                            <div class="info-icon" style="background: #fce7f3; color: #9f1239;">
+                            <div class="info-icon">
                                 <i class="fas fa-phone"></i>
                             </div>
                             <div class="info-content">
                                 <div class="info-label">Số điện thoại</div>
-                                <div class="info-value">@(order.CustomerPhone ?? "Chưa cập nhật")</div>
+                                <div class="info-value">@(order.CustomerPhone ?? "Chưa có")</div>
                             </div>
                         </div>
 
                         <div class="info-item">
-                            <div class="info-icon" style="background: #d1fae5; color: #065f46;">
-                                <i class="fas fa-boxes"></i>
+                            <div class="info-icon">
+                                <i class="fas fa-box"></i>
                             </div>
                             <div class="info-content">
-                                <div class="info-label">Số sản phẩm</div>
-                                <div class="info-value">@order.OrderDetails.Sum(od => od.Quantity) sản phẩm</div>
+                                <div class="info-label">Sản phẩm</div>
+                                <div class="info-value">@order.OrderDetails.Sum(od => od.Quantity) SP</div>
                             </div>
                         </div>
 
                         <div class="info-item">
-                            <div class="info-icon" style="background: #fef3c7; color: #92400e;">
+                            <div class="info-icon">
                                 <i class="fas fa-credit-card"></i>
                             </div>
                             <div class="info-content">
-                                <div class="info-label">Thanh toán</div>
-                                <div class="info-value">@(order.PaymentMethod ?? "Chưa chọn")</div>
+                                <div class="info-label">Phương thức</div>
+                                <div class="info-value">@(order.Payment?.Method ?? "Chưa chọn")</div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Order Actions -->
+                    <!-- Payment Warning -->
+                    @if (order.PaymentStatus != "Paid")
+                    {
+                        <div class="warning-box">
+                            <div class="warning-icon">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div class="warning-content">
+                                <div class="warning-title">⚠️ Chưa thanh toán</div>
+                                <div class="warning-text">Vui lòng xác nhận thanh toán trước khi phê duyệt</div>
+                            </div>
+                        </div>
+                    }
+
+                    <!-- Actions -->
                     <div class="order-actions">
+                        @if (order.Payment?.Method == "PayPal" && order.PaymentStatus != "Paid")
+                        {
+                            <button onclick="verifyPayPalPayment(@order.Id)" class="btn-action btn-verify" title="Kiểm tra thanh toán PayPal">
+                                <i class="fas fa-sync"></i>
+                                Kiểm tra TT
+                            </button>
+                        }
                         <a href="/Admin/Order/Details/@order.Id" class="btn-action btn-view">
-                            <i class="fas fa-eye"></i> Xem chi tiết
+                            <i class="fas fa-eye"></i>
+                            Chi tiết
                         </a>
-                        <button onclick="confirmOrder(@order.Id, '@order.OrderNumber')" class="btn-action btn-approve">
-                            <i class="fas fa-check"></i> Phê duyệt
+                        <button onclick="approveOrder(@order.Id, '@order.OrderNumber', '@order.PaymentStatus')" class="btn-action btn-approve">
+                            <i class="fas fa-check"></i>
+                            Phê duyệt
                         </button>
                         <button onclick="rejectOrder(@order.Id, '@order.OrderNumber')" class="btn-action btn-reject">
-                            <i class="fas fa-times"></i> Từ chối
+                            <i class="fas fa-times"></i>
+                            Từ chối
                         </button>
                     </div>
                 </div>
@@ -290,36 +591,73 @@
 
 @section Scripts {
     <script>
-        function refreshOrders() {
-            location.reload();
+        let currentPaymentFilter = 'all';
+
+        // Filter by payment status
+        function filterByPayment(status) {
+            currentPaymentFilter = status;
+            
+            // Update button active state
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            filterOrders();
         }
 
+        // Filter orders
         function filterOrders() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const startDate = document.getElementById('startDate').value;
-            const endDate = document.getElementById('endDate').value;
-            
             const orders = document.querySelectorAll('.order-card');
             
             orders.forEach(order => {
-                const customer = order.getAttribute('data-customer');
                 const orderNumber = order.getAttribute('data-order-number');
+                const customer = order.getAttribute('data-customer');
+                const paymentStatus = order.getAttribute('data-payment-status');
                 
-                const matchesSearch = !searchTerm || customer.includes(searchTerm) || orderNumber.includes(searchTerm);
+                const matchesSearch = !searchTerm || orderNumber.includes(searchTerm) || customer.includes(searchTerm);
+                const matchesPayment = currentPaymentFilter === 'all' || 
+                                     (currentPaymentFilter === 'paid' && paymentStatus === 'Paid') ||
+                                     (currentPaymentFilter === 'unpaid' && paymentStatus !== 'Paid');
                 
-                if (matchesSearch) {
-                    order.style.display = 'block';
-                } else {
-                    order.style.display = 'none';
-                }
+                order.style.display = (matchesSearch && matchesPayment) ? 'block' : 'none';
             });
         }
 
         // Real-time search
         document.getElementById('searchInput')?.addEventListener('input', filterOrders);
 
-        function confirmOrder(orderId, orderNumber) {
-            if (confirm(`Xác nhận phê duyệt đơn hàng ${orderNumber}?`)) {
+        // Verify PayPal payment
+        async function verifyPayPalPayment(orderId) {
+            if (!confirm('Kiểm tra trạng thái thanh toán PayPal cho đơn hàng này?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/Payment/CheckPaymentStatus?orderId=${orderId}`);
+                const data = await response.json();
+                
+                if (data.status === 'Paid') {
+                    alert('✅ Đơn hàng đã được thanh toán qua PayPal!');
+                    location.reload();
+                } else {
+                    alert(`❌ Trạng thái thanh toán: ${data.status}\n\nKhách hàng chưa hoàn tất thanh toán PayPal.`);
+                }
+            } catch (error) {
+                alert('Lỗi kiểm tra thanh toán: ' + error.message);
+            }
+        }
+
+        // Approve order
+        function approveOrder(orderId, orderNumber, paymentStatus) {
+            let message = `Xác nhận phê duyệt đơn hàng ${orderNumber}?`;
+            
+            if (paymentStatus !== 'Paid') {
+                message = `⚠️ CẢNH BÁO:\nĐơn hàng ${orderNumber} CHƯA ĐƯỢC THANH TOÁN!\n\nBạn có chắc chắn muốn phê duyệt?`;
+            }
+            
+            if (confirm(message)) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '/Admin/Order/ConfirmOrder';
@@ -344,6 +682,7 @@
             }
         }
 
+        // Reject order
         function rejectOrder(orderId, orderNumber) {
             if (confirm(`Bạn có chắc chắn muốn từ chối đơn hàng ${orderNumber}?`)) {
                 alert('Chức năng từ chối đơn hàng đang được phát triển.');

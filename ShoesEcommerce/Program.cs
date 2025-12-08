@@ -85,6 +85,8 @@ builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<IQARepository, QARepository>();
+builder.Services.AddScoped<CheckoutRepository>(); // ✅ NEW: Checkout repository
+builder.Services.AddScoped<ShoesEcommerce.Repositories.Interfaces.IPaymentRepository, ShoesEcommerce.Repositories.PaymentRepository>(); // ✅ NEW: Payment repository
 
 // Register services
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
@@ -98,6 +100,37 @@ builder.Services.AddScoped<IDiscountService, DiscountService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<ShoesEcommerce.Services.ICommentService, ShoesEcommerce.Services.CommentService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>(); // ✅ NEW: Payment service
+builder.Services.AddScoped<ICheckoutService, CheckoutService>(); // ✅ NEW: Checkout service
+
+// ✅ NEW: Register PayPal HttpClient
+builder.Services.AddHttpClient("PayPal", client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.DefaultRequestHeaders.Add("Accept-Language", "en_US");
+});
+
+// ✅ NEW: Register PayPal Client as Singleton
+builder.Services.AddSingleton<ShoesEcommerce.Services.Payment.PayPalClient>(sp =>
+{
+    var configuration = sp.GetRequiredService<IConfiguration>();
+    var logger = sp.GetRequiredService<ILogger<ShoesEcommerce.Services.Payment.PayPalClient>>();
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    
+    var clientId = configuration["PayPalOptions:ClientId"];
+    var clientSecret = configuration["PayPalOptions:ClientSecret"];
+    var mode = configuration["PayPalOptions:Mode"] ?? "Sandbox";
+
+    if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
+    {
+        logger.LogWarning("PayPal configuration missing. PayPal payment will not be available.");
+        throw new InvalidOperationException("PayPal ClientId and ClientSecret must be configured in appsettings.json");
+    }
+
+    logger.LogInformation("PayPal Client initialized in {Mode} mode", mode);
+    return new ShoesEcommerce.Services.Payment.PayPalClient(clientId, clientSecret, mode, logger, httpClientFactory);
+});
 
 // Register HttpContextAccessor for services
 builder.Services.AddHttpContextAccessor();
@@ -242,6 +275,11 @@ try
         name: "admin_order",
         pattern: "Admin/Order/{action=Index}/{id?}",
         defaults: new { controller = "AdminOrder" });
+
+    app.MapControllerRoute(
+        name: "admin_discount",
+        pattern: "Admin/Discount/{action=Index}/{id?}",
+        defaults: new { controller = "AdminDiscount" });
 
     app.MapControllerRoute(
         name: "admin_data",

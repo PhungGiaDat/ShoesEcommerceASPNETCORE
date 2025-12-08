@@ -1,0 +1,226 @@
+@{
+    ViewData["Title"] = "Thanh toán b? h?y";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var orderId = ViewBag.OrderId as int?;
+    var orderTotal = ViewBag.OrderTotal as decimal?;
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Cancel Header -->
+            <div class="text-center mb-5">
+                <div class="cancel-icon mb-3">
+                    <i class="fas fa-times-circle text-warning" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="fw-bold text-warning">Thanh toán b? h?y</h2>
+                <p class="text-muted">B?n ?ã h?y thanh toán qua PayPal</p>
+            </div>
+
+            <!-- Info Card -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-info-circle text-primary"></i>
+                        Thông tin ??n hàng
+                    </h5>
+                    
+                    @if (orderId.HasValue)
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <h6 class="alert-heading">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                ??n hàng #@orderId ?ã b? h?y thanh toán
+                            </h6>
+                            <p class="mb-0">
+                                ??n hàng c?a b?n v?n ???c l?u trong h? th?ng v?i tr?ng thái "Ch? thanh toán".
+                                B?n có th? quay l?i và th? thanh toán l?i ho?c ch?n ph??ng th?c thanh toán khác.
+                            </p>
+                        </div>
+
+                        @if (orderTotal.HasValue)
+                        {
+                            <div class="border rounded p-3 bg-light">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="fw-bold">T?ng ti?n ??n hàng:</span>
+                                    <span class="fs-5 text-primary fw-bold">
+                                        @orderTotal.Value.ToString("N0") ?
+                                    </span>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="alert alert-info" role="alert">
+                            <p class="mb-0">
+                                <i class="fas fa-info-circle"></i>
+                                Thanh toán c?a b?n ?ã b? h?y. N?u b?n mu?n ti?p t?c mua hàng, 
+                                vui lòng quay l?i gi? hàng và th?c hi?n l?i quá trình thanh toán.
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Why was payment cancelled? -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-question-circle text-primary"></i>
+                        T?i sao thanh toán b? h?y?
+                    </h5>
+                    
+                    <p>Có m?t s? lý do ph? bi?n khi?n thanh toán PayPal b? h?y:</p>
+                    
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <i class="fas fa-times text-danger me-2"></i>
+                            B?n ?ã nh?n nút "H?y" trong trang thanh toán PayPal
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-credit-card text-danger me-2"></i>
+                            Không ?? s? d? trong tài kho?n PayPal
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-clock text-danger me-2"></i>
+                            Phiên thanh toán ?ã h?t h?n
+                        </li>
+                        <li class="mb-2">
+                            <i class="fas fa-exclamation-triangle text-danger me-2"></i>
+                            L?i k? thu?t t? PayPal
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- What can you do now? -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-lightbulb text-primary"></i>
+                        B?n có th? làm gì ti?p theo?
+                    </h5>
+                    
+                    <div class="list-group list-group-flush">
+                        <div class="list-group-item d-flex align-items-start">
+                            <div class="me-3">
+                                <i class="fas fa-redo text-success fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Th? l?i thanh toán PayPal</h6>
+                                <p class="mb-0 text-muted small">
+                                    Ki?m tra l?i tài kho?n PayPal và th? thanh toán l?i
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="list-group-item d-flex align-items-start">
+                            <div class="me-3">
+                                <i class="fas fa-exchange-alt text-primary fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Ch?n ph??ng th?c thanh toán khác</h6>
+                                <p class="mb-0 text-muted small">
+                                    S? d?ng COD (thanh toán khi nh?n hàng) ho?c VNPay
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="list-group-item d-flex align-items-start">
+                            <div class="me-3">
+                                <i class="fas fa-headset text-info fs-4"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Liên h? h? tr?</h6>
+                                <p class="mb-0 text-muted small">
+                                    N?u b?n g?p khó kh?n, hãy liên h? v?i chúng tôi
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <a href="@Url.Action("Index", "Cart")" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-shopping-cart"></i>
+                        Gi? hàng
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="@Url.Action("Index", "Checkout")" class="btn btn-warning w-100">
+                        <i class="fas fa-redo"></i>
+                        Th? l?i
+                    </a>
+                </div>
+                <div class="col-md-4">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-primary w-100">
+                        <i class="fas fa-home"></i>
+                        Trang ch?
+                    </a>
+                </div>
+            </div>
+
+            <!-- Contact Support -->
+            <div class="alert alert-light border mt-4" role="alert">
+                <h6 class="alert-heading">
+                    <i class="fas fa-phone-alt"></i>
+                    C?n tr? giúp?
+                </h6>
+                <p class="mb-0">
+                    Hotline: <strong>1900-xxxx</strong> | 
+                    Email: <a href="mailto:support@shoesecommerce.com">support@shoesecommerce.com</a> |
+                    Gi? làm vi?c: 8:00 - 22:00 hàng ngày
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .cancel-icon {
+            animation: shake 0.5s ease-out;
+        }
+        
+        @@keyframes shake {
+            0%, 100% {
+                transform: translateX(0);
+            }
+            10%, 30%, 50%, 70%, 90% {
+                transform: translateX(-5px);
+            }
+            20%, 40%, 60%, 80% {
+                transform: translateX(5px);
+            }
+        }
+        
+        .card {
+            border: none;
+            border-radius: 12px;
+        }
+        
+        .list-group-item {
+            border: none;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .list-group-item:last-child {
+            border-bottom: none;
+        }
+        
+        .btn {
+            font-weight: 500;
+            padding: 12px;
+        }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        console.log('Payment cancelled for order: @(orderId ?? 0)');
+    </script>
+}

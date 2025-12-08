@@ -1,20 +1,22 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using ShoesEcommerce.Data;
-using ShoesEcommerce.Models.Carts;
-using ShoesEcommerce.Models.Orders;
+using ShoesEcommerce.Services.Interfaces;
 using System.Security.Claims;
 
 namespace ShoesEcommerce.Controllers
 {
     public class CheckoutController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly ICheckoutService _checkoutService;
+        private readonly IDiscountService _discountService;
         private readonly ILogger<CheckoutController> _logger;
 
-        public CheckoutController(AppDbContext context, ILogger<CheckoutController> logger)
+        public CheckoutController(
+            ICheckoutService checkoutService,
+            IDiscountService discountService,
+            ILogger<CheckoutController> logger)
         {
-            _context = context;
+            _checkoutService = checkoutService;
+            _discountService = discountService;
             _logger = logger;
         }
 
@@ -35,6 +37,11 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
+        private string GetCustomerEmail()
+        {
+            return User.Identity?.Name ?? "guest@temp.com";
+        }
+
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -43,32 +50,39 @@ namespace ShoesEcommerce.Controllers
                 var customerId = GetCurrentCustomerId();
                 var sessionId = HttpContext.Session.Id;
 
-                _logger.LogInformation("Loading checkout page for customer {CustomerId} or session {SessionId}", customerId, sessionId);
+                _logger.LogInformation("Loading checkout page for customer {CustomerId} or session {SessionId}", 
+                    customerId, sessionId);
 
-                Cart? cart;
-                if (customerId != 0)
+                // Validate checkout prerequisites
+                var (isValid, errorMessage) = await _checkoutService.ValidateCheckoutAsync(customerId, sessionId);
+                if (!isValid)
                 {
-                    cart = await _context.Carts
-                        .Include(c => c.CartItems)
-                            .ThenInclude(ci => ci.ProductVariant)
-                                .ThenInclude(pv => pv.Product)
-                        .FirstOrDefaultAsync(c => c.Customer != null && c.Customer.Id == customerId);
-                }
-                else
-                {
-                    cart = await _context.Carts
-                        .Include(c => c.CartItems)
-                            .ThenInclude(ci => ci.ProductVariant)
-                                .ThenInclude(pv => pv.Product)
-                        .FirstOrDefaultAsync(c => c.SessionId == sessionId);
+                    TempData["Error"] = errorMessage;
+                    return RedirectToAction("Index", "Cart");
                 }
 
-                if (cart == null || !cart.CartItems.Any())
+                // Get cart
+                var cart = await _checkoutService.GetCartForCheckoutAsync(customerId, sessionId);
+                if (cart == null)
                 {
-                    _logger.LogWarning("Empty cart during checkout for customer {CustomerId} or session {SessionId}", customerId, sessionId);
                     TempData["Error"] = "Giỏ hàng của bạn đang trống.";
                     return RedirectToAction("Index", "Cart");
                 }
+
+                // Get addresses for logged-in customers
+                if (customerId != 0)
+                {
+                    var addresses = await _checkoutService.GetCustomerAddressesAsync(customerId);
+                    ViewBag.Addresses = addresses;
+                }
+                else
+                {
+                    ViewBag.Addresses = new List<ShoesEcommerce.Models.Orders.ShippingAddress>();
+                }
+
+                // Load active discounts
+                var activeDiscounts = await _discountService.GetFeaturedDiscountsAsync(5);
+                ViewBag.ActiveDiscounts = activeDiscounts;
 
                 _logger.LogInformation("Checkout page loaded successfully for customer {CustomerId} with {CartItemCount} items", 
                     customerId, cart.CartItems.Count);
@@ -85,118 +99,199 @@ namespace ShoesEcommerce.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> PlaceOrder(string paymentMethod, string shippingAddress)
+        public async Task<IActionResult> PlaceOrder(string paymentMethod, string shippingAddress, string? discountCode)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            
             try
             {
                 var customerId = GetCurrentCustomerId();
                 var sessionId = HttpContext.Session.Id;
 
-                _logger.LogInformation("Placing order for customer {CustomerId} or session {SessionId} with payment method {PaymentMethod}", 
-                    customerId, sessionId, paymentMethod);
+                _logger.LogInformation("Placing order for customer {CustomerId} with payment method {PaymentMethod}", 
+                    customerId, paymentMethod);
 
-                // Validate input parameters
+                // Validate input
                 if (string.IsNullOrWhiteSpace(paymentMethod))
                 {
-                    _logger.LogWarning("Payment method not provided during order placement");
                     TempData["Error"] = "Vui lòng chọn phương thức thanh toán.";
-                    return RedirectToAction("Index", "Checkout");
+                    return RedirectToAction("Index");
                 }
 
                 if (string.IsNullOrWhiteSpace(shippingAddress) || !int.TryParse(shippingAddress, out int shippingAddressId))
                 {
-                    _logger.LogWarning("Invalid shipping address {ShippingAddress} provided during order placement", shippingAddress);
                     TempData["Error"] = "Địa chỉ giao hàng không hợp lệ.";
-                    return RedirectToAction("Index", "Checkout");
+                    return RedirectToAction("Index");
                 }
 
-                var cart = await _context.Carts
-                    .Include(c => c.CartItems)
-                        .ThenInclude(ci => ci.ProductVariant)
-                            .ThenInclude(pv => pv.Product)
-                    .FirstOrDefaultAsync(c => customerId != 0 ? c.Customer.Id == customerId : c.SessionId == sessionId);
-
-                if (cart == null || !cart.CartItems.Any())
+                // ✅ FIX: Get cart and calculate totals BEFORE placing order (cart will be cleared after)
+                var cart = await _checkoutService.GetCartForCheckoutAsync(customerId, sessionId);
+                if (cart == null)
                 {
-                    _logger.LogWarning("Empty cart during order placement for customer {CustomerId} or session {SessionId}", customerId, sessionId);
-                    TempData["Error"] = "Giỏ hàng trống.";
+                    TempData["Error"] = "Giỏ hàng của bạn đang trống.";
                     return RedirectToAction("Index", "Cart");
                 }
 
-                // Validate stock availability before creating order
-                foreach (var cartItem in cart.CartItems)
-                {
-                    if (cartItem.ProductVariant == null)
-                    {
-                        _logger.LogError("ProductVariant not found for cart item {CartItemId}", cartItem.Id);
-                        TempData["Error"] = "Có sản phẩm trong giỏ hàng không tồn tại.";
-                        return RedirectToAction("Index", "Cart");
-                    }
+                var (subtotal, discountAmount, totalAmount) = await _checkoutService.CalculateOrderTotalsAsync(
+                    cart, discountCode, GetCustomerEmail());
 
-                    // Add stock validation here if needed
-                    // if (cartItem.ProductVariant.StockQuantity < cartItem.Quantity) { ... }
+                _logger.LogInformation(
+                    "Calculated order totals: Subtotal={Subtotal}, Discount={Discount}, Total={Total}",
+                    subtotal, discountAmount, totalAmount);
+
+                // Place order through service (this will clear the cart)
+                var order = await _checkoutService.PlaceOrderAsync(
+                    customerId, sessionId, shippingAddressId, paymentMethod, discountCode);
+
+                if (order == null)
+                {
+                    TempData["Error"] = "Không thể tạo đơn hàng. Vui lòng thử lại.";
+                    return RedirectToAction("Index");
                 }
 
-                // Calculate total amount
-                decimal totalAmount = cart.CartItems.Sum(ci => ci.ProductVariant.Price * ci.Quantity); // ✅ FIXED: Use ProductVariant.Price
-
-                _logger.LogInformation("Order total calculated: {TotalAmount} for {CartItemCount} items", totalAmount, cart.CartItems.Count);
-
-                // Create Order
-                var order = new Order
-                {
-                    CustomerId = customerId,               // int, bắt buộc
-                    ShippingAddressId = shippingAddressId, // int, bắt buộc
-                    CreatedAt = DateTime.Now,
-                    TotalAmount = totalAmount,
-                    OrderDetails = cart.CartItems.Select(ci => new OrderDetail
-                    {
-                        ProductVariantId = ci.ProductVarientId,
-                        Quantity = ci.Quantity,
-                        UnitPrice = ci.ProductVariant.Price // ✅ FIXED: Use ProductVariant.Price
-                    }).ToList()
-                };
-
-                _context.Orders.Add(order);
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Order {OrderId} created successfully for customer {CustomerId} with total {TotalAmount}", 
-                    order.Id, customerId, totalAmount);
-
-                // Clear cart after successful order creation
-                _context.CartItems.RemoveRange(cart.CartItems);
-                _context.Carts.Remove(cart);
-                await _context.SaveChangesAsync();
-
-                await transaction.CommitAsync();
-
-                _logger.LogInformation("Cart cleared successfully after order {OrderId} creation", order.Id);
+                _logger.LogInformation("Order {OrderId} created successfully with total {TotalAmount}", 
+                    order.Id, totalAmount);
 
                 // Redirect based on payment method
-                if (paymentMethod == "VNPay")
+                if (paymentMethod == "PayPal")
                 {
-                    _logger.LogInformation("Redirecting to VNPay payment for order {OrderId}", order.Id);
+                    return RedirectToAction("PayPalCheckout", "Payment", new 
+                    { 
+                        orderId = order.Id,
+                        subtotal = subtotal,
+                        discountAmount = discountAmount,
+                        totalAmount = totalAmount
+                    });
+                }
+                else if (paymentMethod == "VNPay")
+                {
                     return RedirectToAction("Pay", "Payment", new { orderId = order.Id, amount = totalAmount });
                 }
                 else if (paymentMethod == "COD")
                 {
-                    _logger.LogInformation("COD payment selected for order {OrderId}", order.Id);
-                    return RedirectToAction("SuccessCOD", "Checkout", new { orderId = order.Id });
+                    return RedirectToAction("SuccessCOD", new { orderId = order.Id });
                 }
 
-                _logger.LogWarning("Unknown payment method {PaymentMethod} for order {OrderId}", paymentMethod, order.Id);
                 TempData["Success"] = "Đặt hàng thành công!";
                 return RedirectToAction("Index", "Home");
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Error placing order for customer {CustomerId} with payment method {PaymentMethod}", 
-                    GetCurrentCustomerId(), paymentMethod);
+                _logger.LogError(ex, "Error placing order for customer {CustomerId}", GetCurrentCustomerId());
                 TempData["Error"] = "Có lỗi xảy ra trong quá trình đặt hàng. Vui lòng thử lại.";
-                return RedirectToAction("Index", "Checkout");
+                return RedirectToAction("Index");
+            }
+        }
+
+        /// <summary>
+        /// AJAX endpoint for creating order and returning JSON (for PayPal inline integration)
+        /// </summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateOrderAjax([FromForm] string paymentMethod, [FromForm] string shippingAddress, [FromForm] string? discountCode)
+        {
+            try
+            {
+                var customerId = GetCurrentCustomerId();
+                var sessionId = HttpContext.Session.Id;
+
+                _logger.LogInformation("Creating order via AJAX for customer {CustomerId} with payment method {PaymentMethod}", 
+                    customerId, paymentMethod);
+
+                // Validate input
+                if (string.IsNullOrWhiteSpace(paymentMethod))
+                {
+                    return Json(new { success = false, error = "Vui lòng chọn phương thức thanh toán." });
+                }
+
+                if (string.IsNullOrWhiteSpace(shippingAddress) || !int.TryParse(shippingAddress, out int shippingAddressId))
+                {
+                    return Json(new { success = false, error = "Địa chỉ giao hàng không hợp lệ." });
+                }
+
+                // Get cart and calculate totals BEFORE placing order
+                var cart = await _checkoutService.GetCartForCheckoutAsync(customerId, sessionId);
+                if (cart == null)
+                {
+                    return Json(new { success = false, error = "Giỏ hàng của bạn đang trống." });
+                }
+
+                var (subtotal, discountAmount, totalAmount) = await _checkoutService.CalculateOrderTotalsAsync(
+                    cart, discountCode, GetCustomerEmail());
+
+                // Place order through service
+                var order = await _checkoutService.PlaceOrderAsync(
+                    customerId, sessionId, shippingAddressId, paymentMethod, discountCode);
+
+                if (order == null)
+                {
+                    return Json(new { success = false, error = "Không thể tạo đơn hàng. Vui lòng thử lại." });
+                }
+
+                _logger.LogInformation("Order {OrderId} created via AJAX with total {TotalAmount}", 
+                    order.Id, totalAmount);
+
+                // Return JSON with order details
+                return Json(new 
+                { 
+                    success = true,
+                    orderId = order.Id,
+                    subtotal = subtotal,
+                    discountAmount = discountAmount,
+                    totalAmount = totalAmount,
+                    paymentMethod = paymentMethod
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating order via AJAX for customer {CustomerId}", GetCurrentCustomerId());
+                return Json(new { success = false, error = "Có lỗi xảy ra trong quá trình đặt hàng. Vui lòng thử lại." });
+            }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AddShippingAddress(
+            [FromForm] string fullName, [FromForm] string phoneNumber, 
+            [FromForm] string address, [FromForm] string city, [FromForm] string district)
+        {
+            try
+            {
+                var customerId = GetCurrentCustomerId();
+                
+                if (customerId == 0)
+                {
+                    return Json(new { success = false, message = "Bạn cần đăng nhập để thêm địa chỉ." });
+                }
+
+                var shippingAddress = await _checkoutService.CreateShippingAddressAsync(
+                    customerId, fullName, phoneNumber, address, city, district);
+
+                if (shippingAddress == null)
+                {
+                    return Json(new { success = false, message = "Vui lòng điền đầy đủ thông tin." });
+                }
+
+                _logger.LogInformation("Shipping address {AddressId} created for customer {CustomerId}", 
+                    shippingAddress.Id, customerId);
+
+                return Json(new 
+                { 
+                    success = true, 
+                    message = "Thêm địa chỉ thành công!", 
+                    address = new 
+                    {
+                        id = shippingAddress.Id,
+                        fullName = shippingAddress.FullName,
+                        phoneNumber = shippingAddress.PhoneNumber,
+                        address = shippingAddress.Address,
+                        city = shippingAddress.City,
+                        district = shippingAddress.District
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error adding shipping address for customer {CustomerId}", GetCurrentCustomerId());
+                return Json(new { success = false, message = "Có lỗi xảy ra khi thêm địa chỉ. Vui lòng thử lại." });
             }
         }
 
@@ -206,30 +301,11 @@ namespace ShoesEcommerce.Controllers
             {
                 _logger.LogInformation("Loading COD success page for order {OrderId}", orderId);
 
-                var order = await _context.Orders
-                    .Include(o => o.OrderDetails)
-                        .ThenInclude(od => od.ProductVariant)
-                            .ThenInclude(pv => pv.Product)
-                    .FirstOrDefaultAsync(o => o.Id == orderId);
+                // You may want to add order retrieval through OrderService here
+                // For now, just show success page
+                ViewBag.OrderId = orderId;
 
-                if (order == null)
-                {
-                    _logger.LogWarning("Order {OrderId} not found for COD success page", orderId);
-                    TempData["Error"] = "Không tìm thấy đơn hàng.";
-                    return RedirectToAction("Index", "Home");
-                }
-
-                // Verify order belongs to current customer
-                var customerId = GetCurrentCustomerId();
-                if (customerId != 0 && order.CustomerId != customerId)
-                {
-                    _logger.LogWarning("Unauthorized access to order {OrderId} by customer {CustomerId}", orderId, customerId);
-                    TempData["Error"] = "Bạn không có quyền truy cập đơn hàng này.";
-                    return RedirectToAction("Index", "Home");
-                }
-
-                _logger.LogInformation("COD success page loaded for order {OrderId}", orderId);
-                return View(order);
+                return View();
             }
             catch (Exception ex)
             {
