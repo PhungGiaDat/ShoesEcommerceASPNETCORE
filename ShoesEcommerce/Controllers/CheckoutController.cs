@@ -8,15 +8,18 @@ namespace ShoesEcommerce.Controllers
     {
         private readonly ICheckoutService _checkoutService;
         private readonly IDiscountService _discountService;
+        private readonly IOrderService _orderService;
         private readonly ILogger<CheckoutController> _logger;
 
         public CheckoutController(
             ICheckoutService checkoutService,
             IDiscountService discountService,
+            IOrderService orderService,
             ILogger<CheckoutController> logger)
         {
             _checkoutService = checkoutService;
             _discountService = discountService;
+            _orderService = orderService;
             _logger = logger;
         }
 
@@ -301,11 +304,23 @@ namespace ShoesEcommerce.Controllers
             {
                 _logger.LogInformation("Loading COD success page for order {OrderId}", orderId);
 
-                // You may want to add order retrieval through OrderService here
-                // For now, just show success page
-                ViewBag.OrderId = orderId;
+                // ✅ FIX: Retrieve order from database instead of just passing OrderId
+                var customerId = GetCurrentCustomerId();
+                
+                // Get order with full details
+                var order = await _orderService.GetOrderByIdAsync(orderId, customerId);
+                
+                if (order == null)
+                {
+                    _logger.LogWarning("Order {OrderId} not found for customer {CustomerId}", orderId, customerId);
+                    TempData["Error"] = "Không tìm thấy thông tin đơn hàng.";
+                    return RedirectToAction("Index", "Home");
+                }
 
-                return View();
+                _logger.LogInformation("COD success page loaded for order {OrderId}", orderId);
+
+                // Pass order model to view
+                return View(order);
             }
             catch (Exception ex)
             {
