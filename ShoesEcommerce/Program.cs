@@ -67,7 +67,18 @@ builder.Services.Configure<RequestLocalizationOptions>(options =>
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+    // ✅ Support both environment variables and appsettings for connection string
+    var connectionString = Environment.GetEnvironmentVariable("DATABASE_CONNECTION_STRING") 
+                           ?? builder.Configuration.GetConnectionString("DefaultConnection");
+    
+    if (string.IsNullOrEmpty(connectionString))
+    {
+        throw new InvalidOperationException(
+            "Database connection string not configured. " +
+            "Set DATABASE_CONNECTION_STRING environment variable or configure ConnectionStrings:DefaultConnection in appsettings.json");
+    }
+    
+    options.UseNpgsql(connectionString);
     
     // Enable detailed errors in development
     if (builder.Environment.IsDevelopment())
@@ -122,14 +133,20 @@ builder.Services.AddSingleton<ShoesEcommerce.Services.Payment.PayPalClient>(sp =
     var logger = sp.GetRequiredService<ILogger<ShoesEcommerce.Services.Payment.PayPalClient>>();
     var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
     
-    var clientId = configuration["PayPalOptions:ClientId"];
-    var clientSecret = configuration["PayPalOptions:ClientSecret"];
-    var mode = configuration["PayPalOptions:Mode"] ?? "Sandbox";
+    // ✅ Support both environment variables and appsettings
+    var clientId = Environment.GetEnvironmentVariable("PAYPAL_CLIENT_ID") 
+                   ?? configuration["PayPalOptions:ClientId"];
+    var clientSecret = Environment.GetEnvironmentVariable("PAYPAL_CLIENT_SECRET") 
+                       ?? configuration["PayPalOptions:ClientSecret"];
+    var mode = Environment.GetEnvironmentVariable("PAYPAL_MODE") 
+               ?? configuration["PayPalOptions:Mode"] 
+               ?? "Sandbox";
 
     if (string.IsNullOrEmpty(clientId) || string.IsNullOrEmpty(clientSecret))
     {
         logger.LogWarning("PayPal configuration missing. PayPal payment will not be available.");
-        throw new InvalidOperationException("PayPal ClientId and ClientSecret must be configured in appsettings.json");
+        logger.LogWarning("Set PAYPAL_CLIENT_ID and PAYPAL_CLIENT_SECRET environment variables or configure in appsettings.json");
+        throw new InvalidOperationException("PayPal ClientId and ClientSecret must be configured");
     }
 
     logger.LogInformation("PayPal Client initialized in {Mode} mode", mode);
