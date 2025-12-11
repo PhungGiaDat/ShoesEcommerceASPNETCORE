@@ -1,0 +1,256 @@
+﻿@model ShoesEcommerce.Models.Orders.Order
+
+@{
+    ViewData["Title"] = "Thanh toán VNPay thành công";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // Lấy thông tin giao dịch VNPay từ ViewBag (Cần Controller truyền vào)
+    var vnpTxnRef = ViewBag.VnpTxnRef as string; // Mã đơn hàng truyền sang VNPay (Ex: 12345_tick)
+    var vnpTransactionNo = ViewBag.VnpTransactionNo as string; // Mã giao dịch VNPay
+}
+
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="text-center mb-5">
+                <div class="success-icon mb-3">
+                    <i class="fas fa-check-circle text-success" style="font-size: 5rem;"></i>
+                </div>
+                <h2 class="fw-bold text-success">Thanh toán VNPay thành công!</h2>
+                <p class="text-muted">Cảm ơn bạn đã mua hàng tại ShoesEcommerce. Hệ thống đã xác nhận thanh toán.</p>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-receipt text-primary"></i>
+                        Thông tin đơn hàng
+                    </h5>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p class="mb-1">
+                                <strong>Mã đơn hàng:</strong> #@Model.Id
+                            </p>
+                            <p class="mb-1">
+                                <strong>Ngày đặt:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                            </p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <p class="mb-1">
+                                <strong>Phương thức:</strong>
+                                <span class="badge bg-info text-dark">
+                                    <i class="fas fa-money-check-alt"></i> VNPay
+                                </span>
+                            </p>
+                            <p class="mb-1">
+                                <strong>Trạng thái:</strong>
+                                <span class="badge bg-success">
+                                    @(Model.Payment?.Status ?? "Paid")
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(vnpTransactionNo))
+                    {
+                        <div class="alert alert-light border" role="alert">
+                            <small>
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Mã giao dịch VNPay:</strong> @vnpTransactionNo
+                                @if (!string.IsNullOrEmpty(vnpTxnRef))
+                                {
+                                    <br />
+                                    <i class="fas fa-info-circle"></i>
+                                    <strong>Mã tham chiếu:</strong>
+ 
+                                    @vnpTxnRef
+                                }
+                            </small>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title mb-3">
+                        <i class="fas fa-shopping-bag text-primary"></i>
+                        Sản phẩm đã đặt (@Model.OrderDetails.Count sản phẩm)
+                    </h5>
+
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Sản phẩm</th>
+                                    <th class="text-center">Số lượng</th>
+                                    <th class="text-end">Đơn giá</th>
+                                    <th class="text-end">Thành tiền</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.OrderDetails)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @if (!string.IsNullOrEmpty(item.ProductVariant?.ImageUrl))
+                                                {
+                                                    <img src="@item.ProductVariant.ImageUrl"
+                                                         alt="@item.ProductVariant.Product?.Name"
+                                                         class="img-thumbnail me-3"
+                                                         style="width: 60px; height: 60px; object-fit: cover;">
+                                                }
+                                                <div>
+                                                    <div class="fw-bold">@item.ProductVariant?.Product?.Name</div>
+                                                    <small class="text-muted">
+                                                        @item.ProductVariant?.Color - Size @item.ProductVariant?.Size
+                                                    </small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center align-middle">
+                                            <span class="badge bg-secondary">@item.Quantity</span>
+                                        </td>
+                                        <td class="text-end align-middle">
+                                            @item.UnitPrice.ToString("N0") đ
+                                        </td>
+                                        <td class="text-end align-middle fw-bold">
+                                            @((item.UnitPrice * item.Quantity).ToString("N0")) đ
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="border-top pt-3 mt-3">
+                        <div class="row">
+                            <div class="col-md-6 offset-md-6">
+                                @{
+                                    var subtotal = Model.OrderDetails.Sum(od => od.UnitPrice * od.Quantity);
+                                    var discountAmount = subtotal - Model.TotalAmount;
+                                }
+
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Tạm tính:</span>
+                                    <span>@subtotal.ToString("N0") đ</span>
+                                </div>
+
+                                @if (discountAmount > 0)
+                                {
+                                    <div class="d-flex justify-content-between mb-2 text-success">
+                                        <span>
+                                            <i class="fas fa-tag"></i> Giảm giá:
+                                        </span>
+                                        <span>-@discountAmount.ToString("N0") đ</span>
+                                    </div>
+                                }
+
+                                <hr>
+
+                                <div class="d-flex justify-content-between">
+                                    <span class="fs-5 fw-bold">Tổng cộng:</span>
+                                    <span class="fs-5 fw-bold text-primary">
+                                        @Model.TotalAmount.ToString("N0") đ
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model.ShippingAddress != null)
+            {
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3">
+                            <i class="fas fa-map-marker-alt text-primary"></i>
+                            Địa chỉ giao hàng
+                        </h5>
+                        <p class="mb-1"><strong>@Model.ShippingAddress.FullName</strong></p>
+                        <p class="mb-1">
+                            <i class="fas fa-phone"></i> @Model.ShippingAddress.PhoneNumber
+                        </p>
+                        <p class="mb-0 text-muted">
+                            <i class="fas fa-home"></i>
+                            @Model.ShippingAddress.Address, @Model.ShippingAddress.District, @Model.ShippingAddress.City
+                        </p>
+                    </div>
+                </div>
+            }
+
+            <div class="row">
+                <div class="col-md-6 mb-3 mb-md-0">
+                    <a href="@Url.Action("Index", "Home")" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-home"></i>
+                        Về trang chủ
+                    </a>
+                </div>
+                <div class="col-md-6">
+                    <a href="@Url.Action("Index", "Order")" class="btn btn-primary w-100">
+                        <i class="fas fa-list"></i>
+                        Xem đơn hàng của tôi
+                    </a>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-4" role="alert">
+                <h6 class="alert-heading">
+                    <i class="fas fa-info-circle"></i>
+                    Thông tin quan trọng
+                </h6>
+                <ul class="mb-0">
+                    <li>Đơn hàng của bạn sẽ được xử lý trong vòng 1-2 ngày làm việc</li>
+                    <li>Bạn sẽ nhận được email xác nhận khi đơn hàng được giao cho đơn vị vận chuyển</li>
+                    <li>Thời gian giao hàng dự kiến: 3-5 ngày làm việc</li>
+                    <li>Bạn có thể theo dõi đơn hàng trong mục "Đơn hàng của tôi"</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Styles {
+    <style>
+        .success-icon {
+            animation: scaleIn 0.5s ease-out;
+        }
+
+        @@keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+
+            to {
+                transform: scale(1);
+            }
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+        }
+
+        .img-thumbnail {
+            border-radius: 8px;
+        }
+
+        .table tbody tr {
+            transition: background-color 0.2s;
+        }
+
+            .table tbody tr:hover {
+                background-color: #f8f9fa;
+            }
+    </style>
+}
+
+@section Scripts {
+    <script>
+        console.log('Payment successful for order #@Model.Id via VNPay');
+        // Optional: Add confetti or celebration effect here
+    </script>
+}

@@ -1,8 +1,11 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using ShoesEcommerce.Models.Payments.PayPal;
-using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.Repositories.Interfaces;
+using ShoesEcommerce.Services.Interfaces;
 using System.Security.Claims;
+using ShoesEcommerce.Services.Payment; // <-- Đ? THÊM: C?n thi?t cho IVnPayService
+using System.Net;
+using System.Linq;
 
 namespace ShoesEcommerce.Controllers
 {
@@ -10,16 +13,19 @@ namespace ShoesEcommerce.Controllers
     {
         private readonly IPaymentService _paymentService;
         private readonly IPaymentRepository _paymentRepository;
+        private readonly IVnPayService _vnPayService; // <-- Đ? THÊM: Khai báo Service cho VNPay
         private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
             IPaymentService paymentService,
             IPaymentRepository paymentRepository,
-            ILogger<PaymentController> _logger)
+            IVnPayService vnPayService, // <-- Đ? THÊM: Tiêm IVnPayService vào constructor
+            ILogger<PaymentController> logger)
         {
             _paymentService = paymentService;
             _paymentRepository = paymentRepository;
-            this._logger = _logger;
+            _vnPayService = vnPayService; // <-- Đ? THÊM: Gán giá tr?
+            this._logger = logger;
         }
 
         private int GetCurrentCustomerId()
@@ -38,6 +44,10 @@ namespace ShoesEcommerce.Controllers
                 return 0;
             }
         }
+
+        // =========================================================================
+        // --- PAYPAL ACTIONS --- 
+        // =========================================================================
 
         /// <summary>
         /// PayPal checkout page - Displays PayPal button
@@ -61,7 +71,7 @@ namespace ShoesEcommerce.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading PayPal checkout for order {OrderId}", orderId);
-                TempData["Error"] = "C� l?i x?y ra khi t?i trang thanh to�n PayPal.";
+                TempData["Error"] = "Có l?i x?y ra khi t?i trang thanh toán PayPal.";
                 return RedirectToAction("Index", "Checkout");
             }
         }
@@ -101,7 +111,7 @@ namespace ShoesEcommerce.Controllers
                 if (!await _paymentRepository.OrderExistsAsync(request.OrderId))
                 {
                     _logger.LogWarning("Order {OrderId} not found", request.OrderId);
-                    return BadRequest(new { error = "??n h�ng kh�ng t?n t?i" });
+                    return BadRequest(new { error = "Đơn hàng không t?n t?i" });
                 }
 
                 // ? Optional: Verify customer ownership
@@ -113,7 +123,7 @@ namespace ShoesEcommerce.Controllers
                         _logger.LogWarning(
                             "Unauthorized access to order {OrderId} by customer {CustomerId}",
                             request.OrderId, customerId);
-                        return BadRequest(new { error = "B?n kh�ng c� quy?n truy c?p ??n h�ng n�y" });
+                        return BadRequest(new { error = "B?n không có quy?n truy c?p đơn hàng này" });
                     }
                 }
 
@@ -121,7 +131,7 @@ namespace ShoesEcommerce.Controllers
                 var returnUrl = Url.Action(
                     "PayPalSuccess",
                     "Payment",
-                    new { orderId = request.OrderId }, 
+                    new { orderId = request.OrderId },
                     protocol: Request.Scheme,
                     host: Request.Host.ToString());
 
@@ -171,11 +181,11 @@ namespace ShoesEcommerce.Controllers
 
                 // Check capture status
                 var capture = response.purchase_units?.FirstOrDefault()?.payments?.captures?.FirstOrDefault();
-                
+
                 if (capture == null)
                 {
                     _logger.LogError("No capture information found for PayPal order {PayPalOrderId}", orderId);
-                    return BadRequest(new { error = "Kh�ng th? x�c nh?n thanh to�n" });
+                    return BadRequest(new { error = "Không th? xác nh?n thanh toán" });
                 }
 
                 var isSuccessful = capture.status == "COMPLETED";
@@ -220,7 +230,7 @@ namespace ShoesEcommerce.Controllers
                 if (order == null)
                 {
                     _logger.LogWarning("Order {OrderId} not found on PayPal success", orderId);
-                    TempData["Error"] = "Kh�ng t�m th?y ??n h�ng.";
+                    TempData["Error"] = "Không t?m th?y đơn hàng.";
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -231,7 +241,7 @@ namespace ShoesEcommerce.Controllers
                     _logger.LogWarning(
                         "Unauthorized access to order {OrderId} success page by customer {CustomerId}",
                         orderId, customerId);
-                    TempData["Error"] = "B?n kh�ng c� quy?n truy c?p ??n h�ng n�y.";
+                    TempData["Error"] = "B?n không có quy?n truy c?p đơn hàng này.";
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -241,7 +251,7 @@ namespace ShoesEcommerce.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error loading PayPal success page for order {OrderId}", orderId);
-                TempData["Error"] = "C� l?i x?y ra. Vui l�ng ki?m tra l?i ??n h�ng c?a b?n.";
+                TempData["Error"] = "Có l?i x?y ra. Vui l?ng ki?m tra l?i đơn hàng c?a b?n.";
                 return RedirectToAction("Index", "Home");
             }
         }
@@ -265,7 +275,7 @@ namespace ShoesEcommerce.Controllers
                 if (order == null)
                 {
                     _logger.LogWarning("Order {OrderId} not found on PayPal cancel", orderId);
-                    TempData["Error"] = "Kh�ng t�m th?y ??n h�ng.";
+                    TempData["Error"] = "Không t?m th?y đơn hàng.";
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -277,7 +287,7 @@ namespace ShoesEcommerce.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling PayPal cancellation for order {OrderId}", orderId);
-                TempData["Warning"] = "Thanh to�n ?� b? h?y.";
+                TempData["Warning"] = "Thanh toán đ? b? h?y.";
                 return RedirectToAction("Index", "Cart");
             }
         }
@@ -292,10 +302,10 @@ namespace ShoesEcommerce.Controllers
             {
                 // ? Get payment via service
                 var payment = await _paymentService.GetPaymentByOrderIdAsync(orderId);
-                
+
                 if (payment == null)
                 {
-                    return NotFound(new { error = "Kh�ng t�m th?y th�ng tin thanh to�n" });
+                    return NotFound(new { error = "Không t?m th?y thông tin thanh toán" });
                 }
 
                 return Ok(new
@@ -312,23 +322,172 @@ namespace ShoesEcommerce.Controllers
                 return BadRequest(new { error = ex.Message });
             }
         }
-    }
 
-    /// <summary>
-    /// Request model for creating PayPal order
-    /// </summary>
-    public class CreatePayPalOrderRequest
-    {
-        [System.Text.Json.Serialization.JsonPropertyName("orderId")]
-        public int OrderId { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("subtotal")]
-        public decimal Subtotal { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("discountAmount")]
-        public decimal DiscountAmount { get; set; }
-        
-        [System.Text.Json.Serialization.JsonPropertyName("totalAmount")]
-        public decimal TotalAmount { get; set; }
+        // =========================================================================
+        // --- VNPAY ACTIONS ---
+        // =========================================================================
+
+        /// <summary>
+        /// VNPay checkout page - hiển thị thông tin đơn hàng trước khi redirect sang VNPay
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> VnPayCheckoutPage(int orderId)
+        {
+            var order = await _paymentRepository.GetOrderWithDetailsAsync(orderId);
+            var customerId = GetCurrentCustomerId();
+
+            if (order == null || (customerId != 0 && order.CustomerId != customerId))
+            {
+                TempData["Error"] = "Không tìm thấy đơn hàng hoặc bạn không có quyền.";
+                return RedirectToAction("Index", "Cart");
+            }
+
+            return View("VnPayCheckout", order);
+        }
+
+        /// <summary>
+        /// VNPay checkout - Redirect to VNPay payment gate
+        /// </summary>
+        [HttpPost]
+        public IActionResult VnPayCheckout(int orderId, decimal amount)
+        {
+            try
+            {
+                _logger.LogInformation("Initiating VNPay checkout for order {OrderId} with amount {Amount}", orderId, amount);
+
+                var paymentUrl = _vnPayService.CreatePaymentUrl(orderId, amount, HttpContext);
+
+                if (string.IsNullOrEmpty(paymentUrl))
+                {
+                    _logger.LogError("Failed to create VNPay payment URL for order {OrderId}", orderId);
+                    TempData["Error"] = "Lỗi tạo liên kết thanh toán VNPay.";
+                    return RedirectToAction("Index", "Checkout");
+                }
+
+                return Redirect(paymentUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during VNPay checkout for order {OrderId}", orderId);
+                TempData["Error"] = "Có lỗi xảy ra khi chuyển hướng thanh toán VNPay.";
+                return RedirectToAction("Index", "Checkout");
+            }
+        }
+
+        /// <summary>
+        /// VNPay return handler - VNPay calls this after payment
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> VnPayReturn()
+        {
+            try
+            {
+                _logger.LogInformation("Receiving VNPay return callback: Query={Query}", Request.QueryString);
+
+                var response = _vnPayService.ProcessReturn(Request.Query);
+
+                if (!response.IsSuccess)
+                {
+                    _logger.LogWarning("VNPay hash validation failed. Response Code: {Code}", response.Vnp_ResponseCode);
+                    TempData["Error"] = "Xác minh thanh toán không hợp lệ hoặc bị lỗi.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var orderId = response.Vnp_TxnRef?.Split('_').FirstOrDefault();
+                if (!int.TryParse(orderId, out int localOrderId))
+                {
+                    _logger.LogError("Could not parse OrderId from VnPay TxnRef: {TxnRef}", response.Vnp_TxnRef);
+                    TempData["Error"] = "Lỗi xử lý đơn hàng: Không tìm thấy ID đơn hàng.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var isSuccessful = response.Vnp_ResponseCode == "00";
+                var paymentStatus = isSuccessful ? "Paid" : "Failed";
+                var transactionId = response.Vnp_TransactionNo;
+
+                await _paymentService.UpdatePaymentStatusAsync(
+                    localOrderId,
+                    paymentStatus,
+                    DateTime.Now,
+                    transactionId);
+
+                _logger.LogInformation(
+                    "VNPay payment result: OrderId={OrderId}, Status={Status}, TxnNo={TxnNo}",
+                    localOrderId, paymentStatus, transactionId);
+
+                if (isSuccessful)
+                {
+                    return RedirectToAction("VnPaySuccess", "Payment", new { orderId = localOrderId });
+                }
+                else
+                {
+                    TempData["Warning"] = $"Thanh toán VNPay không thành công. Mã lỗi: {response.Vnp_ResponseCode}";
+                    return RedirectToAction("Index", "Cart");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error handling VNPay return");
+                TempData["Error"] = "Lỗi trong quá trình xử lý kết quả thanh toán VNPay.";
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        /// <summary>
+        /// VNPay success redirect page
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> VnPaySuccess(int orderId)
+        {
+            try
+            {
+                _logger.LogInformation("VNPay success redirect for order {OrderId}", orderId);
+
+                var order = await _paymentRepository.GetOrderWithDetailsAsync(orderId);
+
+                if (order == null)
+                {
+                    _logger.LogWarning("Order {OrderId} not found on VNPay success", orderId);
+                    TempData["Error"] = "Không tìm thấy đơn hàng.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                var customerId = GetCurrentCustomerId();
+                if (customerId != 0 && order.CustomerId != customerId)
+                {
+                    _logger.LogWarning(
+                        "Unauthorized access to order {OrderId} success page by customer {CustomerId}",
+                        orderId, customerId);
+                    TempData["Error"] = "Bạn không có quyền truy cập đơn hàng này.";
+                    return RedirectToAction("Index", "Home");
+                }
+
+                return View(order);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading VNPay success page for order {OrderId}", orderId);
+                TempData["Error"] = "Có lỗi xảy ra. Vui lòng kiểm tra lại đơn hàng của bạn.";
+                return RedirectToAction("Index", "Home");
+            }
+        }
+
+        /// <summary>
+        /// Request model for creating PayPal order
+        /// </summary>
+        public class CreatePayPalOrderRequest
+        {
+            [System.Text.Json.Serialization.JsonPropertyName("orderId")]
+            public int OrderId { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("subtotal")]
+            public decimal Subtotal { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("discountAmount")]
+            public decimal DiscountAmount { get; set; }
+
+            [System.Text.Json.Serialization.JsonPropertyName("totalAmount")]
+            public decimal TotalAmount { get; set; }
+        }
     }
 }

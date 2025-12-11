@@ -12,6 +12,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
+using ShoesEcommerce.Services.Payment;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,6 +103,9 @@ builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<ShoesEcommerce.Services.ICommentService, ShoesEcommerce.Services.CommentService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>(); // ✅ NEW: Payment service
 builder.Services.AddScoped<ICheckoutService, CheckoutService>(); // ✅ NEW: Checkout service
+
+// Đăng ký VNPayService
+builder.Services.AddScoped<IVnPayService, VnPayService>(); 
 
 // ✅ NEW: Register PayPal HttpClient
 builder.Services.AddHttpClient("PayPal", client =>
