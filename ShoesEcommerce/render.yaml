@@ -1,0 +1,74 @@
+# Render Blueprint for ShoesEcommerce ASP.NET Core Application
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Web Service - Main ASP.NET Core Application
+  - type: web
+    name: shoes-ecommerce
+    runtime: docker
+    
+    # Docker configuration
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Environment settings
+    envVars:
+      # ASP.NET Core environment
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      
+      # Application URL (Render provides this automatically)
+      - key: ASPNETCORE_URLS
+        value: http://+:10000
+      
+      # Database connection - Use Render's PostgreSQL or external Supabase
+      - key: ConnectionStrings__DefaultConnection
+        sync: false  # Set manually in Render dashboard for security
+      
+      # PayPal Configuration (set in Render dashboard)
+      - key: PayPalOptions__ClientId
+        sync: false
+      - key: PayPalOptions__ClientSecret
+        sync: false
+      - key: PayPalOptions__Mode
+        value: Sandbox  # Change to "Live" for production
+      
+      # VNPay Configuration (set in Render dashboard)
+      - key: VNPay__TmnCode
+        sync: false
+      - key: VNPay__HashSecret
+        sync: false
+      - key: VNPay__Url
+        value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      - key: VNPay__ReturnUrl
+        sync: false
+      
+      # Logging
+      - key: Logging__LogLevel__Default
+        value: Information
+      - key: Logging__LogLevel__Microsoft.AspNetCore
+        value: Warning
+      - key: Logging__LogLevel__Microsoft.EntityFrameworkCore
+        value: Warning
+    
+    # Health check endpoint
+    healthCheckPath: /health
+    
+    # Build and deploy settings
+    buildCommand: ""  # Handled by Dockerfile
+    startCommand: ""  # Handled by Dockerfile
+    
+    # Scaling (Free tier)
+    plan: free
+    
+    # Region
+    region: singapore  # Choose: oregon, frankfurt, singapore, ohio
+
+# Optional: Add a PostgreSQL database on Render
+# Uncomment if you want Render-managed PostgreSQL instead of Supabase
+# databases:
+#   - name: shoes-ecommerce-db
+#     databaseName: shoesdb
+#     user: shoesadmin
+#     plan: free
+#     region: singapore

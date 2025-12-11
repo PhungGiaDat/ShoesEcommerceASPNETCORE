@@ -1,0 +1,55 @@
+# Dockerfile for ShoesEcommerce ASP.NET Core 8.0 Application
+# Optimized for Render deployment
+
+# ============================================
+# Stage 1: Build Stage
+# ============================================
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+WORKDIR /src
+
+# Copy project file and restore dependencies
+COPY ["ShoesEcommerce.csproj", "."]
+RUN dotnet restore "ShoesEcommerce.csproj"
+
+# Copy everything else and build
+COPY . .
+RUN dotnet build "ShoesEcommerce.csproj" -c Release -o /app/build
+
+# ============================================
+# Stage 2: Publish Stage
+# ============================================
+FROM build AS publish
+RUN dotnet publish "ShoesEcommerce.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# ============================================
+# Stage 3: Runtime Stage
+# ============================================
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+WORKDIR /app
+
+# Install required dependencies for image processing (if needed)
+RUN apt-get update && apt-get install -y \
+    libgdiplus \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy published application
+COPY --from=publish /app/publish .
+
+# Create directory for logs
+RUN mkdir -p /app/logs
+
+# Set environment variables
+ENV ASPNETCORE_ENVIRONMENT=Production
+ENV ASPNETCORE_URLS=http://+:10000
+ENV TZ=Asia/Ho_Chi_Minh
+
+# Expose the port Render expects
+EXPOSE 10000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl --fail http://localhost:10000/health || exit 1
+
+# Run the application
+ENTRYPOINT ["dotnet", "ShoesEcommerce.dll"]

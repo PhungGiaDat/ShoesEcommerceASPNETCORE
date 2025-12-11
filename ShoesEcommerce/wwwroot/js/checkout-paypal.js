@@ -112,6 +112,9 @@
             createOrder: async function() {
                 console.log('?? PayPal createOrder called');
                 
+                // ? Reset currentOrderId at start of new order creation
+                currentOrderId = null;
+                
                 // Validate address
                 const shippingAddress = document.querySelector('input[name="shippingAddress"]:checked');
                 if (!shippingAddress) {
@@ -140,29 +143,46 @@
                     });
 
                     console.log('?? Order response status:', orderResponse.status);
-                    console.log('?? Order response ok:', orderResponse.ok);
 
                     if (!orderResponse.ok) {
                         const errorText = await orderResponse.text();
-                        console.error('? Order creation failed:', errorText);
-                        throw new Error('Failed to create order');
+                        console.error('? Order creation HTTP error:', orderResponse.status, errorText);
+                        window.showToast?.('L?i k?t n?i server. Vui lòng th? l?i.', 'error');
+                        throw new Error('Failed to create order: HTTP ' + orderResponse.status);
                     }
 
                     const orderResult = await orderResponse.json();
-                    console.log('? Order created:', orderResult);
+                    console.log('?? Order result:', orderResult);
 
+                    // ? IMPROVED: Better error handling
                     if (!orderResult.success) {
-                        console.error('? Order creation unsuccessful:', orderResult.error);
-                        throw new Error(orderResult.error);
+                        console.error('? Order creation failed:', orderResult.error);
+                        window.showToast?.(orderResult.error || 'Không th? t?o ??n hàng. Vui lòng th? l?i.', 'error');
+                        throw new Error(orderResult.error || 'Order creation failed');
                     }
 
-                    currentOrderId = orderResult.orderId;
-                    console.log('? Order ID stored:', currentOrderId);
+                    // ? CRITICAL: Validate orderId is a valid number
+                    const orderId = parseInt(orderResult.orderId, 10);
+                    if (!orderId || orderId <= 0 || isNaN(orderId)) {
+                        console.error('? Invalid orderId from server:', orderResult);
+                        window.showToast?.('L?i: Server tr? v? mã ??n hàng không h?p l?', 'error');
+                        throw new Error('Server returned invalid order ID: ' + orderResult.orderId);
+                    }
+
+                    // ? Store the validated orderId
+                    currentOrderId = orderId;
+                    console.log('? Order ID stored:', currentOrderId, 'Type:', typeof currentOrderId);
+                    
+                    // ? Double-check it was stored correctly
+                    if (!currentOrderId || currentOrderId <= 0) {
+                        console.error('? CRITICAL: currentOrderId not set properly after assignment:', currentOrderId);
+                        throw new Error('Failed to store order ID');
+                    }
 
                     // Step 2: Create PayPal order
                     console.log('?? Step 2: Creating PayPal order...');
                     console.log('?? PayPal order data:', {
-                        orderId: orderResult.orderId,
+                        orderId: currentOrderId,
                         subtotal: orderResult.subtotal,
                         discountAmount: orderResult.discountAmount,
                         totalAmount: orderResult.totalAmount
@@ -172,7 +192,7 @@
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            orderId: orderResult.orderId,
+                            orderId: currentOrderId,
                             subtotal: orderResult.subtotal,
                             discountAmount: orderResult.discountAmount,
                             totalAmount: orderResult.totalAmount
@@ -180,29 +200,51 @@
                     });
 
                     console.log('?? PayPal response status:', paypalResponse.status);
-                    console.log('?? PayPal response ok:', paypalResponse.ok);
 
                     const paypalOrder = await paypalResponse.json();
                     console.log('?? PayPal order response:', paypalOrder);
 
                     if (!paypalResponse.ok) {
                         console.error('? PayPal order creation failed:', paypalOrder.error);
+                        window.showToast?.(paypalOrder.error || 'L?i t?o thanh toán PayPal', 'error');
                         throw new Error(paypalOrder.error || 'Failed to create PayPal order');
                     }
 
                     console.log('? PayPal order created successfully:', paypalOrder.id);
+                    console.log('? currentOrderId confirmed:', currentOrderId);
+                    
                     return paypalOrder.id;
                     
                 } catch (error) {
-                    console.error('? Error creating order:', error);
-                    console.error('? Error stack:', error.stack);
-                    window.showToast?.('Có l?i x?y ra: ' + error.message, 'error');
+                    console.error('? Error in createOrder:', error);
+                    console.error('?? Error stack:', error.stack);
+                    console.error('?? currentOrderId at error:', currentOrderId);
+                    
+                    // ? IMPORTANT: Show user-friendly error
+                    if (!error.message.includes('toast')) { // Avoid duplicate toasts
+                        window.showToast?.('Có l?i x?y ra: ' + error.message, 'error');
+                    }
                     throw error;
                 }
             },
 
             onApprove: async function(data) {
                 console.log('? PayPal payment approved:', data);
+                console.log('?? Current Order ID:', currentOrderId);
+                
+                // ? CRITICAL: Validate currentOrderId before proceeding
+                if (!currentOrderId || currentOrderId <= 0 || isNaN(currentOrderId)) {
+                    console.error('? CRITICAL: Invalid currentOrderId:', currentOrderId);
+                    console.error('? This means order creation failed. Cannot proceed.');
+                    window.showToast?.('L?i nghiêm tr?ng: Không tìm th?y mã ??n hàng. ??n hàng có th? ?ã ???c t?o - vui lòng ki?m tra danh sách ??n hàng.', 'error');
+                    
+                    // ? Redirect to orders page instead of success page with invalid ID
+                    setTimeout(() => {
+                        window.location.href = '/Order';
+                    }, 3000);
+                    return;
+                }
+                
                 window.showToast?.('?ang x? lý thanh toán...', 'info');
 
                 try {
@@ -214,31 +256,52 @@
                     console.log('?? Capture response status:', response.status);
 
                     if (!response.ok) {
-                        throw new Error('Payment capture failed');
+                        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                        console.error('? Capture failed:', errorData);
+                        throw new Error(errorData.error || 'Payment capture failed');
                     }
 
-                    console.log('? Payment captured successfully');
+                    const captureData = await response.json();
+                    console.log('? Payment captured successfully:', captureData);
                     
-                    // Redirect to success page
-                    const successUrl = `/Payment/PayPalSuccess?orderId=${currentOrderId}&token=${data.orderID}`;
-                    console.log('?? Redirecting to success page:', successUrl);
-                    window.location.href = successUrl;
+                    // ? FINAL VALIDATION: Ensure orderId is valid before redirect
+                    if (currentOrderId && currentOrderId > 0 && !isNaN(currentOrderId)) {
+                        const successUrl = `/Payment/PayPalSuccess?orderId=${currentOrderId}&token=${data.orderID}`;
+                        console.log('?? Redirecting to success page:', successUrl);
+                        window.location.href = successUrl;
+                    } else {
+                        // This should never happen, but just in case
+                        console.error('? Cannot redirect: orderId became invalid:', currentOrderId);
+                        window.showToast?.('Thanh toán thành công! ?ang chuy?n ??n trang ??n hàng...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/Order';
+                        }, 2000);
+                    }
                     
                 } catch (error) {
                     console.error('? Error capturing payment:', error);
+                    console.error('?? Error details:', {
+                        message: error.message,
+                        stack: error.stack,
+                        currentOrderId: currentOrderId
+                    });
                     window.showToast?.('L?i x? lý thanh toán: ' + error.message, 'error');
                 }
             },
 
             onCancel: function(data) {
                 console.log('?? PayPal payment cancelled by user:', data);
-                window.showToast?.('B?n ?ã h?y thanh toán PayPal', 'error');
+                window.showToast?.('B?n ?ã h?y thanh toán PayPal', 'warning');
             },
 
             onError: function(err) {
-                console.error('? PayPal error:', err);
+                console.error('? PayPal SDK error:', err);
                 console.error('? PayPal error type:', typeof err);
-                console.error('? PayPal error details:', JSON.stringify(err, null, 2));
+                try {
+                    console.error('? PayPal error details:', JSON.stringify(err, null, 2));
+                } catch (e) {
+                    console.error('? Could not stringify error:', e);
+                }
                 window.showToast?.('Có l?i x?y ra v?i PayPal. Vui lòng th? l?i.', 'error');
             }
         }).render(container).then(() => {

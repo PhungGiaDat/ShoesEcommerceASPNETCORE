@@ -1,0 +1,25 @@
+﻿@model ShoesEcommerce.Models.Orders.Order
+
+@{
+    ViewData["Title"] = "Thanh toán VNPay";
+    var totalAmount = Model.TotalAmount.ToString("C0", new System.Globalization.CultureInfo("vi-VN"));
+}
+
+<h2>Thanh toán qua VNPay</h2>
+
+<div class="card mt-4">
+    <div class="card-body">
+        <h4>Thông tin đơn hàng</h4>
+        <p><strong>Mã đơn hàng:</strong> @Model.Id</p>
+        <p><strong>Ngày tạo:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+        <p><strong>Tổng tiền:</strong> @totalAmount</p>
+
+        <form asp-action="VnPayCheckout" asp-controller="Payment" method="post">
+            <input type="hidden" name="orderId" value="@Model.Id" />
+            <input type="hidden" name="amount" value="@Model.TotalAmount" />
+            <button type="submit" class="btn btn-danger">Thanh toán bằng VNPay</button>
+        </form>
+
+        <a href="@Url.Action("Index", "Cart")" class="btn btn-secondary mt-3">Quay lại giỏ hàng</a>
+    </div>
+</div>

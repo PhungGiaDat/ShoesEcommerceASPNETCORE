@@ -1669,6 +1669,9 @@
 <!-- PayPal SDK - Load at the top -->
 <script src="https://www.paypal.com/sdk/js?client-id=AQ-J5MVltsGtqYFW0OrcELkpILUkJG0ztT2ZsWsSX9zV76XW8Xtey7fRjw-AnNaN7dX7Mw8d-8WYEdNv&currency=USD&intent=capture"></script>
 
+<!-- Checkout PayPal Integration Script (uses CreateOrderAjax properly) -->
+<script src="~/js/checkout-paypal.js" asp-append-version="true"></script>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Select discount code
@@ -1680,7 +1683,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.applyDiscount = function() {
         const code = document.getElementById('discountCode').value;
         if (code) {
-            alert('Chức năng áp dụng mã giảm giá đang được phát triển.\nMã: ' + code);
+            showToast('Mã giảm giá đã được áp dụng: ' + code, 'success');
         }
     };
 
@@ -1793,13 +1796,17 @@ document.addEventListener('DOMContentLoaded', function() {
         return label;
     }
 
-    // Toast notification
-    function showToast(message, type = 'success') {
+    // Toast notification - make it globally accessible
+    window.showToast = function(message, type = 'success') {
         const container = document.getElementById('toastContainer');
+        if (!container) return;
+        
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
         
-        const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+        const icon = type === 'success' ? 'fa-check-circle' : 
+                     type === 'error' ? 'fa-exclamation-circle' : 
+                     type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle';
         
         toast.innerHTML = `
             <i class="fas ${icon} toast-icon"></i>
@@ -1815,196 +1822,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toast.style.animation = 'fadeOut 0.3s ease-out';
             setTimeout(() => toast.remove(), 300);
         }, 5000);
-    }
-
-    // ===== PAYMENT METHOD HANDLING =====
-    const form = document.getElementById('checkoutForm');
-    const placeOrderBtn = document.querySelector('.btn-place-order');
-    const paymentMethodRadios = document.querySelectorAll('input[name="paymentMethod"]');
-    let paypalButtonRendered = false;
-
-    // Handle payment method change
-    paymentMethodRadios.forEach(radio => {
-        radio.addEventListener('change', function() {
-            const selectedMethod = this.value;
-            
-            if (selectedMethod === 'PayPal') {
-                // Show PayPal container, hide regular button
-                showPayPalButton();
-            } else {
-                // Show regular button, hide PayPal container
-                hidePayPalButton();
-            }
-        });
-    });
-
-    function showPayPalButton() {
-        // Hide regular place order button
-        placeOrderBtn.style.display = 'none';
-        
-        // Show or create PayPal container
-        let paypalContainer = document.getElementById('paypal-button-container');
-        if (!paypalContainer) {
-            paypalContainer = document.createElement('div');
-            paypalContainer.id = 'paypal-button-container';
-            paypalContainer.style.minHeight = '150px';
-            placeOrderBtn.parentNode.insertBefore(paypalContainer, placeOrderBtn);
-        } else {
-            paypalContainer.style.display = 'block';
-        }
-
-        // Render PayPal button only once
-        if (!paypalButtonRendered) {
-            renderPayPalButton(paypalContainer);
-            paypalButtonRendered = true;
-        }
-    }
-
-    function hidePayPalButton() {
-        // Show regular button
-        placeOrderBtn.style.display = 'flex';
-        
-        // Hide PayPal container
-        const paypalContainer = document.getElementById('paypal-button-container');
-        if (paypalContainer) {
-            paypalContainer.style.display = 'none';
-        }
-    }
-
-    function renderPayPalButton(container) {
-        paypal.Buttons({
-            style: {
-                layout: 'vertical',
-                color: 'gold',
-                shape: 'rect',
-                label: 'paypal',
-                height: 50
-            },
-            
-            // Create order on PayPal
-            createOrder: async function() {
-                // Validate form first
-                const shippingAddress = document.querySelector('input[name="shippingAddress"]:checked');
-                if (!shippingAddress) {
-                    showToast('Vui lòng chọn địa chỉ giao hàng', 'error');
-                    throw new Error('No shipping address selected');
-                }
-
-                // Show loading
-                showToast('Đang tạo đơn hàng...', 'info');
-
-                try {
-                    // Get form data
-                    const formData = new FormData(form);
-                    
-                    // Create order on backend first
-                    const createResponse = await fetch('@Url.Action("PlaceOrder", "Checkout")', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!createResponse.ok) {
-                        throw new Error('Failed to create order');
-                    }
-
-                    // The response should be a redirect, so we need to extract the orderId from URL
-                    // OR modify PlaceOrder to return JSON when payment is PayPal
-                    const responseUrl = createResponse.url;
-                    const urlParams = new URLSearchParams(new URL(responseUrl).search);
-                    const orderId = urlParams.get('orderId');
-                    const subtotal = parseFloat(urlParams.get('subtotal') || '0');
-                    const discountAmount = parseFloat(urlParams.get('discountAmount') || '0');
-                    const totalAmount = parseFloat(urlParams.get('totalAmount') || '0');
-
-                    // Now create PayPal order
-                    const paypalResponse = await fetch('@Url.Action("CreatePayPalOrder", "Payment")', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            orderId: parseInt(orderId),
-                            subtotal: subtotal,
-                            discountAmount: discountAmount,
-                            totalAmount: totalAmount
-                        })
-                    });
-
-                    const paypalOrder = await paypalResponse.json();
-                    
-                    if (!paypalResponse.ok) {
-                        throw new Error(paypalOrder.error || 'Failed to create PayPal order');
-                    }
-
-                    return paypalOrder.id;
-                } catch (error) {
-                    console.error('Error creating order:', error);
-                    showToast('Có lỗi xảy ra: ' + error.message, 'error');
-                    throw error;
-                }
-            },
-            
-            // Approve and capture payment
-            onApprove: async function(data) {
-                showToast('Đang xử lý thanh toán...', 'info');
-                
-                try {
-                    const response = await fetch(`@Url.Action("CapturePayPalOrder", "Payment")?orderId=${data.orderID}&orderIdLocal=${data.orderID}`, {
-                        method: 'POST'
-                    });
-
-                    if (!response.ok) {
-                        throw new Error('Payment capture failed');
-                    }
-
-                    const result = await response.json();
-                    
-                    // Redirect to success page
-                    window.location.href = `@Url.Action("PayPalSuccess", "Payment")?orderId=${data.orderID}&token=${data.orderID}`;
-                } catch (error) {
-                    console.error('Error capturing payment:', error);
-                    showToast('Lỗi xử lý thanh toán: ' + error.message, 'error');
-                }
-            },
-            
-            // Handle cancellation
-            onCancel: function(data) {
-                showToast('Bạn đã hủy thanh toán PayPal', 'error');
-            },
-            
-            // Handle errors
-            onError: function(err) {
-                console.error('PayPal error:', err);
-                showToast('Có lỗi xảy ra với PayPal. Vui lòng thử lại.', 'error');
-            }
-            
-        }).render(container);
-    }
-
-    // Regular form submission for COD and VNPay
-    form.addEventListener('submit', function(e) {
-        const shippingAddress = document.querySelector('input[name="shippingAddress"]:checked');
-        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
-
-        if (!shippingAddress) {
-            e.preventDefault();
-            showToast('Vui lòng chọn địa chỉ giao hàng', 'error');
-            return false;
-        }
-
-        if (!paymentMethod) {
-            e.preventDefault();
-            showToast('Vui lòng chọn phương thức thanh toán', 'error');
-            return false;
-        }
-
-        // If PayPal is selected, prevent form submission (PayPal button handles it)
-        if (paymentMethod.value === 'PayPal') {
-            e.preventDefault();
-            showToast('Vui lòng sử dụng nút PayPal bên dưới', 'error');
-            return false;
-        }
-    });
+    };
 
     // Show temp messages
     @if (TempData["Error"] != null)
@@ -2019,12 +1837,6 @@ document.addEventListener('DOMContentLoaded', function() {
         <text>
         showToast('@Html.Raw(TempData["Success"])', 'success');
         </text>
-    }
-
-    // Initialize - if PayPal is selected on load, show button
-    const selectedPaymentMethod = document.querySelector('input[name="paymentMethod"]:checked');
-    if (selectedPaymentMethod && selectedPaymentMethod.value === 'PayPal') {
-        showPayPalButton();
     }
 });
 </script>

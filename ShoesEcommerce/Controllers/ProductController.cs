@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using ShoesEcommerce.Services;
 using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.ViewModels.Product;
+using ShoesEcommerce.Helpers;
 
 namespace ShoesEcommerce.Controllers
 {
@@ -26,39 +27,39 @@ namespace ShoesEcommerce.Controllers
         }
 
         // GET: Product - NOW DISPLAYS PRODUCT VARIANTS INSTEAD OF PRODUCTS
+        // SEO-friendly URL: /san-pham or /product
+        [Route("san-pham")]
+        [Route("product")]
+        [Route("Product")]
+        [Route("Product/Index")]
         public async Task<IActionResult> Index(string searchString, int? categoryId, int? brandId, int page = 1, int pageSize = 12)
         {
             ViewData["Title"] = "Danh sách sản phẩm";
 
             try
             {
-                // ✅ NEW: Use product variant list instead of products
                 var model = await _productService.GetProductVariantsListAsync(searchString, categoryId, brandId, page, pageSize);
                 
-                // Get categories and brands for dropdowns
                 var categories = await _productService.GetCategoriesForDropdownAsync();
                 var brands = await _productService.GetBrandsForDropdownAsync();
                 
                 ViewBag.Categories = categories.Select(c => new { c.Id, c.Name }).ToList();
                 ViewBag.Brands = brands.Select(b => new { b.Id, b.Name }).ToList();
 
-                // Set filter values for form persistence
                 ViewData["CurrentFilter"] = searchString;
                 ViewData["CategoryFilter"] = categoryId;
                 ViewData["BrandFilter"] = brandId;
 
-                // Get featured discounts for banner
                 var featuredDiscounts = await _discountService.GetFeaturedDiscountsAsync();
                 model.FeaturedDiscounts = featuredDiscounts;
 
-                return View("VariantIndex", model); // Use new view for variants
+                return View("VariantIndex", model);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error occurred while getting product variants for user page");
                 TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải danh sách sản phẩm.";
                 
-                // Return empty model on error
                 var emptyModel = new ProductVariantListViewModel
                 {
                     ProductVariants = new List<ProductVariantDisplayInfo>(),
@@ -75,38 +76,70 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
-        // GET: Product/Details/5
-        public async Task<IActionResult> Details(int? id)
+        // GET: Product/Details/5 - Traditional route (for backward compatibility)
+        // GET: /san-pham/{slug} - SEO-friendly route
+        [Route("san-pham/{slug}")]
+        [Route("product/{slug}")]
+        [Route("Product/Details/{id:int}")]
+        public async Task<IActionResult> Details(string? slug, int? id)
         {
-            if (id == null)
+            // Extract ID from slug or use direct ID
+            int productId;
+            if (id.HasValue)
+            {
+                productId = id.Value;
+            }
+            else if (!string.IsNullOrEmpty(slug))
+            {
+                productId = SlugHelper.ExtractIdFromSlug(slug);
+            }
+            else
+            {
+                return NotFound();
+            }
+
+            if (productId <= 0)
             {
                 return NotFound();
             }
 
             try
             {
-                var product = await _productService.GetProductByIdAsync(id.Value);
+                var product = await _productService.GetProductByIdAsync(productId);
                 if (product == null)
                 {
                     return NotFound("Sản phẩm không tồn tại.");
                 }
 
-                var variants = await _productService.GetProductVariantsAsync(id.Value);
-                var discountInfo = await _discountService.GetProductDiscountInfoAsync(id.Value);
-                var comments = await _commentService.GetCommentsAsync(id.Value);
-                var qas = await _commentService.GetQAsAsync(id.Value);
+                // Redirect to canonical SEO-friendly URL if accessed by ID
+                var expectedSlug = product.Name.ToSlugWithId(product.Id);
+                if (id.HasValue || (slug != null && !slug.Equals(expectedSlug, StringComparison.OrdinalIgnoreCase)))
+                {
+                    return RedirectToActionPermanent(nameof(Details), new { slug = expectedSlug });
+                }
+
+                var variants = await _productService.GetProductVariantsAsync(productId);
+                var discountInfo = await _discountService.GetProductDiscountInfoAsync(productId);
+                var comments = await _commentService.GetCommentsAsync(productId);
+                var qas = await _commentService.GetQAsAsync(productId);
 
                 ViewData["Title"] = product.Name ?? "Chi tiết sản phẩm";
+                ViewData["MetaDescription"] = product.Description?.Length > 160 
+                    ? product.Description.Substring(0, 157) + "..." 
+                    : product.Description;
+                ViewData["CanonicalUrl"] = Url.Action(nameof(Details), "Product", new { slug = expectedSlug }, Request.Scheme);
+                
                 ViewBag.Variants = variants;
                 ViewBag.DiscountInfo = discountInfo;
                 ViewBag.Comments = comments;
                 ViewBag.QAs = qas;
+                ViewBag.ProductSlug = expectedSlug;
 
                 return View(product);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred while getting product details for ID: {ProductId}", id);
+                _logger.LogError(ex, "Error occurred while getting product details for ID: {ProductId}", productId);
                 TempData["ErrorMessage"] = "Có lỗi xảy ra khi tải thông tin sản phẩm.";
                 return RedirectToAction(nameof(Index));
             }
@@ -121,18 +154,20 @@ namespace ShoesEcommerce.Controllers
                 TempData["Error"] = "Bạn cần đăng nhập để bình luận.";
                 return RedirectToAction("Details", new { id = model.ProductId });
             }
-            // Get customer id and name from claims
+            
             var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(customerIdClaim, out var customerId))
             {
                 model.CustomerId = customerId;
             }
             model.CustomerName = User.Identity.Name ?? "Khách hàng";
+            
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 return RedirectToAction("Details", new { id = model.ProductId });
             }
+            
             await _commentService.AddCommentAsync(model);
             TempData["Success"] = "Đã gửi bình luận thành công.";
             return RedirectToAction("Details", new { id = model.ProductId });
@@ -147,31 +182,36 @@ namespace ShoesEcommerce.Controllers
                 TempData["Error"] = "Bạn cần đăng nhập để gửi câu hỏi.";
                 return RedirectToAction("Details", new { id = model.ProductId });
             }
-            // Get customer id and name from claims
+            
             var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(customerIdClaim, out var customerId))
             {
                 model.CustomerId = customerId;
             }
             model.CustomerName = User.Identity.Name ?? "Khách hàng";
+            
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
                 return RedirectToAction("Details", new { id = model.ProductId });
             }
+            
             await _commentService.AddQAAsync(model);
             TempData["Success"] = "Đã gửi câu hỏi thành công.";
             return RedirectToAction("Details", new { id = model.ProductId });
         }
 
-        // GET: Product/DiscountedProducts - Show product variants with active discounts
+        // GET: Product/DiscountedProducts - SEO-friendly URL
+        [Route("khuyen-mai")]
+        [Route("discounted-products")]
+        [Route("Product/DiscountedProducts")]
         public async Task<IActionResult> DiscountedProducts(int page = 1, int pageSize = 12)
         {
             ViewData["Title"] = "Sản phẩm khuyến mãi";
+            ViewData["MetaDescription"] = "Khám phá các sản phẩm giày dép khuyến mãi với giá ưu đãi tốt nhất. Mua ngay!";
 
             try
             {
-                // ✅ NEW: Use discounted product variants
                 var discountedVariants = await _productService.GetDiscountedProductVariantsAsync(page, pageSize);
                 var featuredDiscounts = await _discountService.GetFeaturedDiscountsAsync();
 
@@ -185,7 +225,7 @@ namespace ShoesEcommerce.Controllers
                     ShowDiscountsOnly = true
                 };
 
-                return View("VariantIndex", model); // Use same variant view
+                return View("VariantIndex", model);
             }
             catch (Exception ex)
             {
@@ -206,13 +246,13 @@ namespace ShoesEcommerce.Controllers
 
             try
             {
-                // ✅ NEW: Search product variants instead of products
                 var searchResult = await _productService.GetProductVariantsListAsync(term, null, null, 1, limit);
                 
                 var variants = searchResult.ProductVariants.Select(v => new {
                     id = v.Id,
                     productId = v.ProductId,
                     name = v.DisplayName,
+                    slug = v.DisplayName.ToSlugWithId(v.ProductId),
                     price = v.Price,
                     discountedPrice = v.DiscountedPrice,
                     imageUrl = v.ImageUrl,
@@ -247,6 +287,7 @@ namespace ShoesEcommerce.Controllers
                     id = v.Id,
                     productId = v.ProductId,
                     name = v.DisplayName,
+                    slug = v.DisplayName.ToSlugWithId(v.ProductId),
                     price = v.Price,
                     discountedPrice = v.DiscountedPrice,
                     imageUrl = v.ImageUrl,
@@ -280,6 +321,7 @@ namespace ShoesEcommerce.Controllers
                     id = v.Id,
                     productId = v.ProductId,
                     name = v.DisplayName,
+                    slug = v.DisplayName.ToSlugWithId(v.ProductId),
                     price = v.Price,
                     discountedPrice = v.DiscountedPrice,
                     imageUrl = v.ImageUrl,

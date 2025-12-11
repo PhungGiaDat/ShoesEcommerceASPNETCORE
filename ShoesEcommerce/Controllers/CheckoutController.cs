@@ -53,10 +53,9 @@ namespace ShoesEcommerce.Controllers
                 var customerId = GetCurrentCustomerId();
                 var sessionId = HttpContext.Session.Id;
 
-                _logger.LogInformation("Loading checkout page for customer {CustomerId} or session {SessionId}", 
+                _logger.LogInformation("Loading checkout page for customer {CustomerId} or session {SessionId}",
                     customerId, sessionId);
 
-                // Validate checkout prerequisites
                 var (isValid, errorMessage) = await _checkoutService.ValidateCheckoutAsync(customerId, sessionId);
                 if (!isValid)
                 {
@@ -64,7 +63,6 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index", "Cart");
                 }
 
-                // Get cart
                 var cart = await _checkoutService.GetCartForCheckoutAsync(customerId, sessionId);
                 if (cart == null)
                 {
@@ -72,7 +70,6 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index", "Cart");
                 }
 
-                // Get addresses for logged-in customers
                 if (customerId != 0)
                 {
                     var addresses = await _checkoutService.GetCustomerAddressesAsync(customerId);
@@ -83,11 +80,10 @@ namespace ShoesEcommerce.Controllers
                     ViewBag.Addresses = new List<ShoesEcommerce.Models.Orders.ShippingAddress>();
                 }
 
-                // Load active discounts
                 var activeDiscounts = await _discountService.GetFeaturedDiscountsAsync(5);
                 ViewBag.ActiveDiscounts = activeDiscounts;
 
-                _logger.LogInformation("Checkout page loaded successfully for customer {CustomerId} with {CartItemCount} items", 
+                _logger.LogInformation("Checkout page loaded successfully for customer {CustomerId} with {CartItemCount} items",
                     customerId, cart.CartItems.Count);
 
                 return View(cart);
@@ -109,10 +105,9 @@ namespace ShoesEcommerce.Controllers
                 var customerId = GetCurrentCustomerId();
                 var sessionId = HttpContext.Session.Id;
 
-                _logger.LogInformation("Placing order for customer {CustomerId} with payment method {PaymentMethod}", 
+                _logger.LogInformation("Placing order for customer {CustomerId} with payment method {PaymentMethod}",
                     customerId, paymentMethod);
 
-                // Validate input
                 if (string.IsNullOrWhiteSpace(paymentMethod))
                 {
                     TempData["Error"] = "Vui lòng chọn phương thức thanh toán.";
@@ -125,7 +120,6 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index");
                 }
 
-                // ✅ FIX: Get cart and calculate totals BEFORE placing order (cart will be cleared after)
                 var cart = await _checkoutService.GetCartForCheckoutAsync(customerId, sessionId);
                 if (cart == null)
                 {
@@ -140,7 +134,6 @@ namespace ShoesEcommerce.Controllers
                     "Calculated order totals: Subtotal={Subtotal}, Discount={Discount}, Total={Total}",
                     subtotal, discountAmount, totalAmount);
 
-                // Place order through service (this will clear the cart)
                 var order = await _checkoutService.PlaceOrderAsync(
                     customerId, sessionId, shippingAddressId, paymentMethod, discountCode);
 
@@ -150,14 +143,14 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index");
                 }
 
-                _logger.LogInformation("Order {OrderId} created successfully with total {TotalAmount}", 
+                _logger.LogInformation("Order {OrderId} created successfully with total {TotalAmount}",
                     order.Id, totalAmount);
 
-                // Redirect based on payment method
+                // Redirect theo phương thức thanh toán
                 if (paymentMethod == "PayPal")
                 {
-                    return RedirectToAction("PayPalCheckout", "Payment", new 
-                    { 
+                    return RedirectToAction("PayPalCheckout", "Payment", new
+                    {
                         orderId = order.Id,
                         subtotal = subtotal,
                         discountAmount = discountAmount,
@@ -166,7 +159,8 @@ namespace ShoesEcommerce.Controllers
                 }
                 else if (paymentMethod == "VNPay")
                 {
-                    return RedirectToAction("Pay", "Payment", new { orderId = order.Id, amount = totalAmount });
+                    // Redirect sang trang xác nhận VNPay trước khi tạo URL thanh toán
+                    return RedirectToAction("VnPayCheckoutPage", "Payment", new { orderId = order.Id });
                 }
                 else if (paymentMethod == "COD")
                 {
@@ -184,9 +178,6 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
-        /// <summary>
-        /// AJAX endpoint for creating order and returning JSON (for PayPal inline integration)
-        /// </summary>
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateOrderAjax([FromForm] string paymentMethod, [FromForm] string shippingAddress, [FromForm] string? discountCode)
@@ -196,10 +187,9 @@ namespace ShoesEcommerce.Controllers
                 var customerId = GetCurrentCustomerId();
                 var sessionId = HttpContext.Session.Id;
 
-                _logger.LogInformation("Creating order via AJAX for customer {CustomerId} with payment method {PaymentMethod}", 
+                _logger.LogInformation("Creating order via AJAX for customer {CustomerId} with payment method {PaymentMethod}",
                     customerId, paymentMethod);
 
-                // Validate input
                 if (string.IsNullOrWhiteSpace(paymentMethod))
                 {
                     return Json(new { success = false, error = "Vui lòng chọn phương thức thanh toán." });
@@ -210,7 +200,6 @@ namespace ShoesEcommerce.Controllers
                     return Json(new { success = false, error = "Địa chỉ giao hàng không hợp lệ." });
                 }
 
-                // Get cart and calculate totals BEFORE placing order
                 var cart = await _checkoutService.GetCartForCheckoutAsync(customerId, sessionId);
                 if (cart == null)
                 {
@@ -220,21 +209,24 @@ namespace ShoesEcommerce.Controllers
                 var (subtotal, discountAmount, totalAmount) = await _checkoutService.CalculateOrderTotalsAsync(
                     cart, discountCode, GetCustomerEmail());
 
-                // Place order through service
+                // ✅ NEW: Log before calling PlaceOrderAsync
+                _logger.LogInformation("About to place order: CustomerId={CustomerId}, PaymentMethod={PaymentMethod}, AddressId={AddressId}, Discount={DiscountCode}",
+                    customerId, paymentMethod, shippingAddressId, discountCode ?? "None");
+
                 var order = await _checkoutService.PlaceOrderAsync(
                     customerId, sessionId, shippingAddressId, paymentMethod, discountCode);
 
                 if (order == null)
                 {
+                    _logger.LogError("PlaceOrderAsync returned null for customer {CustomerId}", customerId);
                     return Json(new { success = false, error = "Không thể tạo đơn hàng. Vui lòng thử lại." });
                 }
 
-                _logger.LogInformation("Order {OrderId} created via AJAX with total {TotalAmount}", 
+                _logger.LogInformation("Order {OrderId} created via AJAX with total {TotalAmount}",
                     order.Id, totalAmount);
 
-                // Return JSON with order details
-                return Json(new 
-                { 
+                return Json(new
+                {
                     success = true,
                     orderId = order.Id,
                     subtotal = subtotal,
@@ -245,21 +237,39 @@ namespace ShoesEcommerce.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating order via AJAX for customer {CustomerId}", GetCurrentCustomerId());
-                return Json(new { success = false, error = "Có lỗi xảy ra trong quá trình đặt hàng. Vui lòng thử lại." });
+                _logger.LogError(ex, "❌ ERROR in CreateOrderAjax for customer {CustomerId}", GetCurrentCustomerId());
+                
+                // ✅ NEW: Log detailed error information
+                _logger.LogError("Exception Type: {Type}", ex.GetType().FullName);
+                _logger.LogError("Exception Message: {Message}", ex.Message);
+                _logger.LogError("PaymentMethod: {PaymentMethod}", paymentMethod);
+                _logger.LogError("ShippingAddress: {Address}", shippingAddress);
+                _logger.LogError("DiscountCode: {DiscountCode}", discountCode ?? "None");
+                
+                if (ex.InnerException != null)
+                {
+                    _logger.LogError("Inner Exception Type: {InnerType}", ex.InnerException.GetType().FullName);
+                    _logger.LogError("Inner Exception Message: {InnerMessage}", ex.InnerException.Message);
+                }
+                
+                // ✅ IMPROVED: Return actual error message to help debugging
+                return Json(new { 
+                    success = false, 
+                    error = $"Có lỗi xảy ra: {ex.Message}" // Include actual error
+                });
             }
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddShippingAddress(
-            [FromForm] string fullName, [FromForm] string phoneNumber, 
+            [FromForm] string fullName, [FromForm] string phoneNumber,
             [FromForm] string address, [FromForm] string city, [FromForm] string district)
         {
             try
             {
                 var customerId = GetCurrentCustomerId();
-                
+
                 if (customerId == 0)
                 {
                     return Json(new { success = false, message = "Bạn cần đăng nhập để thêm địa chỉ." });
@@ -273,14 +283,14 @@ namespace ShoesEcommerce.Controllers
                     return Json(new { success = false, message = "Vui lòng điền đầy đủ thông tin." });
                 }
 
-                _logger.LogInformation("Shipping address {AddressId} created for customer {CustomerId}", 
+                _logger.LogInformation("Shipping address {AddressId} created for customer {CustomerId}",
                     shippingAddress.Id, customerId);
 
-                return Json(new 
-                { 
-                    success = true, 
-                    message = "Thêm địa chỉ thành công!", 
-                    address = new 
+                return Json(new
+                {
+                    success = true,
+                    message = "Thêm địa chỉ thành công!",
+                    address = new
                     {
                         id = shippingAddress.Id,
                         fullName = shippingAddress.FullName,
@@ -304,22 +314,29 @@ namespace ShoesEcommerce.Controllers
             {
                 _logger.LogInformation("Loading COD success page for order {OrderId}", orderId);
 
-                // ✅ FIX: Retrieve order from database instead of just passing OrderId
+                // ✅ FIXED: Validate orderId
+                if (orderId <= 0)
+                {
+                    _logger.LogWarning("Invalid orderId for COD success page: {OrderId}", orderId);
+                    TempData["Error"] = "Mã đơn hàng không hợp lệ.";
+                    return RedirectToAction("Index", "Home");
+                }
+
                 var customerId = GetCurrentCustomerId();
                 
-                // Get order with full details
+                // ✅ FIXED: Get actual order data from OrderService
                 var order = await _orderService.GetOrderByIdAsync(orderId, customerId);
                 
                 if (order == null)
                 {
-                    _logger.LogWarning("Order {OrderId} not found for customer {CustomerId}", orderId, customerId);
-                    TempData["Error"] = "Không tìm thấy thông tin đơn hàng.";
+                    _logger.LogWarning("Order {OrderId} not found for COD success page", orderId);
+                    TempData["Error"] = "Không tìm thấy đơn hàng.";
                     return RedirectToAction("Index", "Home");
                 }
 
                 _logger.LogInformation("COD success page loaded for order {OrderId}", orderId);
-
-                // Pass order model to view
+                
+                // ✅ FIXED: Pass the OrderViewModel to the view
                 return View(order);
             }
             catch (Exception ex)

@@ -91,12 +91,24 @@ namespace ShoesEcommerce.Repositories
                 }
 
                 payment.Status = status;
+                
                 if (paidAt.HasValue)
                 {
                     payment.PaidAt = paidAt.Value;
                 }
 
+                // ? FIX: Save TransactionId from PayPal/VNPay
+                if (!string.IsNullOrEmpty(transactionId))
+                {
+                    payment.TransactionId = transactionId;
+                }
+
                 await _context.SaveChangesAsync();
+                
+                _logger.LogInformation(
+                    "Payment updated for order {OrderId}: Status={Status}, PaidAt={PaidAt}, TransactionId={TransactionId}",
+                    orderId, status, paidAt, transactionId);
+                
                 return true;
             }
             catch (Exception ex)

@@ -1,6 +1,7 @@
 ﻿using ShoesEcommerce.Models.Interactions;
 using ShoesEcommerce.Models.Products;
 using ShoesEcommerce.Models.Promotions;
+using ShoesEcommerce.Helpers;
 
 namespace ShoesEcommerce.Models.Products
 {
@@ -9,6 +10,13 @@ namespace ShoesEcommerce.Models.Products
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// SEO-friendly URL slug for the product
+        /// Auto-generated from Name if not set
+        /// </summary>
+        public string? Slug { get; set; }
+        
         public int CategoryId { get; set; }
         public Category Category { get; set; }
         public int BrandId { get; set; }
@@ -21,6 +29,26 @@ namespace ShoesEcommerce.Models.Products
 
         // ✅ CORRECT: Navigation properties only - NO QUERIES
         public ICollection<DiscountProduct> DiscountProducts { get; set; } = new List<DiscountProduct>();
+
+        /// <summary>
+        /// Gets the URL-friendly slug for this product
+        /// Uses stored slug if available, otherwise generates from name
+        /// </summary>
+        public string GetSlug()
+        {
+            if (!string.IsNullOrEmpty(Slug))
+                return Slug;
+            
+            return Name.ToSlugWithId(Id);
+        }
+
+        /// <summary>
+        /// Generates and sets the slug from the product name
+        /// </summary>
+        public void GenerateSlug()
+        {
+            Slug = Name.ToSlug();
+        }
 
         // ✅ NEW: Method to get the active discount for this product
         public Discount? GetActiveDiscount()

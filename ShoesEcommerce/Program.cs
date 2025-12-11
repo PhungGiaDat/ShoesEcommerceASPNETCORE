@@ -12,6 +12,7 @@ using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
+using ShoesEcommerce.Services.Payment;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -102,6 +103,9 @@ builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<ShoesEcommerce.Services.ICommentService, ShoesEcommerce.Services.CommentService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>(); // ✅ NEW: Payment service
 builder.Services.AddScoped<ICheckoutService, CheckoutService>(); // ✅ NEW: Checkout service
+
+// Đăng ký VNPayService
+builder.Services.AddScoped<IVnPayService, VnPayService>(); 
 
 // ✅ NEW: Register PayPal HttpClient
 builder.Services.AddHttpClient("PayPal", client =>
@@ -291,6 +295,57 @@ try
         name: "admin_default",
         pattern: "Admin/{action=Index}/{id?}",
         defaults: new { controller = "Admin" });
+
+    // ✅ SEO-friendly routes
+    // Product routes - Vietnamese friendly URLs
+    app.MapControllerRoute(
+        name: "product_detail_seo",
+        pattern: "san-pham/{slug}",
+        defaults: new { controller = "Product", action = "Details" });
+
+    app.MapControllerRoute(
+        name: "product_list_seo",
+        pattern: "san-pham",
+        defaults: new { controller = "Product", action = "Index" });
+
+    app.MapControllerRoute(
+        name: "discounted_products_seo",
+        pattern: "khuyen-mai",
+        defaults: new { controller = "Product", action = "DiscountedProducts" });
+
+    // Cart routes
+    app.MapControllerRoute(
+        name: "cart_seo",
+        pattern: "gio-hang",
+        defaults: new { controller = "Cart", action = "Index" });
+
+    // Checkout routes
+    app.MapControllerRoute(
+        name: "checkout_seo",
+        pattern: "thanh-toan",
+        defaults: new { controller = "Checkout", action = "Index" });
+
+    // Account routes
+    app.MapControllerRoute(
+        name: "login_seo",
+        pattern: "dang-nhap",
+        defaults: new { controller = "Account", action = "Login" });
+
+    app.MapControllerRoute(
+        name: "register_seo",
+        pattern: "dang-ky",
+        defaults: new { controller = "Account", action = "Register" });
+
+    // Order history routes
+    app.MapControllerRoute(
+        name: "orders_seo",
+        pattern: "don-hang",
+        defaults: new { controller = "Order", action = "Index" });
+
+    app.MapControllerRoute(
+        name: "order_detail_seo",
+        pattern: "don-hang/{id}",
+        defaults: new { controller = "Order", action = "Details" });
 
     // Default route for all other controllers
     app.MapControllerRoute(
