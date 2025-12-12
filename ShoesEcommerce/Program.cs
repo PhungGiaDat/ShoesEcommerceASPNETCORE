@@ -13,6 +13,7 @@ using Google.Apis.Auth.OAuth2;
 using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using ShoesEcommerce.Services.Payment;
+using ShoesEcommerce.Services.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -129,6 +130,10 @@ builder.Services.AddScoped<ICheckoutService, CheckoutService>();
 
 // Register VNPayService
 builder.Services.AddScoped<IVnPayService, VnPayService>(); 
+
+// Register Subiz Chat Service
+builder.Services.Configure<SubizChatOptions>(builder.Configuration.GetSection(SubizChatOptions.SectionName));
+builder.Services.AddScoped<ISubizChatService, SubizChatService>();
 
 // Register PayPal HttpClient
 builder.Services.AddHttpClient("PayPal", client =>

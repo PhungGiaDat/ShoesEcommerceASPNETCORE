@@ -6,35 +6,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <!-- SEO Meta Tags -->
-    <title>@(ViewData["Title"] ?? "Giày Dép Chính Hãng - Mua Giày Online Giá Tốt") | NHTP ShoesEcommerce</title>
-    <meta name="description" content="@(ViewData["MetaDescription"] ?? "NHTP ShoesEcommerce - Cửa hàng giày dép trực tuyến chính hãng. Mua giày Nike, Adidas, Puma với giá tốt nhất. Miễn phí ship đơn trên 10 triệu. Hỗ trợ 24/7.")">
-    <meta name="keywords" content="@(ViewData["MetaKeywords"] ?? "giày dép, mua giày online, giày chính hãng, nike, adidas, puma, giày thể thao, giày sneaker, NHTP")">
+    @{
+        var pageTitle = ViewData["Title"]?.ToString() ?? "Giày Dép Chính Hãng";
+        var siteName = "NHTP Shoes";
+        var fullTitle = pageTitle.Length > 50 ? pageTitle : $"{pageTitle} | {siteName}";
+        if (fullTitle.Length > 60) fullTitle = fullTitle.Substring(0, 57) + "...";
+        
+        var metaDescription = ViewData["MetaDescription"]?.ToString() 
+            ?? "Mua giày Nike, Adidas, Puma chính hãng. Miễn phí ship đơn 10 triệu. Đổi trả 30 ngày.";
+        if (metaDescription.Length > 155) metaDescription = metaDescription.Substring(0, 152) + "...";
+        
+        var canonicalUrl = ViewData["CanonicalUrl"]?.ToString() 
+            ?? $"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}";
+        // Remove query string from canonical URL for cleaner SEO
+        if (canonicalUrl.Contains("?")) canonicalUrl = canonicalUrl.Split('?')[0];
+    }
+    <title>@fullTitle</title>
+    <meta name="description" content="@metaDescription">
+    <meta name="keywords" content="@(ViewData["MetaKeywords"] ?? "giày dép, mua giày online, giày chính hãng, nike, adidas, puma")">
     <meta name="author" content="NHTP ShoesEcommerce">
     <meta name="robots" content="index, follow">
     
     <!-- Canonical URL -->
-    @if (ViewData["CanonicalUrl"] != null)
-    {
-        <link rel="canonical" href="@ViewData["CanonicalUrl"]">
-    }
-    else
-    {
-        <link rel="canonical" href="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
-    }
+    <link rel="canonical" href="@canonicalUrl">
     
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
-    <meta property="og:url" content="@($"{Context.Request.Scheme}://{Context.Request.Host}{Context.Request.Path}")">
-    <meta property="og:title" content="@(ViewData["Title"] ?? "NHTP ShoesEcommerce - Giày Dép Chính Hãng")">
-    <meta property="og:description" content="@(ViewData["MetaDescription"] ?? "Cửa hàng giày dép trực tuyến chính hãng. Mua giày Nike, Adidas, Puma với giá tốt nhất.")">
+    <meta property="og:url" content="@canonicalUrl">
+    <meta property="og:title" content="@fullTitle">
+    <meta property="og:description" content="@metaDescription">
     <meta property="og:image" content="@(ViewData["OgImage"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-image.jpg")">
-    <meta property="og:site_name" content="NHTP ShoesEcommerce">
+    <meta property="og:site_name" content="@siteName">
     <meta property="og:locale" content="vi_VN">
     
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="@(ViewData["Title"] ?? "NHTP ShoesEcommerce - Giày Dép Chính Hãng")">
-    <meta name="twitter:description" content="@(ViewData["MetaDescription"] ?? "Cửa hàng giày dép trực tuyến chính hãng. Mua giày Nike, Adidas, Puma với giá tốt nhất.")">
+    <meta name="twitter:title" content="@fullTitle">
+    <meta name="twitter:description" content="@metaDescription">
     
     <!-- Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico">
@@ -51,14 +59,32 @@
     {
         "@@context": "https://schema.org",
         "@@type": "WebSite",
-        "name": "NHTP ShoesEcommerce",
+        "name": "@siteName",
         "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}")",
-        "description": "Cửa hàng giày dép trực tuyến chính hãng",
+        "description": "@metaDescription",
         "potentialAction": {
             "@@type": "SearchAction",
             "target": "@($"{Context.Request.Scheme}://{Context.Request.Host}")/san-pham?searchString={search_term_string}",
             "query-input": "required name=search_term_string"
         }
+    }
+    </script>
+    
+    <!-- Organization Schema -->
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org",
+        "@@type": "Organization",
+        "name": "NHTP ShoesEcommerce",
+        "url": "@($"{Context.Request.Scheme}://{Context.Request.Host}")",
+        "logo": "@($"{Context.Request.Scheme}://{Context.Request.Host}/images/logo.png")",
+        "contactPoint": {
+            "@@type": "ContactPoint",
+            "telephone": "+84-xxx-xxx-xxx",
+            "contactType": "customer service",
+            "availableLanguage": "Vietnamese"
+        },
+        "sameAs": []
     }
     </script>
     
@@ -782,5 +808,7 @@
             showErrorAlert('Có lỗi không mong muốn xảy ra. Vui lòng thử lại sau.', 8000);
         });
     </script>
+    
+    @{ await Html.RenderPartialAsync("_SubizChat"); }
 </body>
 </html>

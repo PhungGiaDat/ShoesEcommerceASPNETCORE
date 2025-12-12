@@ -256,6 +256,8 @@
         });
     </script>
 
+    @{ await Html.RenderPartialAsync("_SubizChat"); }
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

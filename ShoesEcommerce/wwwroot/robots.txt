@@ -3,22 +3,25 @@
 
 User-agent: *
 Allow: /
+Allow: /san-pham
+Allow: /san-pham/
+Allow: /product
+Allow: /product/
+Allow: /khuyen-mai
+Allow: /khuyen-mai/"
 
-# Disallow admin and sensitive areas
+Disallow: /Admin
 Disallow: /Admin/
+Disallow: /Account
 Disallow: /Account/
+Disallow: /api
 Disallow: /api/
+Disallow: /Error
 Disallow: /Error/
+Disallow: /Payment
 Disallow: /Payment/
+Disallow: /Checkout
 Disallow: /Checkout/
 
-# Allow specific pages
-Allow: /san-pham
-Allow: /product
-Allow: /khuyen-mai
-
-# Crawl-delay for polite crawling
-Crawl-delay: 1
-
-# Sitemap location
+# Sitemap
 Sitemap: https://shoes-ecommerce.onrender.com/sitemap.xml
