@@ -343,8 +343,9 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
-        // API endpoint to get product variants by product ID
+        // API endpoint to get product variants by product ID (for Add to Cart modal)
         [HttpGet]
+        [Route("Product/GetVariants/{productId:int}")]
         public async Task<IActionResult> GetVariants(int productId)
         {
             try
@@ -359,6 +360,7 @@ namespace ShoesEcommerce.Controllers
                     price = v.Price,
                     imageUrl = v.ImageUrl,
                     stockQuantity = v.StockQuantity,
+                    availableQuantity = v.StockQuantity,
                     isInStock = v.StockQuantity > 0
                 }).ToList();
 

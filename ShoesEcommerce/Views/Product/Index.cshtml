@@ -4,6 +4,9 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
+<!-- Anti-forgery token for AJAX requests -->
+@Html.AntiForgeryToken()
+
 <div class="container-fluid">
     <div class="row mb-4">
         <div class="col-12">
@@ -141,11 +144,13 @@
                     <div class="card h-100 shadow-sm product-card">
                         @* Product Image *@
                         <div class="position-relative">
-                            <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/no-image.svg" : product.ImageUrl)" 
-                                 class="card-img-top" 
-                                 alt="@product.Name" 
-                                 style="height: 250px; object-fit: cover;"
-                                 onerror="this.src='/images/no-image.svg'" />
+                            <a href="@Url.Action("Details", "Product", new { id = product.Id })">
+                                <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/no-image.svg" : product.ImageUrl)" 
+                                     class="card-img-top" 
+                                     alt="@product.Name" 
+                                     style="height: 250px; object-fit: cover;"
+                                     onerror="this.src='/images/no-image.svg'" />
+                            </a>
                             
                             @* Discount Badge *@
                             @if (product.HasActiveDiscount)
@@ -156,7 +161,7 @@
                                     </span>
                                 </div>
                             }
-                            
+							
                             @* Price Badge *@
                             <div class="position-absolute top-0 end-0 m-2">
                                 @if (product.HasActiveDiscount)
@@ -189,9 +194,11 @@
 
                         <div class="card-body d-flex flex-column">
                             @* Product Name - Brand (modified format) *@
-                            <h5 class="card-title text-truncate" title="@product.Name - @product.BrandName">
-                                @product.Name - @product.BrandName
-                            </h5>
+                            <a href="@Url.Action("Details", "Product", new { id = product.Id })" class="text-decoration-none">
+                                <h5 class="card-title text-truncate" title="@product.Name - @product.BrandName">
+                                    @product.Name - @product.BrandName
+                                </h5>
+                            </a>
                             
                             @* Category Badge *@
                             <div class="mb-2">
@@ -236,7 +243,8 @@
                                     {
                                         <button type="button" 
                                                 class="btn btn-success btn-sm add-to-cart-btn"
-                                                data-product-id="@product.Id">
+                                                data-product-id="@product.Id"
+                                                data-product-name="@product.Name">
                                             <i class="fas fa-cart-plus"></i> Thêm vào giỏ
                                         </button>
                                     }
@@ -254,7 +262,7 @@
             }
         </div>
 
-        @* Pagination *@
+        @* Pagination - same as before *@
         @if (Model.TotalPages > 1)
         {
             <div class="row mt-4">
@@ -315,7 +323,6 @@
                         </ul>
                     </nav>
 
-                    @* Pagination info *@
                     <div class="text-center mt-2">
                         <small class="text-muted">
                             Trang @currentPage của @totalPages
@@ -374,6 +381,31 @@
             </p>
         </div>
     }
+</div>
+
+<!-- Variant Selection Modal -->
+<div class="modal fade" id="variantModal" tabindex="-1" aria-labelledby="variantModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="variantModalLabel">Chọn phiên bản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="text-muted mb-3">Vui lòng chọn màu sắc và kích thước:</p>
+                <div id="variantList" class="d-flex flex-column gap-2">
+                    <!-- Variants will be loaded here -->
+                    <div class="text-center py-3">
+                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2 text-muted">Đang tải...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 @* Success/Error Messages *@
@@ -482,86 +514,24 @@
         background-color: var(--neutral-100);
         border-color: var(--neutral-400);
     }
+    
+    /* Variant selection styles */
+    .variant-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--neutral-200);
+        border-radius: 0.5rem;
+        transition: all 0.2s ease;
+    }
+    
+    .variant-item:hover {
+        border-color: var(--neutral-400);
+        background-color: var(--neutral-50);
+    }
+    
+    .variant-item.out-of-stock {
+        opacity: 0.5;
+    }
 </style>
-
-@* Enhanced JavaScript functionality *@
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-dismiss alerts after 5 seconds
-    setTimeout(function() {
-        var alerts = document.querySelectorAll('.alert');
-        alerts.forEach(function(alert) {
-            var bsAlert = new bootstrap.Alert(alert);
-            bsAlert.close();
-        });
-    }, 5000);
-
-    // Add to cart functionality
-    document.querySelectorAll('.add-to-cart-btn').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var productId = this.getAttribute('data-product-id');
-            // This would need to be implemented to show variant selection modal
-            // For now, redirect to product details
-            window.location.href = `/Product/Details/${productId}`;
-        });
-    });
-
-    // Handle filter form submission properly - prevents infinite loop
-    var filterForm = document.getElementById('filterForm');
-    var categoryFilter = document.getElementById('categoryFilter');
-    var brandFilter = document.getElementById('brandFilter');
-    var isSubmitting = false; // Prevent multiple rapid submissions
-    
-    // Add debounced change handlers to dropdowns
-    function submitFilterForm() {
-        if (!isSubmitting) {
-            isSubmitting = true;
-            
-            // Show loading indicator
-            var submitBtn = filterForm.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
-                submitBtn.disabled = true;
-            }
-            
-            setTimeout(function() {
-                filterForm.submit();
-            }, 100); // Small delay to prevent rapid submissions
-        }
-    }
-    
-    // Handle category filter change
-    if (categoryFilter) {
-        categoryFilter.addEventListener('change', function() {
-            submitFilterForm();
-        });
-    }
-    
-    // Handle brand filter change  
-    if (brandFilter) {
-        brandFilter.addEventListener('change', function() {
-            submitFilterForm();
-        });
-    }
-
-    // Handle search form submission
-    filterForm.addEventListener('submit', function(e) {
-        if (isSubmitting) {
-            return; // Already submitting
-        }
-        
-        var submitBtn = this.querySelector('button[type="submit"]');
-        if (submitBtn) {
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang tìm...';
-            submitBtn.disabled = true;
-        }
-    });
-
-    // Smooth scroll to top when pagination
-    document.querySelectorAll('.pagination a').forEach(function(link) {
-        link.addEventListener('click', function() {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-        });
-    });
-});
-</script>
