@@ -1,24 +1,30 @@
 ﻿@using ShoesEcommerce.ViewModels.Product
 @{
-    ViewData["Title"] = "Trang chủ - ShoesEcommerce";
+    ViewData["Title"] = "Mua Giày Dép Chính Hãng Online - Giá Tốt Nhất";
+    ViewData["MetaDescription"] = "NHTP ShoesEcommerce - Cửa hàng giày dép trực tuyến chính hãng số 1 Việt Nam. Mua giày Nike, Adidas, Puma, Converse với giá tốt nhất. Miễn phí ship đơn trên 10 triệu. Đổi trả 30 ngày. Hỗ trợ 24/7.";
+    ViewData["MetaKeywords"] = "giày dép chính hãng, mua giày online, giày nike, giày adidas, giày puma, giày thể thao, sneaker, giày nam, giày nữ, NHTP";
     var featuredVariants = ViewBag.FeaturedProductVariants as IEnumerable<ProductVariantDisplayInfo> ?? new List<ProductVariantDisplayInfo>();
 }
 
 <!-- Hero Section -->
-<section class="hero-section">
+<section class="hero-section" aria-labelledby="hero-heading">
     <div class="container">
         <div class="row align-items-center min-vh-75">
             <div class="col-lg-6">
                 <div class="hero-content">
-                    <h1 class="hero-title">
-                        Chào mừng quý khách đến với <span class="brand-highlight">NHTP</span> - nơi mang đến những sản phẩm chất lượng và dịch vụ tận tâm nhất!
+                    <h1 id="hero-heading" class="hero-title">
+                        Chào mừng quý khách đến với <span class="brand-highlight">NHTP ShoesEcommerce</span> - Cửa hàng giày dép chính hãng hàng đầu Việt Nam
                     </h1>
+                    <p class="hero-description">
+                        Khám phá bộ sưu tập giày dép chính hãng từ các thương hiệu nổi tiếng thế giới như Nike, Adidas, Puma, Converse. 
+                        Chúng tôi cam kết mang đến sản phẩm chất lượng với giá cả cạnh tranh nhất thị trường.
+                    </p>
                     <div class="hero-cta">
-                        <a href="/Product" class="btn-primary-action">
+                        <a href="/san-pham" class="btn-primary-action">
                             Mua ngay
                         </a>
-                        <a href="/Product" class="btn-secondary-action">
-                            Tất cả sản phẩm
+                        <a href="/san-pham" class="btn-secondary-action">
+                            Xem tất cả sản phẩm
                         </a>
                     </div>
                 </div>
@@ -69,12 +75,12 @@
 <!-- Featured Products Section -->
 @if (featuredVariants.Any())
 {
-    <section class="featured-products">
+    <section class="featured-products" aria-labelledby="featured-heading">
         <div class="container">
             <div class="row">
                 <div class="col-12 text-center mb-5">
-                    <h2 class="section-title">Sản phẩm nổi bật</h2>
-                    <p class="section-subtitle">Khám phá những sản phẩm hot nhất với giá tốt nhất</p>
+                    <h2 id="featured-heading" class="section-title">Sản phẩm nổi bật</h2>
+                    <p class="section-subtitle">Khám phá những đôi giày hot nhất với giá ưu đãi đặc biệt - Cập nhật liên tục bộ sưu tập mới nhất từ Nike, Adidas, Puma</p>
                     <div class="section-divider"></div>
                 </div>
             </div>
@@ -82,10 +88,12 @@
                 @foreach (var variant in featuredVariants.Take(8))
                 {
                     <div class="col-lg-3 col-md-6">
-                        <div class="product-item">
+                        <article class="product-item" itemscope itemtype="https://schema.org/Product">
                             <div class="product-image">
                                 <img src="@variant.ImageUrl" 
-                                     alt="@variant.ProductName - @variant.Color" 
+                                     alt="@variant.ProductName - @variant.Color - Giày @variant.BrandName chính hãng" 
+                                     itemprop="image"
+                                     loading="lazy"
                                      onerror="this.src='/images/no-image.svg'">
                                 
                                 @if (variant.HasActiveDiscount)
@@ -97,43 +105,44 @@
                             </div>
                             
                             <div class="product-info">
-                                <h5 class="product-name">
+                                <h3 class="product-name" itemprop="name">
                                     @{
-                                        // Display only Product name - Color (remove size)
                                         var displayName = $"{variant.ProductName} - {variant.Color}";
                                     }
                                     @(displayName.Length > 40 ? displayName.Substring(0, 40) + "..." : displayName)
-                                </h5>
+                                </h3>
                                 
                                 <div class="product-meta">
-                                    <span class="brand-tag">@variant.BrandName</span>
+                                    <span class="brand-tag" itemprop="brand">@variant.BrandName</span>
                                 </div>
                                 
-                                <div class="product-price">
+                                <div class="product-price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
+                                    <meta itemprop="priceCurrency" content="VND">
                                     @if (variant.HasActiveDiscount)
                                     {
                                         <span class="original-price">
                                             @variant.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
                                         </span>
-                                        <span class="discounted-price">
+                                        <span class="discounted-price" itemprop="price" content="@variant.DiscountedPrice">
                                             @variant.DiscountedPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
                                         </span>
                                     }
                                     else
                                     {
-                                        <span class="current-price">
+                                        <span class="current-price" itemprop="price" content="@variant.Price">
                                             @variant.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
                                         </span>
                                     }
+                                    <link itemprop="availability" href="https://schema.org/InStock">
                                 </div>
                                 
                                 <div class="product-actions">
-                                    <a href="/Product/Details/@variant.ProductId" class="btn-view-details">
+                                    <a href="/Product/Details/@variant.ProductId" class="btn-view-details" itemprop="url">
                                         Xem chi tiết
                                     </a>
                                 </div>
                             </div>
-                        </div>
+                        </article>
                     </div>
                 }
             </div>
@@ -141,7 +150,7 @@
             @if (featuredVariants.Count() > 8)
             {
                 <div class="text-center mt-5">
-                    <a href="/Product" class="btn-view-more">
+                    <a href="/san-pham" class="btn-view-more">
                         Xem thêm sản phẩm
                     </a>
                 </div>
@@ -150,7 +159,139 @@
     </section>
 }
 
+<!-- Why Choose Us Section - Add more content for SEO -->
+<section class="why-choose-us" aria-labelledby="why-heading">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2 id="why-heading" class="section-title">Tại sao chọn NHTP ShoesEcommerce?</h2>
+                <p class="section-subtitle">Cam kết mang đến trải nghiệm mua sắm tốt nhất cho khách hàng</p>
+                <div class="section-divider"></div>
+            </div>
+        </div>
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-certificate" aria-hidden="true"></i>
+                    </div>
+                    <h3>100% Chính Hãng</h3>
+                    <p>Tất cả sản phẩm giày dép tại NHTP đều được nhập khẩu trực tiếp từ các thương hiệu chính hãng như Nike, Adidas, Puma, Converse, New Balance. Chúng tôi cam kết hoàn tiền 200% nếu phát hiện hàng giả.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-truck" aria-hidden="true"></i>
+                    </div>
+                    <h3>Giao Hàng Toàn Quốc</h3>
+                    <p>Dịch vụ giao hàng nhanh chóng đến 63 tỉnh thành trên cả nước. Miễn phí vận chuyển cho đơn hàng từ 10 triệu đồng. Giao hàng trong 2-5 ngày tùy khu vực, hỗ trợ ship hỏa tốc nội thành.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
+                    </div>
+                    <h3>Đổi Trả Dễ Dàng</h3>
+                    <p>Chính sách đổi trả linh hoạt trong vòng 30 ngày kể từ ngày mua hàng. Hỗ trợ đổi size, đổi màu hoặc hoàn tiền nếu sản phẩm không đúng như mô tả. Quy trình đổi trả nhanh gọn, không rườm rà.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-credit-card" aria-hidden="true"></i>
+                    </div>
+                    <h3>Thanh Toán Đa Dạng</h3>
+                    <p>Hỗ trợ nhiều phương thức thanh toán tiện lợi: thanh toán khi nhận hàng (COD), chuyển khoản ngân hàng, ví điện tử VNPay, PayPal quốc tế. Bảo mật thông tin thanh toán tuyệt đối.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset" aria-hidden="true"></i>
+                    </div>
+                    <h3>Hỗ Trợ 24/7</h3>
+                    <p>Đội ngũ chăm sóc khách hàng chuyên nghiệp, sẵn sàng hỗ trợ bạn mọi lúc mọi nơi. Tư vấn chọn size, phong cách phối đồ, giải đáp thắc mắc qua hotline, chat trực tuyến hoặc email.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-tags" aria-hidden="true"></i>
+                    </div>
+                    <h3>Giá Cả Cạnh Tranh</h3>
+                    <p>Cam kết giá tốt nhất thị trường với nhiều chương trình khuyến mãi hấp dẫn. Flash sale hàng tuần, giảm giá mùa vụ, ưu đãi sinh nhật và tích điểm thành viên đổi quà giá trị.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
+<!-- Brand Partners Section -->
+<section class="brand-partners" aria-labelledby="brands-heading">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-4">
+                <h2 id="brands-heading" class="section-title">Thương Hiệu Đối Tác</h2>
+                <p class="section-subtitle">Phân phối chính hãng từ các thương hiệu giày dép hàng đầu thế giới</p>
+            </div>
+        </div>
+        <div class="row justify-content-center align-items-center g-4">
+            <div class="col-6 col-md-2 text-center">
+                <div class="brand-logo-item">Nike</div>
+            </div>
+            <div class="col-6 col-md-2 text-center">
+                <div class="brand-logo-item">Adidas</div>
+            </div>
+            <div class="col-6 col-md-2 text-center">
+                <div class="brand-logo-item">Puma</div>
+            </div>
+            <div class="col-6 col-md-2 text-center">
+                <div class="brand-logo-item">Converse</div>
+            </div>
+            <div class="col-6 col-md-2 text-center">
+                <div class="brand-logo-item">Vans</div>
+            </div>
+            <div class="col-6 col-md-2 text-center">
+                <div class="brand-logo-item">New Balance</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- SEO Content Section -->
+<section class="seo-content" aria-labelledby="seo-heading">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h2 id="seo-heading" class="seo-title">Giày Dép Chính Hãng - Xu Hướng Thời Trang 2025</h2>
+                <div class="seo-text">
+                    <p>
+                        <strong>NHTP ShoesEcommerce</strong> tự hào là địa chỉ mua giày dép trực tuyến uy tín hàng đầu Việt Nam, 
+                        chuyên cung cấp các sản phẩm giày thể thao, sneaker, giày chạy bộ, giày bóng rổ và các phụ kiện thời trang 
+                        từ những thương hiệu nổi tiếng thế giới.
+                    </p>
+                    <p>
+                        Với hơn 5 năm kinh nghiệm trong lĩnh vực phân phối giày dép chính hãng, chúng tôi đã phục vụ hơn 100.000 
+                        khách hàng trên toàn quốc. Mỗi sản phẩm tại NHTP đều được kiểm tra kỹ lưỡng về chất lượng trước khi đến tay 
+                        khách hàng, đảm bảo 100% chính hãng với đầy đủ tem nhãn, hóa đơn và giấy tờ bảo hành.
+                    </p>
+                    <p>
+                        Năm 2025, xu hướng giày sneaker tiếp tục thống trị với các dòng sản phẩm hot như Nike Air Max, 
+                        Adidas Ultraboost, Puma RS-X và Converse Chuck Taylor. Tại NHTP, bạn sẽ tìm thấy đa dạng mẫu mã, 
+                        màu sắc và size giày phù hợp cho cả nam và nữ, từ casual đến thể thao chuyên nghiệp.
+                    </p>
+                    <p>
+                        Đặc biệt, chúng tôi thường xuyên cập nhật các bộ sưu tập mới nhất, limited edition và collaboration 
+                        độc quyền. Đăng ký thành viên ngay hôm nay để nhận ưu đãi giảm 10% cho đơn hàng đầu tiên và 
+                        cập nhật thông tin về các chương trình khuyến mãi hấp dẫn!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
 <!-- Minimalist Styles -->
 <style>
@@ -192,8 +333,15 @@
         font-weight: 400;
         color: var(--neutral-800);
         line-height: 1.3;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
         letter-spacing: -0.025em;
+    }
+    
+    .hero-description {
+        font-size: 1.1rem;
+        color: var(--neutral-600);
+        line-height: 1.7;
+        margin-bottom: 1rem;
     }
     
     .brand-highlight {
@@ -316,6 +464,9 @@
         color: var(--neutral-500);
         font-weight: 400;
         margin-bottom: 2rem;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
     }
     
     .section-divider {
@@ -444,33 +595,6 @@
         border-color: var(--neutral-400);
     }
     
-    .btn-add-cart {
-        background: var(--black);
-        color: var(--white);
-        padding: 0.75rem 1rem;
-        border: none;
-        border-radius: 0.375rem;
-        font-weight: 500;
-        font-size: 0.875rem;
-        cursor: pointer;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-add-cart:hover {
-        background: var(--neutral-800);
-    }
-    
-    .btn-out-of-stock {
-        background: var(--neutral-200);
-        color: var(--neutral-500);
-        padding: 0.75rem 1rem;
-        border: none;
-        border-radius: 0.375rem;
-        font-weight: 500;
-        font-size: 0.875rem;
-        cursor: not-allowed;
-    }
-    
     .btn-view-more {
         background: var(--black);
         color: var(--white);
@@ -491,10 +615,94 @@
         transform: translateY(-1px);
     }
     
+    /* Why Choose Us Section */
+    .why-choose-us {
+        padding: 100px 0;
+        background: var(--neutral-100);
+    }
+    
+    .feature-card {
+        background: var(--white);
+        padding: 2rem;
+        border-radius: 0.5rem;
+        text-align: center;
+        height: 100%;
+        transition: all 0.3s ease;
+        border: 1px solid var(--neutral-200);
+    }
+    
+    .feature-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    }
+    
+    .feature-icon {
+        font-size: 2.5rem;
+        color: var(--black);
+        margin-bottom: 1.5rem;
+    }
+    
+    .feature-card h3 {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: var(--neutral-900);
+        margin-bottom: 1rem;
+    }
+    
+    .feature-card p {
+        font-size: 0.9rem;
+        color: var(--neutral-600);
+        line-height: 1.7;
+        margin: 0;
+    }
+    
+    /* Brand Partners Section */
+    .brand-partners {
+        padding: 80px 0;
+        background: var(--white);
+    }
+    
+    .brand-logo-item {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--neutral-400);
+        padding: 1rem;
+        transition: color 0.3s ease;
+    }
+    
+    .brand-logo-item:hover {
+        color: var(--black);
+    }
+    
+    /* SEO Content Section */
+    .seo-content {
+        padding: 80px 0;
+        background: var(--neutral-50);
+    }
+    
+    .seo-title {
+        font-size: 1.5rem;
+        font-weight: 500;
+        color: var(--neutral-900);
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .seo-text {
+        font-size: 1rem;
+        color: var(--neutral-600);
+        line-height: 1.8;
+    }
+    
+    .seo-text p {
+        margin-bottom: 1.5rem;
+    }
+    
+    .seo-text strong {
+        color: var(--neutral-800);
+    }
+    
     /* Responsive */
-</style>
-
-<style>
     @@media (max-width: 768px) {
         .hero-section {
             padding: 80px 0;
@@ -526,6 +734,14 @@
         .featured-products {
             padding: 80px 0;
         }
+        
+        .why-choose-us {
+            padding: 60px 0;
+        }
+        
+        .feature-card {
+            margin-bottom: 1rem;
+        }
     }
 </style>
 
@@ -554,10 +770,7 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Show success message
                     showToast('Đã thêm sản phẩm vào giỏ hàng!', 'success');
-                    
-                    // Update cart count if element exists
                     var cartCount = document.querySelector('.cart-count');
                     if (cartCount && data.cartItemCount) {
                         cartCount.textContent = data.cartItemCount;
@@ -571,7 +784,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ', 'error');
             })
             .finally(() => {
-                // Restore button state
                 this.innerHTML = originalText;
                 this.disabled = false;
             });
@@ -579,7 +791,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Toast function for notifications
 function showToast(message, type) {
     const toast = document.createElement('div');
     toast.style.cssText = `

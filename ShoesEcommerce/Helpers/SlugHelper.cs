@@ -9,6 +9,178 @@ namespace ShoesEcommerce.Helpers
     /// </summary>
     public static class SlugHelper
     {
+        // Build the Vietnamese character map using Unicode code points to avoid encoding issues
+        private static readonly Dictionary<char, string> VietnameseCharMap = BuildVietnameseCharMap();
+
+        private static Dictionary<char, string> BuildVietnameseCharMap()
+        {
+            var map = new Dictionary<char, string>();
+            
+            // Lowercase d with stroke (?) - U+0111
+            map['\u0111'] = "d";
+            
+            // Lowercase a with diacritics
+            map['\u00E0'] = "a"; // à
+            map['\u00E1'] = "a"; // á
+            map['\u1EA3'] = "a"; // ?
+            map['\u00E3'] = "a"; // ã
+            map['\u1EA1'] = "a"; // ?
+            map['\u0103'] = "a"; // ?
+            map['\u1EB1'] = "a"; // ?
+            map['\u1EAF'] = "a"; // ?
+            map['\u1EB3'] = "a"; // ?
+            map['\u1EB5'] = "a"; // ?
+            map['\u1EB7'] = "a"; // ?
+            map['\u00E2'] = "a"; // â
+            map['\u1EA7'] = "a"; // ?
+            map['\u1EA5'] = "a"; // ?
+            map['\u1EA9'] = "a"; // ?
+            map['\u1EAB'] = "a"; // ?
+            map['\u1EAD'] = "a"; // ?
+            
+            // Lowercase e with diacritics
+            map['\u00E8'] = "e"; // è
+            map['\u00E9'] = "e"; // é
+            map['\u1EBB'] = "e"; // ?
+            map['\u1EBD'] = "e"; // ?
+            map['\u1EB9'] = "e"; // ?
+            map['\u00EA'] = "e"; // ê
+            map['\u1EC1'] = "e"; // ?
+            map['\u1EBF'] = "e"; // ?
+            map['\u1EC3'] = "e"; // ?
+            map['\u1EC5'] = "e"; // ?
+            map['\u1EC7'] = "e"; // ?
+            
+            // Lowercase i with diacritics
+            map['\u00EC'] = "i"; // ì
+            map['\u00ED'] = "i"; // í
+            map['\u1EC9'] = "i"; // ?
+            map['\u0129'] = "i"; // ?
+            map['\u1ECB'] = "i"; // ?
+            
+            // Lowercase o with diacritics
+            map['\u00F2'] = "o"; // ò
+            map['\u00F3'] = "o"; // ó
+            map['\u1ECF'] = "o"; // ?
+            map['\u00F5'] = "o"; // õ
+            map['\u1ECD'] = "o"; // ?
+            map['\u00F4'] = "o"; // ô
+            map['\u1ED3'] = "o"; // ?
+            map['\u1ED1'] = "o"; // ?
+            map['\u1ED5'] = "o"; // ?
+            map['\u1ED7'] = "o"; // ?
+            map['\u1ED9'] = "o"; // ?
+            map['\u01A1'] = "o"; // ?
+            map['\u1EDD'] = "o"; // ?
+            map['\u1EDB'] = "o"; // ?
+            map['\u1EDF'] = "o"; // ?
+            map['\u1EE1'] = "o"; // ?
+            map['\u1EE3'] = "o"; // ?
+            
+            // Lowercase u with diacritics
+            map['\u00F9'] = "u"; // ù
+            map['\u00FA'] = "u"; // ú
+            map['\u1EE7'] = "u"; // ?
+            map['\u0169'] = "u"; // ?
+            map['\u1EE5'] = "u"; // ?
+            map['\u01B0'] = "u"; // ?
+            map['\u1EEB'] = "u"; // ?
+            map['\u1EE9'] = "u"; // ?
+            map['\u1EED'] = "u"; // ?
+            map['\u1EEF'] = "u"; // ?
+            map['\u1EF1'] = "u"; // ?
+            
+            // Lowercase y with diacritics
+            map['\u1EF3'] = "y"; // ?
+            map['\u00FD'] = "y"; // ý
+            map['\u1EF7'] = "y"; // ?
+            map['\u1EF9'] = "y"; // ?
+            map['\u1EF5'] = "y"; // ?
+            
+            // Uppercase D with stroke (?) - U+0110
+            map['\u0110'] = "d";
+            
+            // Uppercase A with diacritics
+            map['\u00C0'] = "a"; // À
+            map['\u00C1'] = "a"; // Á
+            map['\u1EA2'] = "a"; // ?
+            map['\u00C3'] = "a"; // Ã
+            map['\u1EA0'] = "a"; // ?
+            map['\u0102'] = "a"; // ?
+            map['\u1EB0'] = "a"; // ?
+            map['\u1EAE'] = "a"; // ?
+            map['\u1EB2'] = "a"; // ?
+            map['\u1EB4'] = "a"; // ?
+            map['\u1EB6'] = "a"; // ?
+            map['\u00C2'] = "a"; // Â
+            map['\u1EA6'] = "a"; // ?
+            map['\u1EA4'] = "a"; // ?
+            map['\u1EA8'] = "a"; // ?
+            map['\u1EAA'] = "a"; // ?
+            map['\u1EAC'] = "a"; // ?
+            
+            // Uppercase E with diacritics
+            map['\u00C8'] = "e"; // È
+            map['\u00C9'] = "e"; // É
+            map['\u1EBA'] = "e"; // ?
+            map['\u1EBC'] = "e"; // ?
+            map['\u1EB8'] = "e"; // ?
+            map['\u00CA'] = "e"; // Ê
+            map['\u1EC0'] = "e"; // ?
+            map['\u1EBE'] = "e"; // ?
+            map['\u1EC2'] = "e"; // ?
+            map['\u1EC4'] = "e"; // ?
+            map['\u1EC6'] = "e"; // ?
+            
+            // Uppercase I with diacritics
+            map['\u00CC'] = "i"; // Ì
+            map['\u00CD'] = "i"; // Í
+            map['\u1EC8'] = "i"; // ?
+            map['\u0128'] = "i"; // ?
+            map['\u1ECA'] = "i"; // ?
+            
+            // Uppercase O with diacritics
+            map['\u00D2'] = "o"; // Ò
+            map['\u00D3'] = "o"; // Ó
+            map['\u1ECE'] = "o"; // ?
+            map['\u00D5'] = "o"; // Õ
+            map['\u1ECC'] = "o"; // ?
+            map['\u00D4'] = "o"; // Ô
+            map['\u1ED2'] = "o"; // ?
+            map['\u1ED0'] = "o"; // ?
+            map['\u1ED4'] = "o"; // ?
+            map['\u1ED6'] = "o"; // ?
+            map['\u1ED8'] = "o"; // ?
+            map['\u01A0'] = "o"; // ?
+            map['\u1EDC'] = "o"; // ?
+            map['\u1EDA'] = "o"; // ?
+            map['\u1EDE'] = "o"; // ?
+            map['\u1EE0'] = "o"; // ?
+            map['\u1EE2'] = "o"; // ?
+            
+            // Uppercase U with diacritics
+            map['\u00D9'] = "u"; // Ù
+            map['\u00DA'] = "u"; // Ú
+            map['\u1EE6'] = "u"; // ?
+            map['\u0168'] = "u"; // ?
+            map['\u1EE4'] = "u"; // ?
+            map['\u01AF'] = "u"; // ?
+            map['\u1EEA'] = "u"; // ?
+            map['\u1EE8'] = "u"; // ?
+            map['\u1EEC'] = "u"; // ?
+            map['\u1EEE'] = "u"; // ?
+            map['\u1EF0'] = "u"; // ?
+            
+            // Uppercase Y with diacritics
+            map['\u1EF2'] = "y"; // ?
+            map['\u00DD'] = "y"; // Ý
+            map['\u1EF6'] = "y"; // ?
+            map['\u1EF8'] = "y"; // ?
+            map['\u1EF4'] = "y"; // ?
+            
+            return map;
+        }
+
         /// <summary>
         /// Converts a string to a URL-friendly slug
         /// </summary>
@@ -21,26 +193,38 @@ namespace ShoesEcommerce.Helpers
                 return string.Empty;
             }
 
+            // Convert Vietnamese characters first
+            var sb = new StringBuilder(title.Length);
+            foreach (var c in title)
+            {
+                if (VietnameseCharMap.TryGetValue(c, out var replacement))
+                {
+                    sb.Append(replacement);
+                }
+                else
+                {
+                    sb.Append(c);
+                }
+            }
+            title = sb.ToString();
+
             // Convert to lowercase
             title = title.ToLowerInvariant();
 
-            // Handle Vietnamese special characters
-            title = ConvertVietnameseCharacters(title);
-
-            // Normalize the string (decompose characters like é -> e)
+            // Normalize the string (decompose characters)
             title = title.Normalize(NormalizationForm.FormD);
             
             // Remove diacritical marks (accents)
-            var stringBuilder = new StringBuilder();
+            sb.Clear();
             foreach (var c in title)
             {
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
                 if (unicodeCategory != UnicodeCategory.NonSpacingMark)
                 {
-                    stringBuilder.Append(c);
+                    sb.Append(c);
                 }
             }
-            title = stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+            title = sb.ToString().Normalize(NormalizationForm.FormC);
 
             // Replace special characters with their equivalents
             title = title.Replace("&", "and")
@@ -72,61 +256,11 @@ namespace ShoesEcommerce.Helpers
         }
 
         /// <summary>
-        /// Converts Vietnamese characters to their ASCII equivalents
-        /// </summary>
-        private static string ConvertVietnameseCharacters(string text)
-        {
-            if (string.IsNullOrEmpty(text))
-                return text;
-
-            // Vietnamese character mappings
-            var vietnameseChars = new Dictionary<string, string>
-            {
-                // Lowercase vowels with diacritics
-                { "?", "d" },
-                { "à", "a" }, { "á", "a" }, { "?", "a" }, { "ã", "a" }, { "?", "a" },
-                { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" },
-                { "â", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" },
-                { "è", "e" }, { "é", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" },
-                { "ê", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" },
-                { "ì", "i" }, { "í", "i" }, { "?", "i" }, { "?", "i" }, { "?", "i" },
-                { "ò", "o" }, { "ó", "o" }, { "?", "o" }, { "õ", "o" }, { "?", "o" },
-                { "ô", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" },
-                { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" },
-                { "ù", "u" }, { "ú", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" },
-                { "?", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" },
-                { "?", "y" }, { "ý", "y" }, { "?", "y" }, { "?", "y" }, { "?", "y" },
-                
-                // Uppercase vowels with diacritics
-                { "?", "d" },
-                { "À", "a" }, { "Á", "a" }, { "?", "a" }, { "Ã", "a" }, { "?", "a" },
-                { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" },
-                { "Â", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" }, { "?", "a" },
-                { "È", "e" }, { "É", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" },
-                { "Ê", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" }, { "?", "e" },
-                { "Ì", "i" }, { "Í", "i" }, { "?", "i" }, { "?", "i" }, { "?", "i" },
-                { "Ò", "o" }, { "Ó", "o" }, { "?", "o" }, { "Õ", "o" }, { "?", "o" },
-                { "Ô", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" },
-                { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" }, { "?", "o" },
-                { "Ù", "u" }, { "Ú", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" },
-                { "?", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" }, { "?", "u" },
-                { "?", "y" }, { "Ý", "y" }, { "?", "y" }, { "?", "y" }, { "?", "y" }
-            };
-
-            foreach (var kvp in vietnameseChars)
-            {
-                text = text.Replace(kvp.Key, kvp.Value);
-            }
-
-            return text;
-        }
-
-        /// <summary>
-        /// Generates a unique slug by appending an ID if needed
+        /// Generates a unique slug by appending an ID
         /// </summary>
         /// <param name="title">The title to convert</param>
         /// <param name="id">The unique identifier to append</param>
-        /// <returns>A URL-friendly slug with optional ID suffix</returns>
+        /// <returns>A URL-friendly slug with ID suffix</returns>
         public static string ToSlugWithId(this string title, int id)
         {
             var slug = title.ToSlug();

@@ -1,0 +1,24 @@
+# robots.txt for NHTP ShoesEcommerce
+# https://www.robotstxt.org/robotstxt.html
+
+User-agent: *
+Allow: /
+
+# Disallow admin and sensitive areas
+Disallow: /Admin/
+Disallow: /Account/
+Disallow: /api/
+Disallow: /Error/
+Disallow: /Payment/
+Disallow: /Checkout/
+
+# Allow specific pages
+Allow: /san-pham
+Allow: /product
+Allow: /khuyen-mai
+
+# Crawl-delay for polite crawling
+Crawl-delay: 1
+
+# Sitemap location
+Sitemap: https://shoes-ecommerce.onrender.com/sitemap.xml
