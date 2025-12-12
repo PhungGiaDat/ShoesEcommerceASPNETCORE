@@ -21,26 +21,26 @@ services:
       - key: ASPNETCORE_URLS
         value: http://+:10000
       
-      # Database connection - Use Render's PostgreSQL or external Supabase
-      - key: ConnectionStrings__DefaultConnection
+      # Database connection - Set in Render dashboard
+      - key: DATABASE_CONNECTION_STRING
         sync: false  # Set manually in Render dashboard for security
       
       # PayPal Configuration (set in Render dashboard)
-      - key: PayPalOptions__ClientId
+      - key: PAYPAL_CLIENT_ID
         sync: false
-      - key: PayPalOptions__ClientSecret
+      - key: PAYPAL_CLIENT_SECRET
         sync: false
-      - key: PayPalOptions__Mode
+      - key: PAYPAL_MODE
         value: Sandbox  # Change to "Live" for production
       
       # VNPay Configuration (set in Render dashboard)
-      - key: VNPay__TmnCode
+      - key: VNPAY_TMN_CODE
         sync: false
-      - key: VNPay__HashSecret
+      - key: VNPAY_HASH_SECRET
         sync: false
-      - key: VNPay__Url
+      - key: VNPAY_URL
         value: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      - key: VNPay__ReturnUrl
+      - key: VNPAY_RETURN_URL
         sync: false
       
       # Logging

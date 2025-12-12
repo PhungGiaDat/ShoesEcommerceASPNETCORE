@@ -19,18 +19,15 @@ var builder = WebApplication.CreateBuilder(args);
 // Enhanced logging configuration
 builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
-builder.Logging.AddDebug();
 
-// Add file logging in production
-if (!builder.Environment.IsDevelopment())
+// Only add Debug logging in development
+if (builder.Environment.IsDevelopment())
 {
-    builder.Logging.AddEventLog();
-    
-    // Add file logging (requires additional NuGet package like Serilog or NLog)
-    // builder.Host.UseSerilog((context, configuration) => {
-    //     configuration.WriteTo.File("logs/shoescommerce-.txt", rollingInterval: RollingInterval.Day);
-    // });
+    builder.Logging.AddDebug();
 }
+
+// ❌ REMOVED: EventLog is Windows-only and causes crash on Linux (Render)
+// builder.Logging.AddEventLog();
 
 // Configure detailed logging for specific components
 builder.Services.Configure<LoggerFilterOptions>(options =>
