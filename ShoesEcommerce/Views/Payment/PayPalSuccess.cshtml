@@ -4,6 +4,7 @@
     ViewData["Title"] = "Thanh toán thành công";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var paypalToken = ViewBag.PayPalToken as string;
+    var transactionId = Model.Payment?.TransactionId;
 }
 
 <div class="container my-5">
@@ -34,6 +35,12 @@
                             <p class="mb-1">
                                 <strong>Ngày ??t:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                             </p>
+                            @if (Model.Payment?.PaidAt != null)
+                            {
+                                <p class="mb-1">
+                                    <strong>Ngày thanh toán:</strong> @Model.Payment.PaidAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                </p>
+                            }
                         </div>
                         <div class="col-md-6 text-md-end">
                             <p class="mb-1">
@@ -51,12 +58,30 @@
                         </div>
                     </div>
 
-                    @if (!string.IsNullOrEmpty(paypalToken))
+                    <!-- Transaction ID Display -->
+                    @if (!string.IsNullOrEmpty(transactionId))
+                    {
+                        <div class="alert alert-success border-0" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fab fa-paypal fa-2x me-3"></i>
+                                <div>
+                                    <strong>Mã giao d?ch PayPal (Transaction ID):</strong>
+                                    <br>
+                                    <code class="fs-6">@transactionId</code>
+                                    <button type="button" class="btn btn-sm btn-outline-success ms-2" 
+                                            onclick="copyToClipboard('@transactionId')" title="Sao chép">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    else if (!string.IsNullOrEmpty(paypalToken))
                     {
                         <div class="alert alert-light border" role="alert">
                             <small>
                                 <i class="fas fa-info-circle"></i>
-                                <strong>Mã giao d?ch PayPal:</strong> @paypalToken
+                                <strong>Mã ??n hàng PayPal:</strong> @paypalToken
                             </small>
                         </div>
                     }
@@ -203,6 +228,10 @@
                     <li>B?n s? nh?n ???c email xác nh?n khi ??n hàng ???c giao cho ??n v? v?n chuy?n</li>
                     <li>Th?i gian giao hàng d? ki?n: 3-5 ngày làm vi?c</li>
                     <li>B?n có th? theo dõi ??n hàng trong m?c "??n hàng c?a tôi"</li>
+                    @if (!string.IsNullOrEmpty(transactionId))
+                    {
+                        <li>Mã giao d?ch <code>@transactionId</code> có th? dùng ?? tra c?u trên PayPal</li>
+                    }
                 </ul>
             </div>
         </div>
@@ -240,15 +269,45 @@
         .table tbody tr:hover {
             background-color: #f8f9fa;
         }
+        
+        code {
+            background-color: #e9ecef;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
     </style>
 }
 
 @section Scripts {
     <script>
-        // Confetti animation on success
-        console.log('Payment successful for order #@Model.Id');
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                // Show toast or alert
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-success');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
         
-        // Optional: Add confetti or celebration effect
-        // You can integrate a library like canvas-confetti here
+        // Log payment info
+        console.log('Payment successful for order #@Model.Id');
+        @if (!string.IsNullOrEmpty(transactionId))
+        {
+            <text>
+            console.log('Transaction ID: @transactionId');
+            </text>
+        }
     </script>
 }

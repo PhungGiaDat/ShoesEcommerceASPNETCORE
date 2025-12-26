@@ -60,33 +60,48 @@ namespace ShoesEcommerce.ViewModels.Account
         [Required(ErrorMessage = "Ngày sinh là b?t bu?c")]
         [DataType(DataType.Date)]
         [Display(Name = "Ngày sinh")]
-        public DateTime DateOfBirth { get; set; } = new DateTime(1990, 1, 1); // Set reasonable default instead of MinValue
+        [DateOfBirthValidation(MinAge = 13, MaxAge = 120, ErrorMessage = "B?n ph?i t? 13 ??n 120 tu?i")]
+        public DateTime DateOfBirth { get; set; } = new DateTime(1990, 1, 1);
 
         [Display(Name = "Tôi ??ng ý v?i các ?i?u kho?n và ?i?u ki?n")]
         [Range(typeof(bool), "true", "true", ErrorMessage = "B?n ph?i ??ng ý v?i các ?i?u kho?n và ?i?u ki?n")]
         public bool AcceptTerms { get; set; } = false;
+    }
 
-        // Custom validation method for date of birth
-        public static ValidationResult ValidateDateOfBirth(DateTime dateOfBirth, ValidationContext context)
+    /// <summary>
+    /// Custom validation attribute for DateOfBirth
+    /// </summary>
+    public class DateOfBirthValidationAttribute : ValidationAttribute
+    {
+        public int MinAge { get; set; } = 13;
+        public int MaxAge { get; set; } = 120;
+
+        protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
         {
+            if (value is not DateTime dateOfBirth)
+            {
+                return new ValidationResult("Ngày sinh không h?p l?");
+            }
+
+            // Check for default/invalid dates
+            if (dateOfBirth.Year < 1900 || dateOfBirth > DateTime.Today)
+            {
+                return new ValidationResult("Ngày sinh không h?p l?");
+            }
+
             var today = DateTime.Today;
             var age = today.Year - dateOfBirth.Year;
-            
-            // Check if birthday has occurred this year
+
+            // Adjust age if birthday hasn't occurred this year
             if (dateOfBirth.Date > today.AddYears(-age))
                 age--;
 
-            if (dateOfBirth > today)
+            if (age < MinAge)
             {
-                return new ValidationResult("Ngày sinh không th? là ngày trong t??ng lai");
+                return new ValidationResult($"B?n ph?i ?? {MinAge} tu?i ?? ??ng ký");
             }
 
-            if (age < 13)
-            {
-                return new ValidationResult("B?n ph?i ?? 13 tu?i ?? ??ng ký tài kho?n");
-            }
-
-            if (age > 150)
+            if (age > MaxAge)
             {
                 return new ValidationResult("Ngày sinh không h?p l?");
             }

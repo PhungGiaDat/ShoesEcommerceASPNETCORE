@@ -9,6 +9,8 @@ namespace ShoesEcommerce.Services.Interfaces
         // Customer Authentication
         Task<CustomerLoginResult> AuthenticateCustomerAsync(LoginViewModel model);
         Task<CustomerRegistrationResult> RegisterCustomerAsync(RegisterViewModel model);
+        Task<CustomerRegistrationResult> RegisterCustomerWithGoogleAsync(RegisterViewModel model, string? googleId, string? profilePicture);
+        Task SignInCustomerAsync(int customerId);
         Task<bool> SignOutAsync();
         
         // Staff Authentication

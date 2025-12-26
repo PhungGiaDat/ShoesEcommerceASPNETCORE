@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authorization;
 using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.ViewModels.Account;
@@ -503,6 +504,132 @@ namespace ShoesEcommerce.Controllers
                 return Json(new { exists = false });
             }
         }
+
+        #region Google OAuth
+
+        // GET: /Account/GoogleLogin - Initiate Google OAuth login
+        [AllowAnonymous]
+        public IActionResult GoogleLogin(string returnUrl = "/")
+        {
+            var redirectUrl = Url.Action("GoogleCallback", "Account", new { returnUrl });
+            var properties = new AuthenticationProperties 
+            { 
+                RedirectUri = redirectUrl,
+                Items =
+                {
+                    { "returnUrl", returnUrl }
+                }
+            };
+            
+            return Challenge(properties, GoogleDefaults.AuthenticationScheme);
+        }
+
+        // GET: /Account/GoogleCallback - Handle Google OAuth callback
+        [AllowAnonymous]
+        public async Task<IActionResult> GoogleCallback(string returnUrl = "/")
+        {
+            try
+            {
+                // Get the external login info from Google
+                var authenticateResult = await HttpContext.AuthenticateAsync(GoogleDefaults.AuthenticationScheme);
+                
+                if (!authenticateResult.Succeeded)
+                {
+                    _logger.LogWarning("Google authentication failed");
+                    TempData["ErrorMessage"] = "Đăng nhập với Google thất bại. Vui lòng thử lại.";
+                    return RedirectToAction("Login", new { returnUrl });
+                }
+
+                var claims = authenticateResult.Principal?.Claims;
+                var email = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
+                var firstName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.GivenName)?.Value ?? "";
+                var lastName = claims?.FirstOrDefault(c => c.Type == ClaimTypes.Surname)?.Value ?? "";
+                var googleId = claims?.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+                var profilePicture = claims?.FirstOrDefault(c => c.Type == "picture" || c.Type == "urn:google:picture")?.Value;
+
+                if (string.IsNullOrEmpty(email))
+                {
+                    _logger.LogWarning("Could not get email from Google authentication");
+                    TempData["ErrorMessage"] = "Không thể lấy thông tin email từ Google.";
+                    return RedirectToAction("Login", new { returnUrl });
+                }
+
+                _logger.LogInformation("Google OAuth successful for email: {Email}", email);
+
+                // Check if customer already exists
+                var existingCustomer = await _customerService.GetCustomerByEmailAsync(email);
+
+                if (existingCustomer != null)
+                {
+                    // Customer exists - sign them in
+                    await _authService.SignInCustomerAsync(existingCustomer.Id);
+                    _logger.LogInformation("Existing customer {Email} logged in via Google", email);
+                    
+                    TempData["SuccessMessage"] = $"Chào mừng {existingCustomer.FirstName} quay trở lại!";
+                }
+                else
+                {
+                    // New customer - create account
+                    var registerModel = new RegisterViewModel
+                    {
+                        Email = email,
+                        FirstName = firstName,
+                        LastName = lastName,
+                        Password = GenerateSecureRandomPassword(),
+                        ConfirmPassword = "",
+                        PhoneNumber = "",
+                        DateOfBirth = DateTime.Now.AddYears(-25), // Default age
+                        AcceptTerms = true
+                    };
+                    registerModel.ConfirmPassword = registerModel.Password;
+
+                    var result = await _authService.RegisterCustomerWithGoogleAsync(registerModel, googleId, profilePicture);
+
+                    if (result.Success)
+                    {
+                        _logger.LogInformation("New customer {Email} registered via Google", email);
+                        TempData["SuccessMessage"] = "Đăng ký thành công! Chào mừng bạn đến với cửa hàng.";
+                        TempData["ShowSuccessPopup"] = "true";
+                    }
+                    else
+                    {
+                        _logger.LogError("Failed to register customer via Google: {Error}", result.ErrorMessage);
+                        TempData["ErrorMessage"] = result.ErrorMessage ?? "Có lỗi xảy ra khi đăng ký. Vui lòng thử lại.";
+                        return RedirectToAction("Login", new { returnUrl });
+                    }
+                }
+
+                // Clean and validate return URL
+                if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl) && !returnUrl.Contains("Admin"))
+                {
+                    return LocalRedirect(returnUrl);
+                }
+
+                return RedirectToAction("Index", "Home");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during Google OAuth callback");
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi đăng nhập với Google. Vui lòng thử lại.";
+                return RedirectToAction("Login", new { returnUrl });
+            }
+        }
+
+        private static string GenerateSecureRandomPassword()
+        {
+            const string chars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz0123456789!@#$%^&*";
+            var random = new Random();
+            var password = new char[16];
+            
+            for (int i = 0; i < password.Length; i++)
+            {
+                password[i] = chars[random.Next(chars.Length)];
+            }
+            
+            return new string(password);
+        }
+
+        #endregion
 
         // Debug endpoint - remove in production
         [HttpGet]

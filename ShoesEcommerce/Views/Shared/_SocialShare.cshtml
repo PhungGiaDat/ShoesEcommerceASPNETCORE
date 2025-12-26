@@ -1,0 +1,163 @@
+@using Microsoft.AspNetCore.Http.Extensions
+@*
+    Social Sharing Buttons Partial View - Minimalist Design
+    Usage: @await Html.RenderPartialAsync("_SocialShare")
+*@
+
+@{
+    var shareUrl = ViewData["ShareUrl"]?.ToString() ?? Context.Request.GetDisplayUrl();
+    var shareTitle = ViewData["ShareTitle"]?.ToString() ?? ViewData["Title"]?.ToString() ?? "NHTP ShoesEcommerce";
+    var shareDescription = ViewData["ShareDescription"]?.ToString() ?? ViewData["MetaDescription"]?.ToString() ?? "C?a hàng giày dép chính hãng";
+    var shareImage = ViewData["ShareImage"]?.ToString() ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-image.jpg";
+    
+    // Encode for URL
+    var encodedUrl = System.Web.HttpUtility.UrlEncode(shareUrl);
+    var encodedTitle = System.Web.HttpUtility.UrlEncode(shareTitle);
+    var encodedImage = System.Web.HttpUtility.UrlEncode(shareImage);
+    
+    // Social sharing URLs
+    var facebookShareUrl = $"https://www.facebook.com/sharer/sharer.php?u={encodedUrl}";
+    var zaloShareUrl = $"https://zalo.me/share?url={encodedUrl}";
+    var twitterShareUrl = $"https://twitter.com/intent/tweet?url={encodedUrl}&text={encodedTitle}";
+    var pinterestShareUrl = $"https://pinterest.com/pin/create/button/?url={encodedUrl}&media={encodedImage}&description={encodedTitle}";
+}
+
+<div class="share-wrapper">
+    <span class="share-label">Chia s?</span>
+    <div class="share-icons">
+        <a href="@facebookShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon" title="Facebook">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+        </a>
+        <a href="@zaloShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon" title="Zalo">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.83 1.316 5.367 3.395 7.098l-.57 2.858c-.043.215.145.398.355.344l3.866-1.37c.97.34 2.01.527 3.104.527 5.523 0 10-4.145 10-9.243S17.523 2 12 2z"/>
+            </svg>
+        </a>
+        <a href="@twitterShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon" title="Twitter">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+            </svg>
+        </a>
+        <a href="@pinterestShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon" title="Pinterest">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.632-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/>
+            </svg>
+        </a>
+        <button type="button" class="share-icon" onclick="copyProductLink('@shareUrl')" title="Sao chép liên k?t">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
+            </svg>
+        </button>
+    </div>
+</div>
+
+<style>
+    .share-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin: 1rem 0;
+    }
+    
+    .share-label {
+        font-size: 0.8rem;
+        color: #737373;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .share-icons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .share-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        border: 1px solid #e5e5e5;
+        border-radius: 50%;
+        color: #525252;
+        background: transparent;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    
+    .share-icon:hover {
+        border-color: #000;
+        color: #000;
+        transform: translateY(-2px);
+    }
+    
+    .share-icon svg {
+        width: 16px;
+        height: 16px;
+    }
+</style>
+
+<script>
+    function copyProductLink(url) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(() => {
+                showCopyNotification('?ã sao chép liên k?t!');
+            }).catch(() => {
+                fallbackCopy(url);
+            });
+        } else {
+            fallbackCopy(url);
+        }
+    }
+    
+    function fallbackCopy(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        try {
+            document.execCommand('copy');
+            showCopyNotification('?ã sao chép liên k?t!');
+        } catch (err) {
+            showCopyNotification('Không th? sao chép', 'error');
+        }
+        document.body.removeChild(textarea);
+    }
+    
+    function showCopyNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: ${type === 'success' ? '#000' : '#dc3545'};
+            color: #fff;
+            padding: 0.75rem 1.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            z-index: 10000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        requestAnimationFrame(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(-50%) translateY(0)';
+        });
+        
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(-50%) translateY(20px)';
+            setTimeout(() => notification.remove(), 300);
+        }, 2000);
+    }
+</script>

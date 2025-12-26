@@ -4,9 +4,8 @@
     ViewData["Title"] = "Thanh toán VNPay thành công";
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    // Lấy thông tin giao dịch VNPay từ ViewBag (Cần Controller truyền vào)
-    var vnpTxnRef = ViewBag.VnpTxnRef as string; // Mã đơn hàng truyền sang VNPay (Ex: 12345_tick)
-    var vnpTransactionNo = ViewBag.VnpTransactionNo as string; // Mã giao dịch VNPay
+    // Get transaction ID from Payment model (saved during VnPayReturn)
+    var transactionId = Model.Payment?.TransactionId;
 }
 
 <div class="container my-5">
@@ -35,6 +34,12 @@
                             <p class="mb-1">
                                 <strong>Ngày đặt:</strong> @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
                             </p>
+                            @if (Model.Payment?.PaidAt != null)
+                            {
+                                <p class="mb-1">
+                                    <strong>Ngày thanh toán:</strong> @Model.Payment.PaidAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                </p>
+                            }
                         </div>
                         <div class="col-md-6 text-md-end">
                             <p class="mb-1">
@@ -52,26 +57,28 @@
                         </div>
                     </div>
 
-                    @if (!string.IsNullOrEmpty(vnpTransactionNo))
+                    <!-- Transaction ID Display -->
+                    @if (!string.IsNullOrEmpty(transactionId))
                     {
-                        <div class="alert alert-light border" role="alert">
-                            <small>
-                                <i class="fas fa-info-circle"></i>
-                                <strong>Mã giao dịch VNPay:</strong> @vnpTransactionNo
-                                @if (!string.IsNullOrEmpty(vnpTxnRef))
-                                {
-                                    <br />
-                                    <i class="fas fa-info-circle"></i>
-                                    <strong>Mã tham chiếu:</strong>
- 
-                                    @vnpTxnRef
-                                }
-                            </small>
+                        <div class="alert alert-success border-0" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-money-check-alt fa-2x me-3 text-info"></i>
+                                <div>
+                                    <strong>Mã giao dịch VNPay (Transaction ID):</strong>
+                                    <br>
+                                    <code class="fs-6">@transactionId</code>
+                                    <button type="button" class="btn btn-sm btn-outline-success ms-2" 
+                                            onclick="copyToClipboard('@transactionId')" title="Sao chép">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     }
                 </div>
             </div>
 
+            <!-- Order Items Card -->
             <div class="card shadow-sm mb-4">
                 <div class="card-body">
                     <h5 class="card-title mb-3">
@@ -207,6 +214,10 @@
                     <li>Bạn sẽ nhận được email xác nhận khi đơn hàng được giao cho đơn vị vận chuyển</li>
                     <li>Thời gian giao hàng dự kiến: 3-5 ngày làm việc</li>
                     <li>Bạn có thể theo dõi đơn hàng trong mục "Đơn hàng của tôi"</li>
+                    @if (!string.IsNullOrEmpty(transactionId))
+                    {
+                        <li>Mã giao dịch <code>@transactionId</code> có thể dùng để tra cứu trên VNPay</li>
+                    }
                 </ul>
             </div>
         </div>
@@ -242,15 +253,46 @@
             transition: background-color 0.2s;
         }
 
-            .table tbody tr:hover {
-                background-color: #f8f9fa;
-            }
+        .table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        code {
+            background-color: #e9ecef;
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+        }
     </style>
 }
 
 @section Scripts {
     <script>
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(function() {
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.classList.remove('btn-outline-success');
+                btn.classList.add('btn-success');
+                
+                setTimeout(function() {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-success');
+                }, 2000);
+            }).catch(function(err) {
+                console.error('Could not copy text: ', err);
+            });
+        }
+        
         console.log('Payment successful for order #@Model.Id via VNPay');
-        // Optional: Add confetti or celebration effect here
+        @if (!string.IsNullOrEmpty(transactionId))
+        {
+            <text>
+            console.log('Transaction ID: @transactionId');
+            </text>
+        }
     </script>
 }

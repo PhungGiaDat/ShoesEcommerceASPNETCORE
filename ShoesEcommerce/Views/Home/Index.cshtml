@@ -4,6 +4,10 @@
     ViewData["MetaDescription"] = "NHTP ShoesEcommerce - Giày Nike, Adidas, Puma chính hãng. Miễn phí ship đơn 10 triệu. Đổi trả 30 ngày. Hỗ trợ 24/7.";
     ViewData["MetaKeywords"] = "giày dép chính hãng, mua giày online, giày nike, giày adidas, giày puma, giày thể thao, sneaker, giày nam, giày nữ, NHTP";
     var featuredVariants = ViewBag.FeaturedProductVariants as IEnumerable<ProductVariantDisplayInfo> ?? new List<ProductVariantDisplayInfo>();
+    
+    // Social sharing data
+    ViewData["ShareTitle"] = "NHTP ShoesEcommerce - Giày Dép Chính Hãng";
+    ViewData["ShareDescription"] = "Mua giày Nike, Adidas, Puma chính hãng với giá tốt nhất. Miễn phí ship, đổi trả 30 ngày!";
 }
 
 <!-- Hero Section -->
@@ -23,6 +27,12 @@
                         Với hơn 5 năm kinh nghiệm trong lĩnh vực phân phối giày dép, NHTP đã phục vụ hơn 100.000 khách hàng trên toàn quốc.
                         Mỗi sản phẩm đều được kiểm tra kỹ lưỡng, đảm bảo 100% chính hãng với đầy đủ tem nhãn và bảo hành.
                     </p>
+                    
+                    <!-- Social Sharing on Homepage -->
+                    <div style="margin-top: 2rem;">
+                        @{ await Html.RenderPartialAsync("_SocialShare"); }
+                    </div>
+                    
                     <div class="hero-cta">
                         <a href="/san-pham" class="btn-primary-action">
                             Mua ngay

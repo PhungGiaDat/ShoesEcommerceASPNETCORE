@@ -110,6 +110,7 @@ builder.Services.AddScoped<IStockRepository, StockRepository>();
 builder.Services.AddScoped<IStaffRepository, StaffRepository>();
 builder.Services.AddScoped<ICommentRepository, CommentRepository>();
 builder.Services.AddScoped<IQARepository, QARepository>();
+builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<CheckoutRepository>();
 builder.Services.AddScoped<ShoesEcommerce.Repositories.Interfaces.IPaymentRepository, ShoesEcommerce.Repositories.PaymentRepository>();
 
@@ -127,9 +128,43 @@ builder.Services.AddScoped<IStockService, StockService>();
 builder.Services.AddScoped<ShoesEcommerce.Services.ICommentService, ShoesEcommerce.Services.CommentService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICheckoutService, CheckoutService>();
+builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 
 // Register VNPayService
 builder.Services.AddScoped<IVnPayService, VnPayService>(); 
+
+// ✅ Register Supabase Storage Service
+builder.Services.Configure<SupabaseStorageOptions>(options =>
+{
+    var projectUrl = Environment.GetEnvironmentVariable("SUPABASE_PROJECT_URL") 
+                     ?? builder.Configuration["SupabaseStorage:ProjectUrl"];
+    var s3Endpoint = Environment.GetEnvironmentVariable("SUPABASE_S3_ENDPOINT") 
+                     ?? builder.Configuration["SupabaseStorage:S3Endpoint"]
+                     ?? "https://wrrlgzyxojhlgwpunpud.storage.supabase.co/storage/v1/s3";
+    var accessKeyId = Environment.GetEnvironmentVariable("SUPABASE_ACCESS_KEY_ID") 
+                      ?? builder.Configuration["SupabaseStorage:AccessKeyId"];
+    var secretAccessKey = Environment.GetEnvironmentVariable("SUPABASE_SECRET_ACCESS_KEY") 
+                          ?? builder.Configuration["SupabaseStorage:SecretAccessKey"];
+    var bucketName = Environment.GetEnvironmentVariable("SUPABASE_BUCKET_NAME") 
+                     ?? builder.Configuration["SupabaseStorage:BucketName"]
+                     ?? "images";
+
+    options.ProjectUrl = projectUrl ?? "https://wrrlgzyxojhlgwpunpud.supabase.co";
+    options.S3Endpoint = s3Endpoint;
+    options.AccessKeyId = accessKeyId ?? "";
+    options.SecretAccessKey = secretAccessKey ?? "";
+    options.BucketName = bucketName;
+
+    if (!string.IsNullOrEmpty(accessKeyId) && !string.IsNullOrEmpty(secretAccessKey))
+    {
+        Console.WriteLine($"✅ Supabase Storage configured with bucket: {bucketName}");
+    }
+    else
+    {
+        Console.WriteLine("⚠️ Supabase Storage not fully configured. Set SUPABASE_ACCESS_KEY_ID and SUPABASE_SECRET_ACCESS_KEY environment variables.");
+    }
+});
+builder.Services.AddScoped<IStorageService, SupabaseStorageService>();
 
 // Register Subiz Chat Service
 builder.Services.Configure<SubizChatOptions>(builder.Configuration.GetSection(SubizChatOptions.SectionName));
@@ -181,6 +216,7 @@ builder.Services.AddSession(options =>
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
+
 // Configure authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -193,6 +229,33 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.SameSite = SameSiteMode.Lax;
+    })
+    .AddGoogle(googleOptions =>
+    {
+        var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") 
+                             ?? builder.Configuration["Authentication:Google:ClientId"];
+        var googleClientSecret = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_SECRET") 
+                                 ?? builder.Configuration["Authentication:Google:ClientSecret"];
+
+        if (!string.IsNullOrEmpty(googleClientId) && !string.IsNullOrEmpty(googleClientSecret))
+        {
+            googleOptions.ClientId = googleClientId;
+            googleOptions.ClientSecret = googleClientSecret;
+            googleOptions.CallbackPath = "/signin-google";
+            
+            // Request additional scopes
+            googleOptions.Scope.Add("email");
+            googleOptions.Scope.Add("profile");
+            
+            Console.WriteLine("✅ Google OAuth configured successfully");
+        }
+        else
+        {
+            Console.WriteLine("⚠️ Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables or configure in appsettings.json");
+            // Use placeholder values to avoid startup crash
+            googleOptions.ClientId = "not-configured";
+            googleOptions.ClientSecret = "not-configured";
+        }
     });
 
 // Configure MVC

@@ -78,18 +78,7 @@ namespace ShoesEcommerce.Services
                 if (result.Success && result.Customer != null)
                 {
                     // Automatically sign in the customer after successful registration
-                    var claimsPrincipal = await CreateCustomerClaimsPrincipalAsync(result.Customer);
-                    
-                    var authProperties = new AuthenticationProperties
-                    {
-                        IsPersistent = false,
-                        ExpiresUtc = DateTimeOffset.UtcNow.AddHours(24)
-                    };
-
-                    await _httpContextAccessor.HttpContext!.SignInAsync(
-                        CookieAuthenticationDefaults.AuthenticationScheme,
-                        claimsPrincipal,
-                        authProperties);
+                    await SignInCustomerAsync(result.Customer.Id);
 
                     _logger.LogInformation("Customer registered and authenticated: {Email} with Cart ID: {CartId}", 
                         model.Email, result.Customer.CartId);
@@ -105,6 +94,75 @@ namespace ShoesEcommerce.Services
                     Success = false,
                     ErrorMessage = "Có l?i x?y ra trong quá trình ??ng ký"
                 };
+            }
+        }
+
+        public async Task<CustomerRegistrationResult> RegisterCustomerWithGoogleAsync(RegisterViewModel model, string? googleId, string? profilePicture)
+        {
+            try
+            {
+                _logger.LogInformation("Registering customer with Google OAuth: {Email}", model.Email);
+
+                var result = await _customerRegistrationService.RegisterCustomerWithCartAsync(model);
+                
+                if (result.Success && result.Customer != null)
+                {
+                    // Update customer with Google-specific info if available
+                    if (!string.IsNullOrEmpty(profilePicture))
+                    {
+                        // Could store profile picture URL - would need to update customer entity
+                        _logger.LogDebug("Google profile picture URL: {ProfilePicture}", profilePicture);
+                    }
+
+                    // Automatically sign in the customer
+                    await SignInCustomerAsync(result.Customer.Id);
+
+                    _logger.LogInformation("Customer registered via Google and signed in: {Email}", model.Email);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error registering customer with Google: {Email}", model.Email);
+                return new CustomerRegistrationResult
+                {
+                    Success = false,
+                    ErrorMessage = "Có l?i x?y ra trong quá trình ??ng ký v?i Google"
+                };
+            }
+        }
+
+        public async Task SignInCustomerAsync(int customerId)
+        {
+            try
+            {
+                var customer = await _customerService.GetCustomerByIdAsync(customerId);
+                if (customer == null)
+                {
+                    _logger.LogWarning("Cannot sign in - customer not found: {CustomerId}", customerId);
+                    return;
+                }
+
+                var claimsPrincipal = await CreateCustomerClaimsPrincipalAsync(customer);
+                
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(30)
+                };
+
+                await _httpContextAccessor.HttpContext!.SignInAsync(
+                    CookieAuthenticationDefaults.AuthenticationScheme,
+                    claimsPrincipal,
+                    authProperties);
+
+                _logger.LogInformation("Customer signed in: {CustomerId} - {Email}", customerId, customer.Email);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error signing in customer: {CustomerId}", customerId);
+                throw;
             }
         }
 

@@ -83,12 +83,15 @@ namespace ShoesEcommerce.Controllers
         [Route("Product/Details/{id:int}")]
         public async Task<IActionResult> Details(string? slug, int? id)
         {
-            // Extract ID from slug or use direct ID
+            // Determine product ID from either route parameter or slug
             int productId;
+            
+            // Case 1: Direct ID access (e.g., /Product/Details/3 or /Product/Details/3?slug=xxx)
             if (id.HasValue)
             {
                 productId = id.Value;
             }
+            // Case 2: SEO-friendly slug route (e.g., /san-pham/product-name-3)
             else if (!string.IsNullOrEmpty(slug))
             {
                 productId = SlugHelper.ExtractIdFromSlug(slug);
@@ -111,13 +114,29 @@ namespace ShoesEcommerce.Controllers
                     return NotFound("Sản phẩm không tồn tại.");
                 }
 
-                // Redirect to canonical SEO-friendly URL if accessed by ID
+                // Generate the canonical SEO-friendly slug
                 var expectedSlug = product.Name.ToSlugWithId(product.Id);
-                if (id.HasValue || (slug != null && !slug.Equals(expectedSlug, StringComparison.OrdinalIgnoreCase)))
+                
+                // Check current path to determine if we need to redirect
+                var currentPath = Request.Path.Value?.ToLowerInvariant() ?? "";
+                
+                // Only redirect if:
+                // 1. Accessed via /Product/Details/{id} route (legacy URL)
+                // 2. OR accessed via SEO route but with wrong slug
+                var isLegacyRoute = currentPath.Contains("/product/details/");
+                var isSeoRouteWithWrongSlug = (currentPath.StartsWith("/san-pham/") || currentPath.StartsWith("/product/")) && 
+                                               !currentPath.Contains("/product/details/") &&
+                                               !string.IsNullOrEmpty(slug) && 
+                                               !slug.Equals(expectedSlug, StringComparison.OrdinalIgnoreCase);
+                
+                if (isLegacyRoute || isSeoRouteWithWrongSlug)
                 {
-                    return RedirectToActionPermanent(nameof(Details), new { slug = expectedSlug });
+                    // Build the SEO URL directly to avoid any routing issues
+                    var seoUrl = $"/san-pham/{expectedSlug}";
+                    return RedirectPermanent(seoUrl);
                 }
 
+                // At this point, we're on the correct SEO URL - render the view
                 var variants = await _productService.GetProductVariantsAsync(productId);
                 var discountInfo = await _discountService.GetProductDiscountInfoAsync(productId);
                 var comments = await _commentService.GetCommentsAsync(productId);
@@ -127,7 +146,7 @@ namespace ShoesEcommerce.Controllers
                 ViewData["MetaDescription"] = product.Description?.Length > 160 
                     ? product.Description.Substring(0, 157) + "..." 
                     : product.Description;
-                ViewData["CanonicalUrl"] = Url.Action(nameof(Details), "Product", new { slug = expectedSlug }, Request.Scheme);
+                ViewData["CanonicalUrl"] = $"{Request.Scheme}://{Request.Host}/san-pham/{expectedSlug}";
                 
                 ViewBag.Variants = variants;
                 ViewBag.DiscountInfo = discountInfo;
@@ -145,6 +164,14 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
+        // GET: AddComment - Redirect to product index when accessed directly
+        [HttpGet]
+        public IActionResult AddComment()
+        {
+            TempData["Info"] = "Vui lòng sử dụng form bình luận trên trang sản phẩm.";
+            return RedirectToAction(nameof(Index));
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddComment(ProductCommentViewModel model)
@@ -152,7 +179,7 @@ namespace ShoesEcommerce.Controllers
             if (!User.Identity.IsAuthenticated)
             {
                 TempData["Error"] = "Bạn cần đăng nhập để bình luận.";
-                return RedirectToAction("Details", new { id = model.ProductId });
+                return RedirectToProductDetails(model.ProductId);
             }
             
             var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -165,12 +192,20 @@ namespace ShoesEcommerce.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                return RedirectToAction("Details", new { id = model.ProductId });
+                return RedirectToProductDetails(model.ProductId);
             }
             
             await _commentService.AddCommentAsync(model);
             TempData["Success"] = "Đã gửi bình luận thành công.";
-            return RedirectToAction("Details", new { id = model.ProductId });
+            return RedirectToProductDetails(model.ProductId);
+        }
+
+        // GET: AddQA - Redirect to product index when accessed directly
+        [HttpGet]
+        public IActionResult AddQA()
+        {
+            TempData["Info"] = "Vui lòng sử dụng form hỏi đáp trên trang sản phẩm.";
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -180,7 +215,7 @@ namespace ShoesEcommerce.Controllers
             if (!User.Identity.IsAuthenticated)
             {
                 TempData["Error"] = "Bạn cần đăng nhập để gửi câu hỏi.";
-                return RedirectToAction("Details", new { id = model.ProductId });
+                return RedirectToProductDetails(model.ProductId);
             }
             
             var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -193,12 +228,12 @@ namespace ShoesEcommerce.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                return RedirectToAction("Details", new { id = model.ProductId });
+                return RedirectToProductDetails(model.ProductId);
             }
             
             await _commentService.AddQAAsync(model);
             TempData["Success"] = "Đã gửi câu hỏi thành công.";
-            return RedirectToAction("Details", new { id = model.ProductId });
+            return RedirectToProductDetails(model.ProductId);
         }
 
         // GET: Product/DiscountedProducts - SEO-friendly URL
@@ -403,6 +438,38 @@ namespace ShoesEcommerce.Controllers
                 _logger.LogError(ex, "Error occurred while getting discount info for product: {ProductId}", productId);
                 return Json(new { hasDiscount = false });
             }
+        }
+
+        /// <summary>
+        /// Helper method to redirect to product details using SEO-friendly URL
+        /// </summary>
+        private async Task<IActionResult> RedirectToProductDetailsAsync(int productId)
+        {
+            try
+            {
+                var product = await _productService.GetProductByIdAsync(productId);
+                if (product != null)
+                {
+                    var slug = product.Name.ToSlugWithId(product.Id);
+                    return RedirectPermanent($"/san-pham/{slug}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting product for redirect: {ProductId}", productId);
+            }
+            
+            // Fallback to old route if product not found
+            return RedirectToAction("Details", new { id = productId });
+        }
+
+        /// <summary>
+        /// Synchronous version for simpler redirects
+        /// </summary>
+        private IActionResult RedirectToProductDetails(int productId)
+        {
+            // Use a simple redirect that will be handled by the Details action
+            return Redirect($"/Product/Details/{productId}");
         }
     }
 }

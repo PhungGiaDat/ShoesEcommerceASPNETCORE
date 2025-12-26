@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Options;
 using ShoesEcommerce.Services.Interfaces;
+using ShoesEcommerce.Services.Options;
 
 namespace ShoesEcommerce.Services
 {
@@ -6,15 +8,39 @@ namespace ShoesEcommerce.Services
     {
         private readonly IWebHostEnvironment _environment;
         private readonly ILogger<FileUploadService> _logger;
+        private readonly IStorageService? _storageService;
+        private readonly SupabaseStorageOptions? _storageOptions;
+        private readonly bool _useCloudStorage;
+        
         private readonly string[] _allowedExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
         private const long MaxFileSize = 5 * 1024 * 1024; // 5MB
         private const string ImageFolder = "images";
         private const string ProductVariantFolder = "product-variants";
 
-        public FileUploadService(IWebHostEnvironment environment, ILogger<FileUploadService> logger)
+        public FileUploadService(
+            IWebHostEnvironment environment, 
+            ILogger<FileUploadService> logger,
+            IStorageService? storageService = null,
+            IOptions<SupabaseStorageOptions>? storageOptions = null)
         {
             _environment = environment;
             _logger = logger;
+            _storageService = storageService;
+            _storageOptions = storageOptions?.Value;
+            
+            // Use cloud storage if configured
+            _useCloudStorage = _storageOptions != null 
+                && !string.IsNullOrEmpty(_storageOptions.AccessKeyId) 
+                && !string.IsNullOrEmpty(_storageOptions.SecretAccessKey);
+
+            if (_useCloudStorage)
+            {
+                _logger.LogInformation("?? FileUploadService using Supabase cloud storage");
+            }
+            else
+            {
+                _logger.LogInformation("?? FileUploadService using local file storage");
+            }
         }
 
         public async Task<string> UploadImageAsync(IFormFile file, string subFolder = "")
@@ -29,24 +55,14 @@ namespace ShoesEcommerce.Services
                 if (!validationResult.IsValid)
                     throw new ArgumentException(validationResult.ErrorMessage);
 
-                // Create upload directory
-                var uploadPath = CreateUploadDirectory(subFolder);
-
-                // Generate unique filename
-                var fileName = GenerateUniqueFileName(file.FileName);
-                var filePath = Path.Combine(uploadPath, fileName);
-
-                // Save file
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Use cloud storage if available
+                if (_useCloudStorage && _storageService != null)
                 {
-                    await file.CopyToAsync(stream);
+                    return await UploadToCloudAsync(file, subFolder);
                 }
 
-                // Return relative URL
-                var relativePath = Path.Combine(ImageFolder, subFolder, fileName)
-                    .Replace('\\', '/');
-                
-                return $"/{relativePath}";
+                // Fallback to local storage
+                return await UploadToLocalAsync(file, subFolder);
             }
             catch (Exception ex)
             {
@@ -73,40 +89,29 @@ namespace ShoesEcommerce.Services
                     throw new ArgumentException(validationResult.ErrorMessage);
                 }
 
-                // Create specific subfolder for product variants
-                var subFolder = Path.Combine(ProductVariantFolder, $"product-{productId}");
-                var uploadPath = CreateUploadDirectory(subFolder);
+                var subFolder = $"{ProductVariantFolder}/product-{productId}";
 
-                _logger.LogInformation("Upload path created: {UploadPath}", uploadPath);
-
-                // Generate descriptive filename
-                var fileName = GenerateProductVariantFileName(file.FileName, productId, color, size);
-                var filePath = Path.Combine(uploadPath, fileName);
-
-                _logger.LogInformation("Saving file to: {FilePath}", filePath);
-
-                // Save file
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                // Use cloud storage if available
+                if (_useCloudStorage && _storageService != null)
                 {
-                    await file.CopyToAsync(stream);
+                    var customFileName = GenerateProductVariantFileName(file.FileName, productId, color, size);
+                    customFileName = Path.GetFileNameWithoutExtension(customFileName);
+                    
+                    var result = await _storageService.UploadFileAsync(file, subFolder, customFileName);
+                    
+                    if (result.Success && !string.IsNullOrEmpty(result.Url))
+                    {
+                        _logger.LogInformation("? Product variant image uploaded to cloud: {Url}", result.Url);
+                        return result.Url;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("?? Cloud upload failed: {Error}, falling back to local", result.ErrorMessage);
+                    }
                 }
 
-                // Verify file was saved
-                if (!File.Exists(filePath))
-                {
-                    throw new InvalidOperationException("File was not saved successfully");
-                }
-
-                _logger.LogInformation("File saved successfully: {FileName}, Size: {FileSize}", fileName, file.Length);
-
-                // Return relative URL
-                var relativePath = Path.Combine(ImageFolder, subFolder, fileName)
-                    .Replace('\\', '/');
-                
-                var imageUrl = $"/{relativePath}";
-                _logger.LogInformation("Returning image URL: {ImageUrl}", imageUrl);
-                
-                return imageUrl;
+                // Fallback to local storage
+                return await UploadProductVariantToLocalAsync(file, productId, color, size);
             }
             catch (Exception ex)
             {
@@ -120,7 +125,21 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                if (string.IsNullOrEmpty(imageUrl) || !imageUrl.StartsWith("/"))
+                if (string.IsNullOrEmpty(imageUrl))
+                    return false;
+
+                // Check if it's a cloud URL
+                if (imageUrl.StartsWith("http"))
+                {
+                    if (_storageService != null)
+                    {
+                        return await _storageService.DeleteFileAsync(imageUrl);
+                    }
+                    return false;
+                }
+
+                // Local file deletion
+                if (!imageUrl.StartsWith("/"))
                     return false;
 
                 var physicalPath = Path.Combine(_environment.WebRootPath, imageUrl.TrimStart('/'));
@@ -128,6 +147,7 @@ namespace ShoesEcommerce.Services
                 if (File.Exists(physicalPath))
                 {
                     await Task.Run(() => File.Delete(physicalPath));
+                    _logger.LogInformation("??? Deleted local file: {Path}", physicalPath);
                     return true;
                 }
 
@@ -162,67 +182,97 @@ namespace ShoesEcommerce.Services
             return new ValidationResult { IsValid = true };
         }
 
+        #region Cloud Storage Methods
+
+        private async Task<string> UploadToCloudAsync(IFormFile file, string subFolder)
+        {
+            var result = await _storageService!.UploadFileAsync(file, subFolder);
+            
+            if (result.Success && !string.IsNullOrEmpty(result.Url))
+            {
+                _logger.LogInformation("? Image uploaded to cloud: {Url}", result.Url);
+                return result.Url;
+            }
+            
+            _logger.LogWarning("?? Cloud upload failed: {Error}, falling back to local storage", result.ErrorMessage);
+            return await UploadToLocalAsync(file, subFolder);
+        }
+
+        #endregion
+
+        #region Local Storage Methods
+
+        private async Task<string> UploadToLocalAsync(IFormFile file, string subFolder)
+        {
+            var uploadPath = CreateUploadDirectory(subFolder);
+            var fileName = GenerateUniqueFileName(file.FileName);
+            var filePath = Path.Combine(uploadPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var relativePath = Path.Combine(ImageFolder, subFolder, fileName).Replace('\\', '/');
+            var imageUrl = $"/{relativePath}";
+            
+            _logger.LogInformation("?? Image uploaded to local: {Url}", imageUrl);
+            return imageUrl;
+        }
+
+        private async Task<string> UploadProductVariantToLocalAsync(IFormFile file, int productId, string color, string size)
+        {
+            var subFolder = Path.Combine(ProductVariantFolder, $"product-{productId}");
+            var uploadPath = CreateUploadDirectory(subFolder);
+
+            var fileName = GenerateProductVariantFileName(file.FileName, productId, color, size);
+            var filePath = Path.Combine(uploadPath, fileName);
+
+            using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            if (!File.Exists(filePath))
+            {
+                throw new InvalidOperationException("File was not saved successfully");
+            }
+
+            var relativePath = Path.Combine(ImageFolder, subFolder, fileName).Replace('\\', '/');
+            var imageUrl = $"/{relativePath}";
+            
+            _logger.LogInformation("?? Product variant image uploaded to local: {Url}", imageUrl);
+            return imageUrl;
+        }
+
         private string CreateUploadDirectory(string subFolder)
         {
-            try
+            var uploadPath = Path.Combine(_environment.WebRootPath, ImageFolder);
+            
+            if (!string.IsNullOrEmpty(subFolder))
             {
-                var uploadPath = Path.Combine(_environment.WebRootPath, ImageFolder);
-                
-                if (!string.IsNullOrEmpty(subFolder))
-                {
-                    uploadPath = Path.Combine(uploadPath, subFolder);
-                }
-
-                _logger.LogInformation("Creating directory: {UploadPath}", uploadPath);
-
-                if (!Directory.Exists(uploadPath))
-                {
-                    Directory.CreateDirectory(uploadPath);
-                    _logger.LogInformation("Directory created successfully: {UploadPath}", uploadPath);
-                }
-                else
-                {
-                    _logger.LogInformation("Directory already exists: {UploadPath}", uploadPath);
-                }
-
-                // Verify directory was created and is writable
-                if (!Directory.Exists(uploadPath))
-                {
-                    throw new DirectoryNotFoundException($"Failed to create directory: {uploadPath}");
-                }
-
-                // Test write permissions
-                var testFile = Path.Combine(uploadPath, $"test_{Guid.NewGuid()}.tmp");
-                try
-                {
-                    File.WriteAllText(testFile, "test");
-                    File.Delete(testFile);
-                    _logger.LogInformation("Directory write test successful: {UploadPath}", uploadPath);
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "Directory write test failed: {UploadPath}", uploadPath);
-                    throw new UnauthorizedAccessException($"No write permission for directory: {uploadPath}", ex);
-                }
-
-                return uploadPath;
+                uploadPath = Path.Combine(uploadPath, subFolder);
             }
-            catch (Exception ex)
+
+            if (!Directory.Exists(uploadPath))
             {
-                _logger.LogError(ex, "Error creating upload directory for subfolder: {SubFolder}", subFolder);
-                throw;
+                Directory.CreateDirectory(uploadPath);
+                _logger.LogInformation("?? Directory created: {Path}", uploadPath);
             }
+
+            return uploadPath;
         }
+
+        #endregion
+
+        #region Filename Generation
 
         private string GenerateUniqueFileName(string originalFileName)
         {
             var extension = Path.GetExtension(originalFileName);
             var fileName = Path.GetFileNameWithoutExtension(originalFileName);
-            
-            // Sanitize filename
             fileName = SanitizeFileName(fileName);
             
-            // Add timestamp and GUID for uniqueness
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             var uniqueId = Guid.NewGuid().ToString("N")[..8];
             
@@ -232,12 +282,8 @@ namespace ShoesEcommerce.Services
         private string GenerateProductVariantFileName(string originalFileName, int productId, string color, string size)
         {
             var extension = Path.GetExtension(originalFileName);
-            
-            // Sanitize inputs
             var sanitizedColor = SanitizeFileName(color);
             var sanitizedSize = SanitizeFileName(size);
-            
-            // Create descriptive filename
             var timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             
             return $"product_{productId}_{sanitizedColor}_{sanitizedSize}_{timestamp}{extension}";
@@ -247,9 +293,9 @@ namespace ShoesEcommerce.Services
         {
             var invalidChars = Path.GetInvalidFileNameChars();
             var sanitized = string.Join("_", fileName.Split(invalidChars, StringSplitOptions.RemoveEmptyEntries));
-            
-            // Remove extra spaces and convert to lowercase
             return sanitized.Trim().Replace(" ", "_").ToLowerInvariant();
         }
+
+        #endregion
     }
 }

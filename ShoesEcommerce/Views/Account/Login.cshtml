@@ -1,251 +1,653 @@
 @model ShoesEcommerce.ViewModels.Account.LoginViewModel
 @{
     ViewData["Title"] = "Đăng nhập";
+    Layout = "~/Views/Shared/_Layout.cshtml";
 }
 
-<style>
-    /* Light (mặc định) */
-    :root {
-        --bg-color: #f4f6f8;
-        --text-color: #222;
-        --card-bg: #fff;
-        --label-color: #555;
-        --input-bg: #fff;
-        --input-border: #ccc;
-        --error-bg: #f8d7da;
-        --error-text: #721c24;
-        --btn-bg: #007bff;
-        --btn-hover: #0056b3;
-        --code-bg: #eee;
-        --code-text: #000;
-    }
+<div class="login-page">
+    <div class="login-container">
+        <!-- Left Side - Branding -->
+        <div class="login-brand">
+            <div class="brand-content">
+                <div class="brand-logo">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                        <line x1="3" y1="6" x2="21" y2="6"/>
+                        <path d="M16 10a4 4 0 0 1-8 0"/>
+                    </svg>
+                </div>
+                <h1>NHTP Shoes</h1>
+                <p class="tagline">Chào mừng bạn quay trở lại</p>
+                
+                <div class="features">
+                    <div class="feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <path d="M22 4 12 14.01l-3-3"/>
+                        </svg>
+                        <span>Theo dõi đơn hàng dễ dàng</span>
+                    </div>
+                    <div class="feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <path d="M22 4 12 14.01l-3-3"/>
+                        </svg>
+                        <span>Lưu sản phẩm yêu thích</span>
+                    </div>
+                    <div class="feature">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                            <path d="M22 4 12 14.01l-3-3"/>
+                        </svg>
+                        <span>Nhận ưu đãi độc quyền</span>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    /* Dark (khi html có data-theme="dark") */
-    [data-theme="dark"] {
-        --bg-color: #121212;
-        --text-color: #f1f1f1;
-        --card-bg: #1e1e1e;
-        --label-color: #ccc;
-        --input-bg: #2b2b2b;
-        --input-border: #444;
-        --error-bg: #5f2120;
-        --error-text: #f8d7da;
-        --btn-bg: #4a90e2;
-        --btn-hover: #357abd;
-        --code-bg: #333;
-        --code-text: #fff;
-    }
+        <!-- Right Side - Form -->
+        <div class="login-form-wrapper">
+            <div class="form-header">
+                <h2>Đăng nhập</h2>
+                <p>Nhập thông tin tài khoản của bạn</p>
+            </div>
 
-    /* Hiệu ứng chuyển mượt khi đổi theme */
-    * {
-        transition: background-color .25s ease, color .25s ease, border-color .25s ease;
-    }
-
-    body {
-        font-family: Arial, sans-serif;
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        margin: 0;
-    }
-
-    .login-wrapper {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 80vh;
-    }
-
-    .login-card {
-        background-color: var(--card-bg);
-        padding: 2rem;
-        border-radius: 8px;
-        width: 100%;
-        max-width: 380px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        position: relative;
-    }
-
-        .login-card h2 {
-            text-align: center;
-            margin-bottom: 1.5rem;
-            font-weight: bold;
-        }
-
-    .theme-toggle {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        cursor: pointer;
-        font-size: 0.9rem;
-        padding: 0.2rem 0.5rem;
-        border-radius: 4px;
-        background-color: var(--btn-bg);
-        color: white;
-        border: none;
-    }
-
-    .form-group {
-        margin-bottom: 1rem;
-    }
-
-        .form-group label {
-            font-weight: 500;
-            display: block;
-            margin-bottom: 0.3rem;
-            color: var(--label-color);
-        }
-
-    .form-control {
-        width: 100%;
-        padding: 0.6rem 0.8rem;
-        border-radius: 4px;
-        border: 1px solid var(--input-border);
-        background-color: var(--input-bg);
-        color: var(--text-color);
-        font-size: 1rem;
-        outline: none;
-    }
-
-        .form-control:focus {
-            border-color: var(--btn-bg);
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
-        }
-
-    .btn-submit {
-        width: 100%;
-        padding: 0.6rem;
-        background-color: var(--btn-bg);
-        border: none;
-        color: white;
-        border-radius: 4px;
-        font-size: 1rem;
-        cursor: pointer;
-    }
-
-        .btn-submit:hover {
-            background-color: var(--btn-hover);
-        }
-
-    .error-box {
-        background-color: var(--error-bg);
-        color: var(--error-text);
-        padding: 0.5rem;
-        border-radius: 4px;
-        margin-bottom: 1rem;
-        font-size: 0.9rem;
-    }
-
-    .register-link {
-        text-align: center;
-        margin-top: 1rem;
-        color: var(--label-color);
-    }
-
-    .register-link a {
-        color: var(--btn-bg);
-        text-decoration: none;
-    }
-
-    .register-link a:hover {
-        text-decoration: underline;
-    }
-
-    .remember-me {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .remember-me input {
-        margin-right: 0.5rem;
-    }
-
-    .text-danger {
-        color: #dc3545;
-        font-size: 0.875rem;
-        margin-top: 0.25rem;
-        display: block;
-    }
-</style>
-
-<div class="login-wrapper">
-    <div class="login-card">
-        <button class="theme-toggle" id="themeBtn" type="button" onclick="toggleTheme()">🌙/☀️</button>
-
-        <h2>Đăng nhập</h2>
-
-        <form asp-action="Login" method="post">
-            @Html.AntiForgeryToken()
-
-            <!-- Giữ ReturnUrl -->
-            @if (!string.IsNullOrEmpty(Model?.ReturnUrl))
+            @if (TempData["SuccessMessage"] != null)
             {
-                <input asp-for="ReturnUrl" type="hidden" />
-            }
-
-            <div class="form-group">
-                <label asp-for="Email">Email</label>
-                <input asp-for="Email" class="form-control" placeholder="Nhập email" type="email" />
-                <span asp-validation-for="Email" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Password">Mật khẩu</label>
-                <input asp-for="Password" class="form-control" placeholder="Nhập mật khẩu" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
-
-            <div class="remember-me">
-                <input asp-for="RememberMe" type="checkbox" />
-                <label asp-for="RememberMe">Ghi nhớ đăng nhập</label>
-            </div>
-
-            @if (!ViewData.ModelState.IsValid)
-            {
-                <div class="error-box">
-                    @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                    {
-                        <div>@error.ErrorMessage</div>
-                    }
+                <div class="alert alert-success">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <path d="M22 4 12 14.01l-3-3"/>
+                    </svg>
+                    <span>@TempData["SuccessMessage"]</span>
                 </div>
             }
 
-            <button type="submit" class="btn-submit">Đăng nhập</button>
+            @if (TempData["ErrorMessage"] != null)
+            {
+                <div class="alert alert-error">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                    <span>@TempData["ErrorMessage"]</span>
+                </div>
+            }
 
-            <div class="register-link">
-                Chưa có tài khoản? <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@Model?.ReturnUrl">Đăng ký ngay</a>
-            </div>
-        </form>
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="alert alert-error">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                    <div>
+                        @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors).Take(3))
+                        {
+                            <div>@error.ErrorMessage</div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <form asp-action="Login" method="post" id="loginForm" novalidate>
+                @Html.AntiForgeryToken()
+
+                @if (!string.IsNullOrEmpty(Model?.ReturnUrl))
+                {
+                    <input asp-for="ReturnUrl" type="hidden" />
+                }
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label asp-for="Email">Email</label>
+                    <div class="input-with-icon">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                            <polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                        <input asp-for="Email" class="form-input" placeholder="example@@email.com" type="email" autocomplete="email" />
+                    </div>
+                    <span asp-validation-for="Email" class="error-text"></span>
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label asp-for="Password">Mật khẩu</label>
+                    <div class="input-with-icon password-input">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <input asp-for="Password" class="form-input" placeholder="Nhập mật khẩu" type="password" id="passwordInput" autocomplete="current-password" />
+                        <button type="button" class="toggle-password" id="togglePasswordBtn">
+                            <svg class="eye-open" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                <circle cx="12" cy="12" r="3"/>
+                            </svg>
+                            <svg class="eye-closed" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
+                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                <line x1="1" y1="1" x2="23" y2="23"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="error-text"></span>
+                </div>
+
+                <!-- Remember Me & Forgot Password -->
+                <div class="form-options">
+                    <label class="checkbox-label">
+                        <input asp-for="RememberMe" type="checkbox" class="checkbox-input" />
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Ghi nhớ đăng nhập</span>
+                    </label>
+                    <a href="#" class="forgot-link">Quên mật khẩu?</a>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <span class="btn-text">Đăng nhập</span>
+                    <span class="btn-loading" style="display:none">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                        Đang xử lý...
+                    </span>
+                </button>
+
+                <!-- Divider -->
+                <div class="divider">
+                    <span>hoặc</span>
+                </div>
+
+                <!-- Social Login -->
+                <div class="social-login">
+                    <a href="/Account/GoogleLogin?returnUrl=@(Model?.ReturnUrl ?? "/")" class="btn-social btn-google">
+                        <svg width="20" height="20" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        Đăng nhập với Google
+                    </a>
+                </div>
+
+                <!-- Register Link -->
+                <div class="register-link">
+                    Chưa có tài khoản? <a asp-controller="Account" asp-action="Register" asp-route-returnUrl="@Model?.ReturnUrl">Đăng ký ngay</a>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
+
+<style>
+    :root {
+        --primary-color: #c9a227;
+        --primary-hover: #b08d1f;
+        --primary-light: rgba(201, 162, 39, 0.1);
+        --accent-color: #d4af37;
+        --success-color: #22c55e;
+        --error-color: #ef4444;
+        --text-dark: #1f2937;
+        --text-muted: #6b7280;
+        --border-color: #e5e7eb;
+        --bg-light: #faf9f7;
+    }
+
+    .login-page {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #faf9f7 0%, #f5f3ef 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 1rem;
+    }
+
+    .login-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        max-width: 900px;
+        width: 100%;
+        background: #fff;
+        border-radius: 24px;
+        overflow: hidden;
+        box-shadow: 0 25px 80px rgba(201, 162, 39, 0.15);
+    }
+
+    /* Brand Side */
+    .login-brand {
+        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
+        color: #fff;
+        padding: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .login-brand::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(201, 162, 39, 0.1) 0%, transparent 50%);
+        animation: pulse 4s ease-in-out infinite;
+    }
+
+    .brand-content {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+    }
+
+    .brand-logo {
+        width: 90px;
+        height: 90px;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        box-shadow: 0 8px 32px rgba(201, 162, 39, 0.4);
+    }
+
+    .brand-logo svg { color: #1a1a1a; }
+
+    .brand-content h1 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem;
+        background: linear-gradient(135deg, #fff, var(--accent-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .tagline {
+        font-size: 1rem;
+        margin-bottom: 2.5rem;
+        color: #ccc;
+    }
+
+    .features { text-align: left; }
+
+    .feature {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.75rem 0;
+    }
+
+    .feature svg { color: var(--primary-color); flex-shrink: 0; }
+    .feature span { color: #e5e5e5; }
+
+    /* Form Side */
+    .login-form-wrapper { padding: 3rem; }
+    .form-header { margin-bottom: 2rem; }
+
+    .form-header h2 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem;
+        color: var(--text-dark);
+    }
+
+    .form-header p { color: var(--text-muted); margin: 0; }
+
+    /* Alert */
+    .alert {
+        display: flex;
+        gap: 0.75rem;
+        padding: 1rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        align-items: flex-start;
+    }
+
+    .alert-error {
+        background: #fef2f2;
+        color: var(--error-color);
+        border: 1px solid #fecaca;
+    }
+
+    .alert-success {
+        background: #f0fdf4;
+        color: var(--success-color);
+        border: 1px solid #bbf7d0;
+    }
+
+    .alert svg { flex-shrink: 0; margin-top: 2px; }
+
+    /* Form */
+    .form-group { margin-bottom: 1.5rem; }
+
+    .form-group > label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-dark);
+        margin-bottom: 0.5rem;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 0.875rem 1rem;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        background: #fff;
+        color: var(--text-dark);
+        box-sizing: border-box;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 4px var(--primary-light);
+    }
+
+    .input-with-icon { position: relative; }
+
+    .input-with-icon > svg:first-of-type {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+        pointer-events: none;
+        z-index: 1;
+    }
+
+    .input-with-icon .form-input { padding-left: 2.75rem; }
+    .password-input .form-input { padding-right: 3.5rem; }
+
+    /* Toggle Password Button - Fixed */
+    .toggle-password {
+        position: absolute;
+        right: 0.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        color: var(--text-muted);
+        padding: 0.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.2s;
+        z-index: 2;
+        width: 36px;
+        height: 36px;
+    }
+
+    .toggle-password:hover {
+        color: var(--primary-color);
+        background: var(--primary-light);
+    }
+
+    .toggle-password svg {
+        width: 20px;
+        height: 20px;
+        display: block;
+    }
+
+    .error-text {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--error-color);
+        margin-top: 0.25rem;
+    }
+
+    /* Form Options - Fixed Checkbox */
+    .form-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .checkbox-input {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+
+    .checkbox-custom {
+        width: 22px;
+        height: 22px;
+        min-width: 22px;
+        border: 2px solid var(--border-color);
+        border-radius: 5px;
+        position: relative;
+        transition: all 0.2s;
+        background: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .checkbox-label:hover .checkbox-custom {
+        border-color: var(--primary-color);
+    }
+
+    .checkbox-input:checked + .checkbox-custom {
+        background: var(--primary-color);
+        border-color: var(--primary-color);
+    }
+
+    .checkbox-input:checked + .checkbox-custom::after {
+        content: '';
+        position: absolute;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 10px;
+        border: solid #fff;
+        border-width: 0 2.5px 2.5px 0;
+        transform: rotate(45deg);
+    }
+
+    .checkbox-input:focus + .checkbox-custom {
+        box-shadow: 0 0 0 4px var(--primary-light);
+    }
+
+    .checkbox-text {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    .forgot-link {
+        font-size: 0.875rem;
+        color: var(--primary-color);
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+    .forgot-link:hover { text-decoration: underline; }
+
+    /* Submit Button */
+    .btn-submit {
+        width: 100%;
+        padding: 1rem;
+        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+        color: #1a1a1a;
+        border: none;
+        border-radius: 12px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        box-shadow: 0 4px 16px rgba(201, 162, 39, 0.3);
+    }
+
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(201, 162, 39, 0.4);
+    }
+
+    .btn-submit:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .spin { animation: spin 1s linear infinite; }
+
+    @@keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    @@keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 1; }
+    }
+
+    /* Divider */
+    .divider {
+        display: flex;
+        align-items: center;
+        margin: 1.5rem 0;
+        color: var(--text-muted);
+        font-size: 0.875rem;
+    }
+
+    .divider::before,
+    .divider::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--border-color);
+    }
+
+    .divider span { padding: 0 1rem; }
+
+    /* Social Login */
+    .social-login { margin-bottom: 1.5rem; }
+
+    .btn-social {
+        width: 100%;
+        padding: 0.875rem;
+        background: #fff;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        font-size: 0.95rem;
+        font-weight: 500;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        color: var(--text-dark);
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-social:hover {
+        background: #f9fafb;
+        border-color: #d1d5db;
+    }
+
+    /* Register Link */
+    .register-link {
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+    }
+
+    .register-link a {
+        color: var(--primary-color);
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .register-link a:hover { text-decoration: underline; }
+
+    /* Responsive */
+    @@media (max-width: 768px) {
+        .login-container {
+            grid-template-columns: 1fr;
+            max-width: 450px;
+        }
+
+        .login-brand { display: none; }
+        .login-form-wrapper { padding: 2rem; }
+    }
+
+    @@media (max-width: 480px) {
+        .login-page { padding: 1rem; }
+        .login-form-wrapper { padding: 1.5rem; }
+        .form-options { flex-direction: column; gap: 1rem; align-items: flex-start; }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var toggleBtn = document.getElementById('togglePasswordBtn');
+    var passwordInput = document.getElementById('passwordInput');
+    
+    if (toggleBtn && passwordInput) {
+        toggleBtn.addEventListener('click', function() {
+            var eyeOpen = this.querySelector('.eye-open');
+            var eyeClosed = this.querySelector('.eye-closed');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeOpen.style.display = 'none';
+                eyeClosed.style.display = 'block';
+            } else {
+                passwordInput.type = 'password';
+                eyeOpen.style.display = 'block';
+                eyeClosed.style.display = 'none';
+            }
+        });
+    }
+
+    var loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        loginForm.addEventListener('submit', function() {
+            var btn = document.getElementById('submitBtn');
+            var btnText = btn.querySelector('.btn-text');
+            var btnLoading = btn.querySelector('.btn-loading');
+
+            btn.disabled = true;
+            btnText.style.display = 'none';
+            btnLoading.style.display = 'flex';
+
+            setTimeout(function() {
+                btn.disabled = false;
+                btnText.style.display = 'block';
+                btnLoading.style.display = 'none';
+            }, 10000);
+        });
+    }
+});
+</script>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
 }
-
-<script>
-    // Thiết lập theme theo localStorage, nếu chưa có thì theo hệ điều hành
-    (function initTheme() {
-        const saved = localStorage.getItem("theme");
-        if (saved === "dark" || saved === "light") {
-            document.documentElement.setAttribute("data-theme", saved);
-        } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
-            document.documentElement.setAttribute("data-theme", "dark");
-        } // else: để mặc định light
-        updateToggleLabel();
-    })();
-
-    function toggleTheme() {
-        const cur = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
-        const next = cur === "dark" ? "light" : "dark";
-        document.documentElement.setAttribute("data-theme", next);
-        localStorage.setItem("theme", next);
-        updateToggleLabel();
-    }
-
-    function updateToggleLabel() {
-        const isDark = document.documentElement.getAttribute("data-theme") === "dark";
-        const btn = document.getElementById("themeBtn");
-        if (btn) btn.textContent = isDark ? "☀️ Light" : "🌙 Dark";
-    }
-</script>
