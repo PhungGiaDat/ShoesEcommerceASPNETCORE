@@ -30,11 +30,8 @@ namespace ShoesEcommerce.Services
             var config = new AmazonS3Config
             {
                 ServiceURL = _options.S3Endpoint,
-                ForcePathStyle = true, // Required for Supabase S3 compatibility
-                SignatureVersion = "4",
-                UseHttp = false,
-                // Important: Set the region explicitly
-                AuthenticationRegion = "ap-south-1" // Supabase uses this region
+                ForcePathStyle = true,
+                //RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName("auto")
             };
 
             // Create credentials
@@ -94,7 +91,7 @@ namespace ShoesEcommerce.Services
                     Key = objectKey,
                     InputStream = memoryStream,
                     ContentType = file.ContentType ?? "application/octet-stream",
-                    DisablePayloadSigning = true // Important for Supabase S3
+                    //DisablePayloadSigning = true // Important for Supabase S3
                 };
 
                 var response = await _s3Client.PutObjectAsync(putRequest);
