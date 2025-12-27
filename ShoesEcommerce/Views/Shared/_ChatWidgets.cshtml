@@ -1,0 +1,119 @@
+@using Microsoft.Extensions.Options
+@using ShoesEcommerce.Services.Options
+@inject IOptions<SubizChatOptions> SubizOptions
+@inject IOptions<SocialChatOptions> SocialChatOptions
+
+@{
+    var subiz = SubizOptions.Value;
+    var social = SocialChatOptions.Value;
+}
+
+<!-- Chat Widgets Container -->
+<div id="chat-widgets-container">
+    
+    @* Subiz Chat Widget *@
+    @if (subiz.Enabled && !string.IsNullOrEmpty(subiz.AccountId))
+    {
+        <!-- Subiz Live Chat -->
+        <script>
+            (function(s,u,b,i,z){
+                s[i]||(s._sbzaccid=z,s[i]=function(){(s[i].q=s[i].q||[]).push(arguments)},
+                s[i].q=[],u=u.getElementsByTagName(b)[0],
+                b=u.cloneNode(false),b.async=1,b.src='//static.subiz.net/sbz/app.js?accid='+z,
+                u.parentNode.insertBefore(b,u))
+            })(window,document,'script','sbz','@subiz.AccountId');
+        </script>
+    }
+
+    @* Zalo OA Chat Widget *@
+    @if (social.Zalo.Enabled && !string.IsNullOrEmpty(social.Zalo.OaId))
+    {
+        <!-- Zalo SDK -->
+        <div class="zalo-chat-widget" 
+             data-oaid="@social.Zalo.OaId" 
+             data-welcome-message="@social.Zalo.WelcomeMessage"
+             data-autopopup="@social.Zalo.AutoPopupDelay"
+             data-width="350"
+             data-height="420">
+        </div>
+        <script src="https://sp.zalo.me/plugins/sdk.js"></script>
+    }
+
+    @* Facebook Messenger Chat Plugin *@
+    @if (social.Facebook.Enabled && !string.IsNullOrEmpty(social.Facebook.PageId))
+    {
+        <!-- Facebook Messenger Chat Plugin -->
+        <div id="fb-root"></div>
+        
+        <!-- Facebook Chat Plugin Code -->
+        <div id="fb-customer-chat" class="fb-customerchat">
+        </div>
+
+        <script>
+            var chatbox = document.getElementById('fb-customer-chat');
+            chatbox.setAttribute("page_id", "@social.Facebook.PageId");
+            chatbox.setAttribute("attribution", "biz_inbox");
+            chatbox.setAttribute("theme_color", "#@social.Facebook.ThemeColor");
+            chatbox.setAttribute("logged_in_greeting", "@social.Facebook.LoggedInGreeting");
+            chatbox.setAttribute("logged_out_greeting", "@social.Facebook.LoggedOutGreeting");
+
+            window.fbAsyncInit = function() {
+                FB.init({
+                    xfbml: true,
+                    version: 'v18.0'
+                });
+            };
+
+            (function(d, s, id) {
+                var js, fjs = d.getElementsByTagName(s)[0];
+                if (d.getElementById(id)) return;
+                js = d.createElement(s); js.id = id;
+                js.src = 'https://connect.facebook.net/vi_VN/sdk/xfbml.customerchat.js';
+                fjs.parentNode.insertBefore(js, fjs);
+            }(document, 'script', 'facebook-jssdk'));
+        </script>
+    }
+
+</div>
+
+@* Custom Chat Button Styles (Optional - for positioning multiple widgets) *@
+<style>
+    /* Zalo widget positioning */
+    .zalo-chat-widget {
+        position: fixed !important;
+        bottom: 80px !important;
+        right: 20px !important;
+        z-index: 9998 !important;
+    }
+
+    /* Facebook widget is automatically positioned by FB SDK */
+    
+    /* If Subiz is also present, adjust positions */
+    @if (subiz.Enabled && social.Zalo.Enabled)
+    {
+        <text>
+        .zalo-chat-widget {
+            bottom: 160px !important;
+        }
+        </text>
+    }
+
+    /* Hide chat widgets on print */
+    @@media print {
+        #chat-widgets-container,
+        .zalo-chat-widget,
+        #fb-root,
+        #fb-customer-chat,
+        [id*="subiz"] {
+            display: none !important;
+        }
+    }
+
+    /* Mobile responsive */
+    @@media (max-width: 768px) {
+        .zalo-chat-widget {
+            bottom: 70px !important;
+            right: 10px !important;
+        }
+    }
+</style>

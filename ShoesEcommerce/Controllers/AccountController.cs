@@ -7,6 +7,7 @@ using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.ViewModels.Account;
 using System.Security.Claims;
 using ShoesEcommerce.Models.ViewModels;
+using ShoesEcommerce.Helpers;
 
 namespace ShoesEcommerce.Controllers
 {
@@ -16,17 +17,20 @@ namespace ShoesEcommerce.Controllers
         private readonly ICustomerService _customerService;
         private readonly ILogger<AccountController> _logger;
         private readonly ICustomerRegistrationService _registrationService;
+        private readonly ITwilioService _twilioService;
 
         public AccountController(
             IAuthService authService,
             ICustomerService customerService,
             ILogger<AccountController> logger,
-            ICustomerRegistrationService registrationService)
+            ICustomerRegistrationService registrationService,
+            ITwilioService twilioService)
         {
             _authService = authService;
             _customerService = customerService;
             _logger = logger;
             _registrationService = registrationService;
+            _twilioService = twilioService;
         }
 
         // GET: /Account/Login
@@ -627,6 +631,354 @@ namespace ShoesEcommerce.Controllers
             }
             
             return new string(password);
+        }
+
+        #endregion
+
+        #region OTP Verification
+
+        // GET: /Account/SendOtp
+        [AllowAnonymous]
+        public IActionResult SendOtp(string returnUrl = "/", string purpose = "verify")
+        {
+            if (!_twilioService.IsConfigured)
+            {
+                TempData["ErrorMessage"] = "Dịch vụ SMS chưa được cấu hình.";
+                return RedirectToAction("Login");
+            }
+
+            var model = new SendOtpViewModel
+            {
+                Purpose = purpose,
+                ReturnUrl = returnUrl
+            };
+
+            return View(model);
+        }
+
+        // POST: /Account/SendOtp
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendOtp(SendOtpViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                // Check rate limiting - prevent spam
+                var lastOtpSent = HttpContext.Session.GetString("LastOtpSentTime");
+                if (!string.IsNullOrEmpty(lastOtpSent))
+                {
+                    var lastSentTime = DateTime.Parse(lastOtpSent);
+                    var timeSinceLastSent = DateTime.UtcNow - lastSentTime;
+                    if (timeSinceLastSent.TotalSeconds < 60)
+                    {
+                        var waitTime = 60 - (int)timeSinceLastSent.TotalSeconds;
+                        ModelState.AddModelError("", $"Vui lòng đợi {waitTime} giây trước khi gửi lại mã OTP.");
+                        return View(model);
+                    }
+                }
+
+                // Generate OTP
+                var otpData = OtpHelper.GenerateOtpWithExpiration(expirationMinutes: 5, length: 6);
+                otpData.PhoneNumber = model.PhoneNumber;
+
+                // Send OTP via Twilio
+                var result = await _twilioService.SendOtpAsync(model.PhoneNumber, otpData.Code);
+
+                if (result.Success)
+                {
+                    // Store OTP in session
+                    HttpContext.Session.SetString("OtpCode", otpData.Code);
+                    HttpContext.Session.SetString("OtpExpiresAt", otpData.ExpiresAt.ToString("O"));
+                    HttpContext.Session.SetString("OtpPhoneNumber", model.PhoneNumber);
+                    HttpContext.Session.SetString("OtpPurpose", model.Purpose);
+                    HttpContext.Session.SetString("LastOtpSentTime", DateTime.UtcNow.ToString("O"));
+                    HttpContext.Session.SetInt32("OtpAttemptCount", 0);
+
+                    _logger.LogInformation("OTP sent successfully to {PhoneNumber}", MaskPhoneNumber(model.PhoneNumber));
+
+                    TempData["SuccessMessage"] = "Mã OTP đã được gửi đến số điện thoại của bạn.";
+
+                    return RedirectToAction("VerifyOtp", new { 
+                        phoneNumber = model.PhoneNumber, 
+                        purpose = model.Purpose, 
+                        returnUrl = model.ReturnUrl 
+                    });
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to send OTP to {PhoneNumber}: {Error}", 
+                        MaskPhoneNumber(model.PhoneNumber), result.ErrorMessage);
+                    ModelState.AddModelError("", result.ErrorMessage ?? "Không thể gửi mã OTP. Vui lòng thử lại.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending OTP to {PhoneNumber}", MaskPhoneNumber(model.PhoneNumber));
+                ModelState.AddModelError("", "Có lỗi xảy ra khi gửi mã OTP. Vui lòng thử lại.");
+            }
+
+            return View(model);
+        }
+
+        // GET: /Account/VerifyOtp
+        [AllowAnonymous]
+        public IActionResult VerifyOtp(string phoneNumber, string purpose = "verify", string returnUrl = "/")
+        {
+            var storedPhone = HttpContext.Session.GetString("OtpPhoneNumber");
+            var expiresAtStr = HttpContext.Session.GetString("OtpExpiresAt");
+
+            if (string.IsNullOrEmpty(storedPhone) || string.IsNullOrEmpty(expiresAtStr))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy mã OTP. Vui lòng yêu cầu mã mới.";
+                return RedirectToAction("SendOtp", new { purpose, returnUrl });
+            }
+
+            var expiresAt = DateTime.Parse(expiresAtStr);
+            var remainingSeconds = (int)(expiresAt - DateTime.UtcNow).TotalSeconds;
+
+            if (remainingSeconds <= 0)
+            {
+                TempData["ErrorMessage"] = "Mã OTP đã hết hạn. Vui lòng yêu cầu mã mới.";
+                return RedirectToAction("SendOtp", new { purpose, returnUrl });
+            }
+
+            var model = new VerifyOtpViewModel
+            {
+                PhoneNumber = storedPhone,
+                Purpose = purpose,
+                ReturnUrl = returnUrl,
+                RemainingSeconds = remainingSeconds,
+                CanResend = true
+            };
+
+            return View(model);
+        }
+
+        // POST: /Account/VerifyOtp
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> VerifyOtp(VerifyOtpViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            try
+            {
+                // Get stored OTP data from session
+                var storedCode = HttpContext.Session.GetString("OtpCode");
+                var storedPhone = HttpContext.Session.GetString("OtpPhoneNumber");
+                var expiresAtStr = HttpContext.Session.GetString("OtpExpiresAt");
+                var attemptCount = HttpContext.Session.GetInt32("OtpAttemptCount") ?? 0;
+
+                // Validate stored data
+                if (string.IsNullOrEmpty(storedCode) || string.IsNullOrEmpty(storedPhone) || string.IsNullOrEmpty(expiresAtStr))
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy mã OTP. Vui lòng yêu cầu mã mới.";
+                    return RedirectToAction("SendOtp", new { purpose = model.Purpose, returnUrl = model.ReturnUrl });
+                }
+
+                // Check attempt count
+                if (attemptCount >= 3)
+                {
+                    // Clear OTP data after max attempts
+                    ClearOtpSession();
+                    TempData["ErrorMessage"] = "Bạn đã nhập sai quá 3 lần. Vui lòng yêu cầu mã OTP mới.";
+                    return RedirectToAction("SendOtp", new { purpose = model.Purpose, returnUrl = model.ReturnUrl });
+                }
+
+                // Create OTP data for validation
+                var otpData = new OtpData
+                {
+                    Code = storedCode,
+                    PhoneNumber = storedPhone,
+                    ExpiresAt = DateTime.Parse(expiresAtStr),
+                    AttemptCount = attemptCount
+                };
+
+                // Validate OTP
+                var validationResult = OtpHelper.ValidateOtp(otpData, model.OtpCode);
+
+                if (!validationResult.IsValid)
+                {
+                    // Increment attempt count
+                    HttpContext.Session.SetInt32("OtpAttemptCount", attemptCount + 1);
+                    
+                    _logger.LogWarning("Invalid OTP attempt {AttemptCount} for {PhoneNumber}", 
+                        attemptCount + 1, MaskPhoneNumber(storedPhone));
+
+                    ModelState.AddModelError("OtpCode", validationResult.ErrorMessage ?? "Mã OTP không chính xác.");
+                    
+                    // Recalculate remaining time
+                    model.RemainingSeconds = OtpHelper.GetRemainingSeconds(otpData);
+                    return View(model);
+                }
+
+                // OTP verified successfully
+                _logger.LogInformation("OTP verified successfully for {PhoneNumber}", MaskPhoneNumber(storedPhone));
+
+                // Clear OTP session data
+                ClearOtpSession();
+
+                // Mark phone as verified in session
+                HttpContext.Session.SetString("VerifiedPhoneNumber", storedPhone);
+                HttpContext.Session.SetString("PhoneVerifiedAt", DateTime.UtcNow.ToString("O"));
+
+                TempData["SuccessMessage"] = "Xác thực số điện thoại thành công!";
+
+                // Handle different purposes
+                switch (model.Purpose.ToLower())
+                {
+                    case "register":
+                        return RedirectToAction("Register", new { verifiedPhone = storedPhone });
+                    
+                    case "login":
+                        // For phone login flow
+                        return RedirectToAction("PhoneLogin", new { phoneNumber = storedPhone });
+                    
+                    case "reset_password":
+                        return RedirectToAction("ResetPassword", new { phoneNumber = storedPhone });
+                    
+                    default:
+                        if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
+                        {
+                            return LocalRedirect(model.ReturnUrl);
+                        }
+                        return RedirectToAction("Index", "Home");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error verifying OTP");
+                ModelState.AddModelError("", "Có lỗi xảy ra khi xác thực mã OTP. Vui lòng thử lại.");
+            }
+
+            return View(model);
+        }
+
+        // POST: /Account/ResendOtp
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResendOtp(string purpose = "verify", string returnUrl = "/")
+        {
+            var storedPhone = HttpContext.Session.GetString("OtpPhoneNumber");
+
+            if (string.IsNullOrEmpty(storedPhone))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy số điện thoại. Vui lòng thử lại.";
+                return RedirectToAction("SendOtp", new { purpose, returnUrl });
+            }
+
+            // Check rate limiting
+            var lastOtpSent = HttpContext.Session.GetString("LastOtpSentTime");
+            if (!string.IsNullOrEmpty(lastOtpSent))
+            {
+                var lastSentTime = DateTime.Parse(lastOtpSent);
+                var timeSinceLastSent = DateTime.UtcNow - lastSentTime;
+                if (timeSinceLastSent.TotalSeconds < 60)
+                {
+                    var waitTime = 60 - (int)timeSinceLastSent.TotalSeconds;
+                    TempData["ErrorMessage"] = $"Vui lòng đợi {waitTime} giây trước khi gửi lại mã OTP.";
+                    return RedirectToAction("VerifyOtp", new { phoneNumber = storedPhone, purpose, returnUrl });
+                }
+            }
+
+            try
+            {
+                // Generate new OTP
+                var otpData = OtpHelper.GenerateOtpWithExpiration(expirationMinutes: 5, length: 6);
+
+                // Send OTP via Twilio
+                var result = await _twilioService.SendOtpAsync(storedPhone, otpData.Code);
+
+                if (result.Success)
+                {
+                    // Update session with new OTP
+                    HttpContext.Session.SetString("OtpCode", otpData.Code);
+                    HttpContext.Session.SetString("OtpExpiresAt", otpData.ExpiresAt.ToString("O"));
+                    HttpContext.Session.SetString("LastOtpSentTime", DateTime.UtcNow.ToString("O"));
+                    HttpContext.Session.SetInt32("OtpAttemptCount", 0);
+
+                    _logger.LogInformation("OTP resent successfully to {PhoneNumber}", MaskPhoneNumber(storedPhone));
+                    TempData["SuccessMessage"] = "Mã OTP mới đã được gửi đến số điện thoại của bạn.";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = result.ErrorMessage ?? "Không thể gửi lại mã OTP. Vui lòng thử lại sau.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error resending OTP to {PhoneNumber}", MaskPhoneNumber(storedPhone));
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi gửi lại mã OTP.";
+            }
+
+            return RedirectToAction("VerifyOtp", new { phoneNumber = storedPhone, purpose, returnUrl });
+        }
+
+        // AJAX: Check OTP status
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult CheckOtpStatus()
+        {
+            var expiresAtStr = HttpContext.Session.GetString("OtpExpiresAt");
+            var attemptCount = HttpContext.Session.GetInt32("OtpAttemptCount") ?? 0;
+            var lastSentStr = HttpContext.Session.GetString("LastOtpSentTime");
+
+            if (string.IsNullOrEmpty(expiresAtStr))
+            {
+                return Json(new { expired = true, remainingSeconds = 0, canResend = true });
+            }
+
+            var expiresAt = DateTime.Parse(expiresAtStr);
+            var remainingSeconds = (int)(expiresAt - DateTime.UtcNow).TotalSeconds;
+            
+            var canResend = true;
+            var resendWaitSeconds = 0;
+            if (!string.IsNullOrEmpty(lastSentStr))
+            {
+                var timeSinceLastSent = DateTime.UtcNow - DateTime.Parse(lastSentStr);
+                if (timeSinceLastSent.TotalSeconds < 60)
+                {
+                    canResend = false;
+                    resendWaitSeconds = 60 - (int)timeSinceLastSent.TotalSeconds;
+                }
+            }
+
+            return Json(new
+            {
+                expired = remainingSeconds <= 0,
+                remainingSeconds = Math.Max(0, remainingSeconds),
+                attemptCount = attemptCount,
+                maxAttempts = 3,
+                canResend = canResend,
+                resendWaitSeconds = resendWaitSeconds
+            });
+        }
+
+        private void ClearOtpSession()
+        {
+            HttpContext.Session.Remove("OtpCode");
+            HttpContext.Session.Remove("OtpExpiresAt");
+            HttpContext.Session.Remove("OtpPhoneNumber");
+            HttpContext.Session.Remove("OtpPurpose");
+            HttpContext.Session.Remove("OtpAttemptCount");
+        }
+
+        private string MaskPhoneNumber(string phoneNumber)
+        {
+            if (string.IsNullOrEmpty(phoneNumber) || phoneNumber.Length < 8)
+                return "***";
+            return phoneNumber.Substring(0, 4) + "****" + phoneNumber.Substring(phoneNumber.Length - 3);
         }
 
         #endregion

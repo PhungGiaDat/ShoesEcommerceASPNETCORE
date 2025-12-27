@@ -445,6 +445,26 @@
                 </div>
             </div>
 
+            @if (!string.IsNullOrEmpty(Model.Payment?.TransactionId))
+            {
+                <div class="payment-detail-item" style="grid-column: 1 / -1;">
+                    <div class="payment-detail-icon" style="background: #e0e7ff; color: #4f46e5;">
+                        <i class="fab fa-paypal"></i>
+                    </div>
+                    <div class="payment-detail-content">
+                        <div class="payment-detail-label">Mã giao dịch (Transaction ID)</div>
+                        <div class="payment-detail-value">
+                            <code style="background: #f3f4f6; padding: 6px 12px; border-radius: 6px; font-family: 'SF Mono', Monaco, monospace; font-size: 14px; color: #1f2937;">@Model.Payment.TransactionId</code>
+                            <button type="button" onclick="copyTransactionId('@Model.Payment.TransactionId')" 
+                                    style="margin-left: 8px; padding: 4px 8px; background: #e5e7eb; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;"
+                                    title="Sao chép">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+
             @if (Model.Payment?.PaidAt.HasValue == true)
             {
                 <div class="payment-detail-item">
@@ -608,3 +628,18 @@
         </div>
     }
 </div>
+
+@section Scripts {
+<script>
+function copyTransactionId(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        const btn = event.target.closest('button');
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check" style="color: #10b981;"></i>';
+        setTimeout(function() {
+            btn.innerHTML = originalHtml;
+        }, 2000);
+    });
+}
+</script>
+}

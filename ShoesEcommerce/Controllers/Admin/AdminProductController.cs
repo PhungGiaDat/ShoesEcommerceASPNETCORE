@@ -805,20 +805,99 @@ namespace ShoesEcommerce.Controllers.Admin
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> EditVariant(EditProductVariantViewModel model)
         {
+            _logger.LogInformation("=== EditVariant POST ===");
+            _logger.LogInformation("Model: Id={Id}, ProductId={ProductId}, Color={Color}, Size={Size}, Price={Price}", 
+                model.Id, model.ProductId, model.Color, model.Size, model.Price);
+            _logger.LogInformation("ImageFile: {HasFile}", model.ImageFile != null ? $"Yes ({model.ImageFile.FileName}, {model.ImageFile.Length} bytes)" : "No");
+            _logger.LogInformation("KeepCurrentImage: {Keep}, UseImageUrl: {UseUrl}, ImageUrl: {Url}", 
+                model.KeepCurrentImage, model.UseImageUrl, model.ImageUrl ?? "(null)");
+            
             ViewData["Title"] = "Chỉnh sửa Phiên bản";
             var product = await _productService.GetProductByIdAsync(model.ProductId);
             ViewBag.Product = product;
-            if (ModelState.IsValid)
+            
+            if (!ModelState.IsValid)
             {
-                var result = await _productService.UpdateProductVariantAsync(model.Id, model);
+                _logger.LogWarning("ModelState is INVALID. Errors:");
+                foreach (var key in ModelState.Keys)
+                {
+                    var state = ModelState[key];
+                    if (state?.Errors?.Count > 0)
+                    {
+                        foreach (var error in state.Errors)
+                        {
+                            _logger.LogWarning("  - {Key}: {Error}", key, error.ErrorMessage);
+                        }
+                    }
+                }
+                return View(model);
+            }
+            
+            _logger.LogInformation("ModelState is VALID. Calling UpdateProductVariantAsync...");
+            var result = await _productService.UpdateProductVariantAsync(model.Id, model);
+            if (result)
+            {
+                _logger.LogInformation("Update SUCCESS!");
+                TempData["SuccessMessage"] = "Cập nhật phiên bản thành công!";
+                return RedirectToAction("Details", new { id = model.ProductId });
+            }
+            
+            _logger.LogWarning("Update FAILED!");
+            ModelState.AddModelError("", "Không thể cập nhật phiên bản. Vui lòng thử lại.");
+            return View(model);
+        }
+
+        // GET: Admin/Product/DeleteVariant/5
+        [HttpGet]
+        public async Task<IActionResult> DeleteVariant(int id)
+        {
+            ViewData["Title"] = "Xóa Phiên bản";
+            
+            var variant = await _productService.GetProductVariantByIdAsync(id);
+            if (variant == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy phiên bản!";
+                return RedirectToAction(nameof(Index));
+            }
+            
+            var product = await _productService.GetProductByIdAsync(variant.ProductId);
+            ViewBag.Product = product;
+            ViewBag.Variant = variant;
+            
+            return View(variant);
+        }
+
+        // POST: Admin/Product/DeleteVariant/5
+        [HttpPost, ActionName("DeleteVariant")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteVariantConfirmed(int id)
+        {
+            var variant = await _productService.GetProductVariantByIdAsync(id);
+            var productId = variant?.ProductId ?? 0;
+            
+            try
+            {
+                var result = await _productService.DeleteProductVariantAsync(id);
                 if (result)
                 {
-                    TempData["SuccessMessage"] = "Cập nhật phiên bản thành công!";
-                    return RedirectToAction("Variants", new { productId = model.ProductId });
+                    TempData["SuccessMessage"] = "Xóa phiên bản thành công!";
                 }
-                ModelState.AddModelError("", "Không thể cập nhật phiên bản. Vui lòng thử lại.");
+                else
+                {
+                    TempData["ErrorMessage"] = "Không thể xóa phiên bản. Vui lòng thử lại.";
+                }
             }
-            return View(model);
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting product variant with ID: {VariantId}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa phiên bản: " + ex.Message;
+            }
+
+            if (productId > 0)
+            {
+                return RedirectToAction("Details", new { id = productId });
+            }
+            return RedirectToAction(nameof(Index));
         }
     }
 }

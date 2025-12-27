@@ -260,6 +260,21 @@
                                 <div class="info-value">@(order.PaymentMethod ?? "Chưa chọn")</div>
                             </div>
                         </div>
+
+                        @if (!string.IsNullOrEmpty(order.Payment?.TransactionId))
+                        {
+                            <div class="info-item" style="grid-column: 1 / -1;">
+                                <div class="info-icon" style="background: #e0e7ff; color: #3730a3;">
+                                    <i class="fab fa-paypal"></i>
+                                </div>
+                                <div class="info-content">
+                                    <div class="info-label">Mã giao dịch (Transaction ID)</div>
+                                    <div class="info-value">
+                                        <code style="background: #f3f4f6; padding: 2px 8px; border-radius: 4px; font-family: monospace; font-size: 13px;">@order.Payment.TransactionId</code>
+                                    </div>
+                                </div>
+                            </div>
+                        }
                     </div>
 
                     <!-- Order Actions -->

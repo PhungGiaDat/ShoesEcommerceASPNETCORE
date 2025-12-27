@@ -64,6 +64,7 @@ namespace ShoesEcommerce.Models.ViewModels
         public string Method { get; set; }
         public string Status { get; set; }
         public DateTime? PaidAt { get; set; }
+        public string? TransactionId { get; set; }
     }
 
     // ViewModel cho sản phẩm variant

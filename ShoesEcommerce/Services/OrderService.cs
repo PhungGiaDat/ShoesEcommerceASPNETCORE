@@ -65,7 +65,7 @@ namespace ShoesEcommerce.Services
                     OrderNumber = $"ORD{order.Id:D6}",
                     CreatedAt = order.CreatedAt,
                     TotalAmount = order.TotalAmount,
-                    Status = order.Status, // Use actual status
+                    Status = order.Status,
                     PaymentStatus = order.Payment?.Status ?? "Chưa thanh toán",
                     OrderDetails = order.OrderDetails.Select(od => new OrderDetailViewModel
                     {
@@ -107,7 +107,8 @@ namespace ShoesEcommerce.Services
                         Id = order.Payment?.Id ?? 0,
                         Method = order.Payment?.Method ?? "",
                         Status = order.Payment?.Status ?? "",
-                        PaidAt = order.Payment?.PaidAt
+                        PaidAt = order.Payment?.PaidAt,
+                        TransactionId = order.Payment?.TransactionId // ✅ ADD: Map TransactionId
                     },
                     CustomerName = order.Customer != null ? order.Customer.FirstName + " " + order.Customer.LastName : "",
                     CustomerId = order.CustomerId,
@@ -146,7 +147,7 @@ namespace ShoesEcommerce.Services
                     OrderNumber = $"ORD{order.Id:D6}",
                     CreatedAt = order.CreatedAt,
                     TotalAmount = order.TotalAmount,
-                    Status = order.Status, // Use actual status from DB
+                    Status = order.Status,
                     PaymentStatus = order.Payment?.Status ?? "Chưa thanh toán",
                     OrderDetails = order.OrderDetails.Select(od => new OrderDetailViewModel
                     {
@@ -156,7 +157,7 @@ namespace ShoesEcommerce.Services
                             {
                                 Id = od.ProductVariant.Id,
                                 Name = od.ProductVariant.Product.Name,
-                                ImageUrl = od.ProductVariant.ImageUrl, // ✅ FIXED: Use ProductVariant.ImageUrl
+                                ImageUrl = od.ProductVariant.ImageUrl,
                                 Color = od.ProductVariant.Color,
                                 Size = od.ProductVariant.Size,
                                 Price = od.UnitPrice
@@ -188,7 +189,8 @@ namespace ShoesEcommerce.Services
                         Id = order.Payment?.Id ?? 0,
                         Method = order.Payment?.Method ?? "",
                         Status = order.Payment?.Status ?? "",
-                        PaidAt = order.Payment?.PaidAt
+                        PaidAt = order.Payment?.PaidAt,
+                        TransactionId = order.Payment?.TransactionId // ✅ ADD: Map TransactionId
                     }
                 }).ToList();
             }
@@ -529,6 +531,7 @@ namespace ShoesEcommerce.Services
                 .Include(o => o.ShippingAddress)
                 .Include(o => o.OrderDetails)
                     .ThenInclude(od => od.ProductVariant)
+                        .ThenInclude(pv => pv.Product)
                 .Include(o => o.Payment)
                 .Where(o => o.Status == status && o.Payment != null)
                 .OrderByDescending(o => o.CreatedAt)
@@ -593,7 +596,8 @@ namespace ShoesEcommerce.Services
                     Id = o.Payment.Id,
                     Method = o.Payment.Method,
                     Status = o.Payment.Status,
-                    PaidAt = o.Payment.PaidAt
+                    PaidAt = o.Payment.PaidAt,
+                    TransactionId = o.Payment.TransactionId // ✅ ADD: Map TransactionId
                 } : null,
                 CustomerName = o.Customer != null ? o.Customer.FirstName + " " + o.Customer.LastName : "",
                 CustomerId = o.CustomerId,

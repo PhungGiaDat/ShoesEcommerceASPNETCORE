@@ -14,8 +14,23 @@ using System.Globalization;
 using Microsoft.AspNetCore.Localization;
 using ShoesEcommerce.Services.Payment;
 using ShoesEcommerce.Services.Options;
+using ShoesEcommerce.Services.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ✅ Ensure Development configuration is loaded properly
+if (builder.Environment.IsDevelopment())
+{
+    builder.Configuration
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
+        .AddEnvironmentVariables();
+    
+    Console.WriteLine("📁 Configuration files loaded:");
+    Console.WriteLine("   - appsettings.json");
+    Console.WriteLine($"   - appsettings.{builder.Environment.EnvironmentName}.json");
+}
 
 // Enhanced logging configuration
 builder.Logging.ClearProviders();
@@ -29,6 +44,8 @@ if (builder.Environment.IsDevelopment())
 
 // Log current environment for debugging
 Console.WriteLine($"🔧 Current Environment: {builder.Environment.EnvironmentName}");
+
+
 
 // Configure detailed logging for specific components
 builder.Services.Configure<LoggerFilterOptions>(options =>
@@ -114,7 +131,47 @@ builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<CheckoutRepository>();
 builder.Services.AddScoped<ShoesEcommerce.Repositories.Interfaces.IPaymentRepository, ShoesEcommerce.Repositories.PaymentRepository>();
 
-// Register services
+// ✅ Register Supabase Storage Service - Use proper binding from configuration
+// This will automatically read from appsettings.Development.json in Development environment
+builder.Services.Configure<SupabaseStorageOptions>(options =>
+{
+    // First, bind from configuration section (appsettings.json / appsettings.Development.json)
+    builder.Configuration.GetSection(SupabaseStorageOptions.SectionName).Bind(options);
+    
+    // Then allow environment variables to override (for production/CI environments)
+    var envProjectUrl = Environment.GetEnvironmentVariable("SUPABASE_PROJECT_URL");
+    var envS3Endpoint = Environment.GetEnvironmentVariable("SUPABASE_S3_ENDPOINT");
+    var envAccessKeyId = Environment.GetEnvironmentVariable("SUPABASE_ACCESS_KEY_ID");
+    var envSecretAccessKey = Environment.GetEnvironmentVariable("SUPABASE_SECRET_ACCESS_KEY");
+    var envBucketName = Environment.GetEnvironmentVariable("SUPABASE_BUCKET_NAME");
+
+    // Override with environment variables only if they are set
+    if (!string.IsNullOrEmpty(envProjectUrl)) options.ProjectUrl = envProjectUrl;
+    if (!string.IsNullOrEmpty(envS3Endpoint)) options.S3Endpoint = envS3Endpoint;
+    if (!string.IsNullOrEmpty(envAccessKeyId)) options.AccessKeyId = envAccessKeyId;
+    if (!string.IsNullOrEmpty(envSecretAccessKey)) options.SecretAccessKey = envSecretAccessKey;
+    if (!string.IsNullOrEmpty(envBucketName)) options.BucketName = envBucketName;
+
+    // Log final configuration
+    Console.WriteLine("📦 Supabase Storage Configuration (after binding):");
+    Console.WriteLine($"   - Project URL: {options.ProjectUrl}");
+    Console.WriteLine($"   - S3 Endpoint: {options.S3Endpoint}");
+    Console.WriteLine($"   - Bucket: {options.BucketName}");
+    Console.WriteLine($"   - AccessKeyId: {(string.IsNullOrEmpty(options.AccessKeyId) ? "❌ NOT SET" : options.AccessKeyId.Substring(0, Math.Min(8, options.AccessKeyId.Length)) + "***")})");
+    Console.WriteLine($"   - SecretAccessKey: {(string.IsNullOrEmpty(options.SecretAccessKey) ? "❌ NOT SET" : "✅ SET (length: " + options.SecretAccessKey.Length + ")")}");
+
+    if (!string.IsNullOrEmpty(options.AccessKeyId) && !string.IsNullOrEmpty(options.SecretAccessKey))
+    {
+        Console.WriteLine($"✅ Supabase Storage configured successfully!");
+    }
+    else
+    {
+        Console.WriteLine("⚠️ Supabase Storage not fully configured - images will be stored locally!");
+    }
+});
+builder.Services.AddScoped<IStorageService, SupabaseStorageService>();
+
+// Register services (FileUploadService needs IStorageService - must be registered AFTER)
 builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<ICustomerService, CustomerService>();
@@ -133,42 +190,49 @@ builder.Services.AddScoped<IFavoriteService, FavoriteService>();
 // Register VNPayService
 builder.Services.AddScoped<IVnPayService, VnPayService>(); 
 
-// ✅ Register Supabase Storage Service
-builder.Services.Configure<SupabaseStorageOptions>(options =>
+// ✅ Register Twilio SMS Service - Use proper binding from configuration
+builder.Services.Configure<TwilioOptions>(options =>
 {
-    var projectUrl = Environment.GetEnvironmentVariable("SUPABASE_PROJECT_URL") 
-                     ?? builder.Configuration["SupabaseStorage:ProjectUrl"];
-    var s3Endpoint = Environment.GetEnvironmentVariable("SUPABASE_S3_ENDPOINT") 
-                     ?? builder.Configuration["SupabaseStorage:S3Endpoint"]
-                     ?? "https://wrrlgzyxojhlgwpunpud.storage.supabase.co/storage/v1/s3";
-    var accessKeyId = Environment.GetEnvironmentVariable("SUPABASE_ACCESS_KEY_ID") 
-                      ?? builder.Configuration["SupabaseStorage:AccessKeyId"];
-    var secretAccessKey = Environment.GetEnvironmentVariable("SUPABASE_SECRET_ACCESS_KEY") 
-                          ?? builder.Configuration["SupabaseStorage:SecretAccessKey"];
-    var bucketName = Environment.GetEnvironmentVariable("SUPABASE_BUCKET_NAME") 
-                     ?? builder.Configuration["SupabaseStorage:BucketName"]
-                     ?? "images";
+    // First, bind from configuration section (appsettings.json / appsettings.Development.json)
+    builder.Configuration.GetSection("Twilio").Bind(options);
+    
+    // Then allow environment variables to override (for production/CI environments)
+    var envAccountSid = Environment.GetEnvironmentVariable("TWILIO_ACCOUNT_SID");
+    var envAuthToken = Environment.GetEnvironmentVariable("TWILIO_AUTH_TOKEN");
+    var envPhoneNumber = Environment.GetEnvironmentVariable("TWILIO_PHONE_NUMBER");
 
-    options.ProjectUrl = projectUrl ?? "https://wrrlgzyxojhlgwpunpud.supabase.co";
-    options.S3Endpoint = s3Endpoint;
-    options.AccessKeyId = accessKeyId ?? "";
-    options.SecretAccessKey = secretAccessKey ?? "";
-    options.BucketName = bucketName;
+    // Override with environment variables only if they are set
+    if (!string.IsNullOrEmpty(envAccountSid)) options.AccountSid = envAccountSid;
+    if (!string.IsNullOrEmpty(envAuthToken)) options.AuthToken = envAuthToken;
+    if (!string.IsNullOrEmpty(envPhoneNumber)) options.PhoneNumber = envPhoneNumber;
 
-    if (!string.IsNullOrEmpty(accessKeyId) && !string.IsNullOrEmpty(secretAccessKey))
+    // Set defaults if not configured
+    if (options.OtpLength == 0) options.OtpLength = 6;
+    if (options.OtpExpirationMinutes == 0) options.OtpExpirationMinutes = 5;
+
+    // Log final configuration
+    Console.WriteLine("📱 Twilio SMS Configuration (after binding):");
+    Console.WriteLine($"   - Account SID: {(string.IsNullOrEmpty(options.AccountSid) ? "❌ NOT SET" : options.AccountSid.Substring(0, Math.Min(8, options.AccountSid.Length)) + "***")}");
+    Console.WriteLine($"   - Auth Token: {(string.IsNullOrEmpty(options.AuthToken) ? "❌ NOT SET" : "✅ SET")}");
+    Console.WriteLine($"   - Phone Number: {(string.IsNullOrEmpty(options.PhoneNumber) ? "❌ NOT SET" : options.PhoneNumber)}");
+
+    if (!string.IsNullOrEmpty(options.AccountSid) && !string.IsNullOrEmpty(options.AuthToken) && !string.IsNullOrEmpty(options.PhoneNumber))
     {
-        Console.WriteLine($"✅ Supabase Storage configured with bucket: {bucketName}");
+        Console.WriteLine($"✅ Twilio SMS Service configured successfully!");
     }
     else
     {
-        Console.WriteLine("⚠️ Supabase Storage not fully configured. Set SUPABASE_ACCESS_KEY_ID and SUPABASE_SECRET_ACCESS_KEY environment variables.");
+        Console.WriteLine("⚠️ Twilio SMS Service not fully configured.");
     }
 });
-builder.Services.AddScoped<IStorageService, SupabaseStorageService>();
+builder.Services.AddScoped<ITwilioService, TwilioService>();
 
 // Register Subiz Chat Service
 builder.Services.Configure<SubizChatOptions>(builder.Configuration.GetSection(SubizChatOptions.SectionName));
 builder.Services.AddScoped<ISubizChatService, SubizChatService>();
+
+// Register Social Chat Options (Facebook, Zalo)
+builder.Services.Configure<SocialChatOptions>(builder.Configuration.GetSection(SocialChatOptions.SectionName));
 
 // Register PayPal HttpClient
 builder.Services.AddHttpClient("PayPal", client =>

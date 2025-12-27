@@ -346,18 +346,34 @@ namespace ShoesEcommerce.Services
         {
             try
             {
+                _logger.LogInformation("=== UpdateProductVariantAsync START ===");
+                _logger.LogInformation("Variant ID: {Id}, ProductId: {ProductId}", id, model.ProductId);
+                _logger.LogInformation("KeepCurrentImage: {Keep}, UseImageUrl: {UseUrl}", model.KeepCurrentImage, model.UseImageUrl);
+                _logger.LogInformation("ImageFile: {HasFile}, ImageUrl: {ImageUrl}", 
+                    model.ImageFile != null ? $"Yes ({model.ImageFile.FileName}, {model.ImageFile.Length} bytes)" : "No", 
+                    model.ImageUrl ?? "(null)");
+
                 var existingVariant = await _productRepository.GetProductVariantByIdAsync(id);
                 if (existingVariant == null)
+                {
+                    _logger.LogWarning("Variant not found with ID: {Id}", id);
                     return false;
+                }
+
+                _logger.LogInformation("Existing variant ImageUrl: {ImageUrl}", existingVariant.ImageUrl ?? "(null)");
 
                 // Handle image update
-                string imageUrl = existingVariant.ImageUrl;
+                string imageUrl = existingVariant.ImageUrl ?? string.Empty;
                 
-                if (model.ImageFile != null && !model.UseImageUrl)
+                // Case 1: New file uploaded
+                if (model.ImageFile != null && model.ImageFile.Length > 0)
                 {
-                    // Delete old image if it exists and is a local file
-                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl) && existingVariant.ImageUrl.StartsWith("/"))
+                    _logger.LogInformation("?? Uploading new image file: {FileName}", model.ImageFile.FileName);
+                    
+                    // Delete old image if it exists (both local and cloud)
+                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl))
                     {
+                        _logger.LogInformation("??? Deleting old image: {OldUrl}", existingVariant.ImageUrl);
                         await _fileUploadService.DeleteImageAsync(existingVariant.ImageUrl);
                     }
                     
@@ -367,35 +383,35 @@ namespace ShoesEcommerce.Services
                         model.ProductId, 
                         model.Color, 
                         model.Size);
-                }
-                else if (model.UseImageUrl && !string.IsNullOrEmpty(model.ImageUrl))
-                {
-                    // Delete old image if switching to URL
-                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl) && existingVariant.ImageUrl.StartsWith("/"))
-                    {
-                        await _fileUploadService.DeleteImageAsync(existingVariant.ImageUrl);
-                    }
                     
-                    // Use provided URL
-                    imageUrl = model.ImageUrl;
+                    _logger.LogInformation("? New image uploaded: {NewUrl}", imageUrl);
                 }
-                else if (!model.KeepCurrentImage)
+                // Case 2: User wants to remove the image (KeepCurrentImage = false and no new file)
+                else if (!model.KeepCurrentImage && model.ImageFile == null)
                 {
-                    // Remove image
-                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl) && existingVariant.ImageUrl.StartsWith("/"))
+                    _logger.LogInformation("??? Removing current image");
+                    
+                    if (!string.IsNullOrEmpty(existingVariant.ImageUrl))
                     {
                         await _fileUploadService.DeleteImageAsync(existingVariant.ImageUrl);
                     }
                     imageUrl = string.Empty;
+                }
+                // Case 3: Keep current image (default)
+                else
+                {
+                    _logger.LogInformation("?? Keeping current image: {CurrentUrl}", imageUrl);
                 }
 
                 existingVariant.Color = model.Color;
                 existingVariant.Size = model.Size;
                 existingVariant.Price = model.Price;
                 existingVariant.ImageUrl = imageUrl;
-                // ? REMOVED: StockQuantity assignment - stock managed separately
 
+                _logger.LogInformation("?? Saving variant with ImageUrl: {FinalUrl}", existingVariant.ImageUrl);
                 await _productRepository.UpdateProductVariantAsync(existingVariant);
+                
+                _logger.LogInformation("=== UpdateProductVariantAsync SUCCESS ===");
                 return true;
             }
             catch (Exception ex)

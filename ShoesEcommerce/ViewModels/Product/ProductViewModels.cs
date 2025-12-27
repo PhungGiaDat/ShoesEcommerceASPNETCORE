@@ -135,29 +135,29 @@ namespace ShoesEcommerce.ViewModels.Product
         public int Id { get; set; }
         public int ProductId { get; set; }
 
-        [Required(ErrorMessage = "Màu s?c là b?t bu?c")]
-        [StringLength(50, ErrorMessage = "Màu s?c không ???c quá 50 ký t?")]
+        [Required(ErrorMessage = "Màu sắc là bắt buộc")]
+        [StringLength(50, ErrorMessage = "Màu sắc không được quá 50 ký tự")]
         public string Color { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Kích th??c là b?t bu?c")]
-        [StringLength(20, ErrorMessage = "K kích th??c không ???c quá 20 ký t?")]
+        [Required(ErrorMessage = "Kích thước là bắt buộc")]
+        [StringLength(20, ErrorMessage = "Kích thước không được quá 20 ký tự")]
         public string Size { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Giá là b?t bu?c")]
-        [Range(1, double.MaxValue, ErrorMessage = "Giá ph?i l?n h?n 0 VN?")]
+        [Required(ErrorMessage = "Giá là bắt buộc")]
+        [Range(1, double.MaxValue, ErrorMessage = "Giá phải lớn hơn 0 VNĐ")]
         public decimal Price { get; set; }
 
-        [StringLength(500, ErrorMessage = "URL hình ?nh không ???c quá 500 ký t?")]
-        public string ImageUrl { get; set; } = string.Empty;
+        [StringLength(500, ErrorMessage = "URL hình ảnh không được quá 500 ký tự")]
+        public string? ImageUrl { get; set; } // Nullable - not required
 
         // File upload properties for editing
-        [Display(Name = "Hình ?nh m?i")]
+        [Display(Name = "Hình ảnh mới")]
         public IFormFile? ImageFile { get; set; }
 
-        [Display(Name = "S? d?ng URL thay vì t?i lên")]
+        [Display(Name = "Sử dụng URL thay vì tải lên")]
         public bool UseImageUrl { get; set; } = false;
 
-        [Display(Name = "Gi? hình ?nh hi?n t?i")]
+        [Display(Name = "Giữ hình ảnh hiện tại")]
         public bool KeepCurrentImage { get; set; } = true;
 
         // Current image info for display
