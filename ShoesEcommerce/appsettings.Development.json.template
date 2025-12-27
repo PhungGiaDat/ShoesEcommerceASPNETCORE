@@ -1,6 +1,6 @@
 {
   "_comment": "Copy this file to appsettings.Development.json and fill in your values",
-  
+
   "Logging": {
     "LogLevel": {
       "Default": "Debug",
@@ -8,9 +8,17 @@
       "Microsoft.EntityFrameworkCore": "Information"
     }
   },
-  
+
   "ConnectionStrings": {
     "DefaultConnection": "Host=YOUR_SUPABASE_HOST;Port=5432;Database=postgres;Username=YOUR_USERNAME;Password=YOUR_PASSWORD;Pooling=true;"
+  },
+
+  "SupabaseStorage": {
+    "ProjectUrl": "https://wrrlgzyxojhlgwpunpud.supabase.co",
+    "S3Endpoint": "https://wrrlgzyxojhlgwpunpud.storage.supabase.co/storage/v1/s3",
+    "AccessKeyId": "MY-ACCESS-KEY",
+    "SecretAccessKey": "MY-SECRET",
+    "BucketName": "images"
   },
 
   "PayPalOptions": {

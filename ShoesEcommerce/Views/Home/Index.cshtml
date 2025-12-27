@@ -1,840 +1,343 @@
 ﻿@using ShoesEcommerce.ViewModels.Product
 @{
-    ViewData["Title"] = "Giày Dép Chính Hãng - Giá Tốt Nhất";
-    ViewData["MetaDescription"] = "NHTP ShoesEcommerce - Giày Nike, Adidas, Puma chính hãng. Miễn phí ship đơn 10 triệu. Đổi trả 30 ngày. Hỗ trợ 24/7.";
-    ViewData["MetaKeywords"] = "giày dép chính hãng, mua giày online, giày nike, giày adidas, giày puma, giày thể thao, sneaker, giày nam, giày nữ, NHTP";
+    ViewData["Title"] = "Giày Thể Thao Chính Hãng - Giày Đá Bóng, Futsal";
+    ViewData["MetaDescription"] = "SPORTS - Chuyên giày thể thao, giày đá bóng, futsal chính hãng Nike, Adidas, Puma, Mizuno. Miễn phí ship. Đổi trả 30 ngày.";
+    ViewData["MetaKeywords"] = "giày thể thao, giày đá bóng, giày futsal, nike mercurial, adidas predator, puma future, mizuno, giày cỏ nhân tạo";
     var featuredVariants = ViewBag.FeaturedProductVariants as IEnumerable<ProductVariantDisplayInfo> ?? new List<ProductVariantDisplayInfo>();
-    
-    // Social sharing data
-    ViewData["ShareTitle"] = "NHTP ShoesEcommerce - Giày Dép Chính Hãng";
-    ViewData["ShareDescription"] = "Mua giày Nike, Adidas, Puma chính hãng với giá tốt nhất. Miễn phí ship, đổi trả 30 ngày!";
+    var newArrivals = ViewBag.NewArrivals as IEnumerable<ProductVariantDisplayInfo> ?? new List<ProductVariantDisplayInfo>();
+    var hotDeals = ViewBag.HotDeals as IEnumerable<ProductVariantDisplayInfo> ?? new List<ProductVariantDisplayInfo>();
+    var categories = ViewBag.Categories as IEnumerable<dynamic> ?? new List<object>();
+    var brands = ViewBag.Brands as IEnumerable<dynamic> ?? new List<object>();
 }
 
-<!-- Hero Section -->
-<section class="hero-section" aria-labelledby="hero-heading">
-    <div class="container">
-        <div class="row align-items-center min-vh-75">
-            <div class="col-lg-6">
-                <div class="hero-content">
-                    <h1 id="hero-heading" class="hero-title">
-                        Giày Dép Chính Hãng - <span class="brand-highlight">NHTP ShoesEcommerce</span>
-                    </h1>
-                    <p class="hero-description">
-                        Khám phá bộ sưu tập giày dép chính hãng từ các thương hiệu nổi tiếng thế giới như Nike, Adidas, Puma, Converse. 
-                        Chúng tôi cam kết mang đến sản phẩm chất lượng với giá cả cạnh tranh nhất thị trường.
-                    </p>
-                    <p class="hero-description">
-                        Với hơn 5 năm kinh nghiệm trong lĩnh vực phân phối giày dép, NHTP đã phục vụ hơn 100.000 khách hàng trên toàn quốc.
-                        Mỗi sản phẩm đều được kiểm tra kỹ lưỡng, đảm bảo 100% chính hãng với đầy đủ tem nhãn và bảo hành.
-                    </p>
-                    
-                    <!-- Social Sharing on Homepage -->
-                    <div style="margin-top: 2rem;">
-                        @{ await Html.RenderPartialAsync("_SocialShare"); }
-                    </div>
-                    
-                    <div class="hero-cta">
-                        <a href="/san-pham" class="btn-primary-action">
-                            Mua ngay
-                        </a>
-                        <a href="/san-pham" class="btn-secondary-action">
-                            Xem tất cả sản phẩm
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="hero-image">
-                    <div class="product-showcase">
-                        <div class="product-cards-grid">
-                            <div class="product-card card-1">
-                                <div class="card-content">
-                                    <span class="brand-logo">waa.</span>
+<!-- Hero Banner Slider -->
+<section class="hero-banner">
+    <div id="heroCarousel" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-indicators">
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="0" class="active"></button>
+            <button type="button" data-bs-target="#heroCarousel" data-bs-slide-to="1"></button>
+        </div>
+        <div class="carousel-inner">
+            <!-- Slide 1: Main Banner -->
+            <div class="carousel-item active">
+                <div class="hero-slide">
+                    <div class="hero-bg-image" style="background-image: url('/images/hero/banner-1.jpg');"></div>
+                    <div class="container">
+                        <div class="row align-items-center min-vh-hero">
+                            <div class="col-lg-6">
+                                <div class="hero-content">
+                                    <span class="hero-badge">NEW ARRIVAL 2025</span>
+                                    <h1 class="hero-title">GIÀY ĐÁ BÓNG<br><span class="text-accent">CHÍNH HÃNG</span></h1>
+                                    <p class="hero-subtitle">Nike, Adidas, Puma, Mizuno - Cập nhật mẫu mới nhất</p>
+                                    <a href="/san-pham" class="btn-hero">XEM TẤT CẢ SẢN PHẨM</a>
                                 </div>
                             </div>
-                            <div class="product-card card-2">
-                                <div class="card-content">
-                                    <span class="brand-logo">waa.</span>
-                                </div>
-                            </div>
-                            <div class="product-card card-3">
-                                <div class="card-content">
-                                    <span class="brand-logo">waa.</span>
-                                </div>
-                            </div>
-                            <div class="product-card card-4">
-                                <div class="card-content">
-                                    <span class="brand-logo">waa.</span>
-                                </div>
-                            </div>
-                            <div class="product-card card-5">
-                                <div class="card-content">
-                                    <span class="brand-logo">waa.</span>
-                                </div>
-                            </div>
-                            <div class="product-card card-6">
-                                <div class="card-content">
-                                    <span class="brand-logo">waa.</span>
+                            <div class="col-lg-6 d-none d-lg-block">
+                                <div class="hero-product-showcase">
+                                    <img src="/images/hero/hero-shoe-1.png" alt="Giày đá bóng" class="hero-product-img" onerror="this.style.display='none'">
                                 </div>
                             </div>
                         </div>
-                        <div class="showcase-shadow"></div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Slide 2: Sale Banner -->
+            <div class="carousel-item">
+                <div class="hero-slide">
+                    <div class="hero-bg-image" style="background-image: url('/images/hero/banner-sale.jpg');"></div>
+                    <div class="container">
+                        <div class="row align-items-center min-vh-hero">
+                            <div class="col-lg-6">
+                                <div class="hero-content">
+                                    <span class="hero-badge hot">🔥 HOT DEAL</span>
+                                    <h1 class="hero-title">GIẢM ĐẾN<br><span class="text-accent">50%</span></h1>
+                                    <p class="hero-subtitle">Chương trình khuyến mãi đặc biệt - Số lượng có hạn!</p>
+                                    <a href="/khuyen-mai" class="btn-hero btn-hot">XEM DEAL NGAY</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-6 d-none d-lg-block">
+                                <div class="hero-product-showcase">
+                                    <img src="/images/hero/hero-shoe-sale.png" alt="Sale" class="hero-product-img" onerror="this.style.display='none'">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+            <span class="carousel-control-prev-icon"></span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+            <span class="carousel-control-next-icon"></span>
+        </button>
+    </div>
+</section>
+
+<!-- Dynamic Category Quick Links -->
+<section class="category-links">
+    <div class="container">
+        <div class="row g-3">
+            @{
+                var categoryList = categories.Take(3).ToList();
+                foreach (var category in categoryList)
+                {
+                    <div class="col-6 col-md-3">
+                        <a href="/san-pham?categoryId=@category.Id" class="category-card">
+                            <div class="category-icon">
+                                <i class="fas fa-shoe-prints"></i>
+                            </div>
+                            <span>@category.Name</span>
+                        </a>
+                    </div>
+                }
+            }
+            <div class="col-6 col-md-3">
+                <a href="/khuyen-mai" class="category-card hot">
+                    <div class="category-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <span>🔥 Hot Deal</span>
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Store Features -->
+<section class="store-features">
+    <div class="container">
+        <h2 class="section-title text-center mb-4">GIỚI THIỆU VỀ CỬA HÀNG</h2>
+        <div class="row g-4">
+            <div class="col-md-4 col-6">
+                <div class="feature-box">
+                    <div class="feature-icon"><i class="fas fa-user-tie"></i></div>
+                    <h4>Tư vấn bán hàng</h4>
+                    <p>chuyên nghiệp</p>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="feature-box">
+                    <div class="feature-icon"><i class="fas fa-users"></i></div>
+                    <h4>Hỗ trợ khách hàng</h4>
+                    <p>đo chân chính xác</p>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="feature-box">
+                    <div class="feature-icon"><i class="fas fa-gift"></i></div>
+                    <h4>Quà tặng khi mua</h4>
+                    <p>giày (Túi, Vớ, Bình Xịt)</p>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="feature-box">
+                    <div class="feature-icon"><i class="fas fa-credit-card"></i></div>
+                    <h4>Thanh toán linh hoạt</h4>
+                    <p>Tiền mặt, Thẻ, Chuyển khoản</p>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="feature-box">
+                    <div class="feature-icon"><i class="fas fa-truck"></i></div>
+                    <h4>Giao hàng nhanh</h4>
+                    <p>toàn quốc 2-5 ngày</p>
+                </div>
+            </div>
+            <div class="col-md-4 col-6">
+                <div class="feature-box">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h4>Chính sách bảo hành</h4>
+                    <p>đổi trả 30 ngày</p>
                 </div>
             </div>
         </div>
     </div>
 </section>
 
-<!-- Featured Products Section -->
+<!-- HOT SALE Section -->
+@if (hotDeals.Any())
+{
+<section class="products-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">🔥 SẢN PHẨM HOT SALE</h2>
+            <a href="/khuyen-mai" class="view-all-link">Xem tất cả <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="row g-3">
+            @foreach (var variant in hotDeals.Take(4))
+            {
+                @await Html.PartialAsync("_ProductCard", variant)
+            }
+        </div>
+    </div>
+</section>
+}
+
+<!-- New Arrivals Section -->
+@if (newArrivals.Any())
+{
+<section class="products-section alt-bg">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">SẢN PHẨM MỚI</h2>
+            <a href="/san-pham" class="view-all-link">Xem tất cả <i class="fas fa-arrow-right"></i></a>
+        </div>
+        
+        <div class="row g-3">
+            @foreach (var variant in newArrivals.Take(4))
+            {
+                @await Html.PartialAsync("_ProductCard", variant)
+            }
+        </div>
+    </div>
+</section>
+}
+
+<!-- Featured Products Section with Dynamic Brands -->
 @if (featuredVariants.Any())
 {
-    <section class="featured-products" aria-labelledby="featured-heading">
-        <div class="container">
-            <div class="row">
-                <div class="col-12 text-center mb-5">
-                    <h2 id="featured-heading" class="section-title">Sản phẩm nổi bật</h2>
-                    <p class="section-subtitle">Khám phá những đôi giày hot nhất với giá ưu đãi đặc biệt - Cập nhật liên tục bộ sưu tập mới nhất từ Nike, Adidas, Puma</p>
-                    <div class="section-divider"></div>
-                </div>
-            </div>
-            <div class="row g-4">
-                @foreach (var variant in featuredVariants.Take(8))
+<section class="products-section">
+    <div class="container">
+        <div class="section-header">
+            <h2 class="section-title">SẢN PHẨM NỔI BẬT</h2>
+            <div class="brand-filter">
+                @foreach (var brand in brands.Take(4))
                 {
-                    <div class="col-lg-3 col-md-6">
-                        <article class="product-item" itemscope itemtype="https://schema.org/Product">
-                            <div class="product-image">
-                                <img src="@variant.ImageUrl" 
-                                     alt="@variant.ProductName - @variant.Color - Giày @variant.BrandName chính hãng" 
-                                     itemprop="image"
-                                     loading="lazy"
-                                     onerror="this.src='/images/no-image.svg'">
-                                
-                                @if (variant.HasActiveDiscount)
-                                {
-                                    <div class="discount-badge">
-                                        -@(variant.DiscountPercentage?.ToString("F0"))%
-                                    </div>
-                                }
-                            </div>
-                            
-                            <div class="product-info">
-                                <h3 class="product-name" itemprop="name">
-                                    @{
-                                        var displayName = $"{variant.ProductName} - {variant.Color}";
-                                    }
-                                    @(displayName.Length > 40 ? displayName.Substring(0, 40) + "..." : displayName)
-                                </h3>
-                                
-                                <div class="product-meta">
-                                    <span class="brand-tag" itemprop="brand">@variant.BrandName</span>
-                                </div>
-                                
-                                <div class="product-price" itemprop="offers" itemscope itemtype="https://schema.org/Offer">
-                                    <meta itemprop="priceCurrency" content="VND">
-                                    @if (variant.HasActiveDiscount)
-                                    {
-                                        <span class="original-price">
-                                            @variant.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
-                                        </span>
-                                        <span class="discounted-price" itemprop="price" content="@variant.DiscountedPrice">
-                                            @variant.DiscountedPrice.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
-                                        </span>
-                                    }
-                                    else
-                                    {
-                                        <span class="current-price" itemprop="price" content="@variant.Price">
-                                            @variant.Price.ToString("C0", new System.Globalization.CultureInfo("vi-VN"))
-                                        </span>
-                                    }
-                                    <link itemprop="availability" href="https://schema.org/InStock">
-                                </div>
-                                
-                                <div class="product-actions">
-                                    <a href="/Product/Details/@variant.ProductId" class="btn-view-details" itemprop="url">
-                                        Xem chi tiết
-                                    </a>
-                                </div>
-                            </div>
-                        </article>
-                    </div>
+                    <a href="/san-pham?brandId=@brand.Id" class="brand-btn">@brand.Name</a>
                 }
             </div>
-            
-            @if (featuredVariants.Count() > 8)
+        </div>
+        
+        <div class="row g-3">
+            @foreach (var variant in featuredVariants.Take(8))
             {
-                <div class="text-center mt-5">
-                    <a href="/san-pham" class="btn-view-more">
-                        Xem thêm sản phẩm
+                @await Html.PartialAsync("_ProductCard", variant)
+            }
+        </div>
+        
+        <div class="text-center mt-4">
+            <a href="/san-pham" class="btn-view-all">XEM TẤT CẢ SẢN PHẨM</a>
+        </div>
+    </div>
+</section>
+}
+
+<!-- Dynamic Brand Partners -->
+<section class="brand-partners">
+    <div class="container">
+        <div class="brand-logos">
+            @foreach (var brand in brands)
+            {
+                <div class="brand-item">
+                    <a href="/san-pham?brandId=@brand.Id">
+                        <span class="brand-name">@brand.Name</span>
                     </a>
                 </div>
             }
         </div>
-    </section>
-}
-
-<!-- Why Choose Us Section - Add more content for SEO -->
-<section class="why-choose-us" aria-labelledby="why-heading">
-    <div class="container">
-        <div class="row">
-            <div class="col-12 text-center mb-5">
-                <h2 id="why-heading" class="section-title">Tại sao chọn NHTP ShoesEcommerce?</h2>
-                <p class="section-subtitle">Cam kết mang đến trải nghiệm mua sắm tốt nhất cho khách hàng</p>
-                <div class="section-divider"></div>
-            </div>
-        </div>
-        <div class="row g-4">
-            <div class="col-lg-4 col-md-6">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-certificate" aria-hidden="true"></i>
-                    </div>
-                    <h3>100% Chính Hãng</h3>
-                    <p>Tất cả sản phẩm giày dép tại NHTP đều được nhập khẩu trực tiếp từ các thương hiệu chính hãng như Nike, Adidas, Puma, Converse, New Balance. Chúng tôi cam kết hoàn tiền 200% nếu phát hiện hàng giả.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-truck" aria-hidden="true"></i>
-                    </div>
-                    <h3>Giao Hàng Toàn Quốc</h3>
-                    <p>Dịch vụ giao hàng nhanh chóng đến 63 tỉnh thành trên cả nước. Miễn phí vận chuyển cho đơn hàng từ 10 triệu đồng. Giao hàng trong 2-5 ngày tùy khu vực, hỗ trợ ship hỏa tốc nội thành.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-exchange-alt" aria-hidden="true"></i>
-                    </div>
-                    <h3>Đổi Trả Dễ Dàng</h3>
-                    <p>Chính sách đổi trả linh hoạt trong vòng 30 ngày kể từ ngày mua hàng. Hỗ trợ đổi size, đổi màu hoặc hoàn tiền nếu sản phẩm không đúng như mô tả. Quy trình đổi trả nhanh gọn, không rườm rà.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-credit-card" aria-hidden="true"></i>
-                    </div>
-                    <h3>Thanh Toán Đa Dạng</h3>
-                    <p>Hỗ trợ nhiều phương thức thanh toán tiện lợi: thanh toán khi nhận hàng (COD), chuyển khoản ngân hàng, ví điện tử VNPay, PayPal quốc tế. Bảo mật thông tin thanh toán tuyệt đối.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-headset" aria-hidden="true"></i>
-                    </div>
-                    <h3>Hỗ Trợ 24/7</h3>
-                    <p>Đội ngũ chăm sóc khách hàng chuyên nghiệp, sẵn sàng hỗ trợ bạn mọi lúc mọi nơi. Tư vấn chọn size, phong cách phối đồ, giải đáp thắc mắc qua hotline, chat trực tuyến hoặc email.</p>
-                </div>
-            </div>
-            <div class="col-lg-4 col-md-6">
-                <div class="feature-card">
-                    <div class="feature-icon">
-                        <i class="fas fa-tags" aria-hidden="true"></i>
-                    </div>
-                    <h3>Giá Cả Cạnh Tranh</h3>
-                    <p>Cam kết giá tốt nhất thị trường với nhiều chương trình khuyến mãi hấp dẫn. Flash sale hàng tuần, giảm giá mùa vụ, ưu đãi sinh nhật và tích điểm thành viên đổi quà giá trị.</p>
-                </div>
-            </div>
-        </div>
     </div>
 </section>
 
-<!-- Brand Partners Section -->
-<section class="brand-partners" aria-labelledby="brands-heading">
-    <div class="container">
-        <div class="row">
-            <div class="col-12 text-center mb-4">
-                <h2 id="brands-heading" class="section-title">Thương Hiệu Đối Tác</h2>
-                <p class="section-subtitle">Phân phối chính hãng từ các thương hiệu giày dép hàng đầu thế giới</p>
-            </div>
-        </div>
-        <div class="row justify-content-center align-items-center g-4">
-            <div class="col-6 col-md-2 text-center">
-                <div class="brand-logo-item">Nike</div>
-            </div>
-            <div class="col-6 col-md-2 text-center">
-                <div class="brand-logo-item">Adidas</div>
-            </div>
-            <div class="col-6 col-md-2 text-center">
-                <div class="brand-logo-item">Puma</div>
-            </div>
-            <div class="col-6 col-md-2 text-center">
-                <div class="brand-logo-item">Converse</div>
-            </div>
-            <div class="col-6 col-md-2 text-center">
-                <div class="brand-logo-item">Vans</div>
-            </div>
-            <div class="col-6 col-md-2 text-center">
-                <div class="brand-logo-item">New Balance</div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- SEO Content Section -->
-<section class="seo-content" aria-labelledby="seo-heading">
-    <div class="container">
-        <div class="row">
-            <div class="col-lg-8 mx-auto">
-                <h2 id="seo-heading" class="seo-title">Giày Dép Chính Hãng - Xu Hướng Thời Trang 2025</h2>
-                <div class="seo-text">
-                    <p>
-                        <strong>NHTP ShoesEcommerce</strong> tự hào là địa chỉ mua giày dép trực tuyến uy tín hàng đầu Việt Nam, 
-                        chuyên cung cấp các sản phẩm giày thể thao, sneaker, giày chạy bộ, giày bóng rổ và các phụ kiện thời trang 
-                        từ những thương hiệu nổi tiếng thế giới.
-                    </p>
-                    <p>
-                        Với hơn 5 năm kinh nghiệm trong lĩnh vực phân phối giày dép chính hãng, chúng tôi đã phục vụ hơn 100.000 
-                        khách hàng trên toàn quốc. Mỗi sản phẩm tại NHTP đều được kiểm tra kỹ lưỡng về chất lượng trước khi đến tay 
-                        khách hàng, đảm bảo 100% chính hãng với đầy đủ tem nhãn, hóa đơn và giấy tờ bảo hành.
-                    </p>
-                    <p>
-                        Năm 2025, xu hướng giày sneaker tiếp tục thống trị với các dòng sản phẩm hot như Nike Air Max, 
-                        Adidas Ultraboost, Puma RS-X và Converse Chuck Taylor. Tại NHTP, bạn sẽ tìm thấy đa dạng mẫu mã, 
-                        màu sắc và size giày phù hợp cho cả nam và nữ, từ casual đến thể thao chuyên nghiệp.
-                    </p>
-                    <p>
-                        Đặc biệt, chúng tôi thường xuyên cập nhật các bộ sưu tập mới nhất, limited edition và collaboration 
-                        độc quyền. Đăng ký thành viên ngay hôm nay để nhận ưu đãi giảm 10% cho đơn hàng đầu tiên và 
-                        cập nhật thông tin về các chương trình khuyến mãi hấp dẫn!
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- Minimalist Styles -->
+@section Styles {
 <style>
     :root {
-        --neutral-50: #fafafa;
-        --neutral-100: #f5f5f5;
-        --neutral-200: #e5e5e5;
-        --neutral-300: #d4d4d4;
-        --neutral-400: #a3a3a3;
-        --neutral-500: #737373;
-        --neutral-600: #525252;
-        --neutral-700: #404040;
-        --neutral-800: #262626;
-        --neutral-900: #171717;
-        --black: #000000;
+        --primary-black: #1a1a1a;
+        --accent-red: #c41e3a;
         --white: #ffffff;
+        --gray-50: #fafafa;
+        --gray-100: #f5f5f5;
+        --gray-200: #e5e5e5;
+        --gray-300: #d4d4d4;
+        --gray-500: #737373;
     }
-    
-    body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-        color: var(--neutral-800);
-        line-height: 1.6;
+
+    .hero-banner { background: var(--primary-black); }
+    .hero-slide { position: relative; min-height: 500px; display: flex; align-items: center; background: var(--primary-black); }
+    .hero-bg-image { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0.6; }
+    .min-vh-hero { min-height: 500px; }
+    .hero-content { position: relative; z-index: 2; color: white; }
+    .hero-badge { display: inline-block; background: rgba(255,255,255,0.15); color: #fff; padding: 8px 20px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 2px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.3); }
+    .hero-badge.hot { background: var(--accent-red); border-color: var(--accent-red); }
+    .hero-title { font-size: 48px; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-transform: uppercase; }
+    .text-accent { color: var(--accent-red); }
+    .hero-subtitle { font-size: 18px; opacity: 0.9; margin-bottom: 30px; }
+    .btn-hero { display: inline-block; background: var(--white); color: var(--primary-black); padding: 16px 40px; border-radius: 4px; font-weight: 700; font-size: 14px; text-decoration: none; text-transform: uppercase; letter-spacing: 1px; transition: all 0.3s ease; }
+    .btn-hero:hover { background: var(--accent-red); color: var(--white); transform: translateY(-2px); }
+    .btn-hero.btn-hot { background: var(--accent-red); color: var(--white); }
+    .hero-product-showcase { position: relative; z-index: 2; text-align: center; }
+    .hero-product-img { max-width: 100%; max-height: 400px; object-fit: contain; filter: drop-shadow(0 20px 40px rgba(0,0,0,0.5)); }
+    .carousel-control-prev, .carousel-control-next { width: 50px; height: 50px; background: rgba(255,255,255,0.15); border-radius: 4px; top: 50%; transform: translateY(-50%); opacity: 1; }
+    .carousel-control-prev:hover, .carousel-control-next:hover { background: var(--accent-red); }
+    .carousel-control-prev { left: 20px; }
+    .carousel-control-next { right: 20px; }
+    .carousel-indicators button { width: 40px; height: 4px; border-radius: 2px; margin: 0 5px; opacity: 0.5; }
+    .carousel-indicators button.active { opacity: 1; background: var(--accent-red); }
+
+    .category-links { padding: 40px 0; background: var(--gray-100); }
+    .category-card { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 30px 15px; background: var(--white); border-radius: 12px; text-decoration: none; color: var(--primary-black); transition: all 0.3s ease; border: 2px solid transparent; }
+    .category-card:hover { border-color: var(--primary-black); transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .category-card.hot { background: var(--accent-red); color: var(--white); }
+    .category-card.hot:hover { background: #a01830; border-color: #a01830; }
+    .category-icon { width: 60px; height: 60px; border-radius: 50%; background: var(--gray-100); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; font-size: 24px; }
+    .category-card.hot .category-icon { background: rgba(255,255,255,0.2); }
+    .category-card span { font-weight: 600; font-size: 14px; }
+
+    .store-features { padding: 60px 0; background: var(--white); }
+    .feature-box { text-align: center; padding: 25px 15px; background: var(--gray-50); border-radius: 12px; height: 100%; transition: all 0.3s ease; border: 1px solid var(--gray-200); }
+    .feature-box:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+    .feature-icon { width: 70px; height: 70px; border-radius: 50%; background: var(--accent-red); color: white; display: flex; align-items: center; justify-content: center; margin: 0 auto 15px; font-size: 28px; }
+    .feature-box h4 { font-size: 14px; font-weight: 700; color: var(--primary-black); margin-bottom: 5px; }
+    .feature-box p { font-size: 12px; color: var(--gray-500); margin: 0; }
+
+    .products-section { padding: 60px 0; background: var(--white); }
+    .products-section.alt-bg { background: var(--gray-50); }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid var(--gray-200); flex-wrap: wrap; gap: 15px; }
+    .section-title { font-size: 24px; font-weight: 800; color: var(--primary-black); margin: 0; text-transform: uppercase; letter-spacing: 1px; }
+    .view-all-link { color: var(--accent-red); font-weight: 600; text-decoration: none; font-size: 14px; }
+    .view-all-link:hover { color: var(--primary-black); }
+
+    .brand-filter { display: flex; gap: 10px; flex-wrap: wrap; }
+    .brand-btn { padding: 8px 20px; border: 2px solid var(--primary-black); border-radius: 4px; color: var(--primary-black); font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.3s ease; text-transform: uppercase; }
+    .brand-btn:hover { background: var(--primary-black); color: var(--white); }
+    .btn-view-all { display: inline-block; padding: 16px 48px; background: var(--primary-black); color: var(--white); border-radius: 4px; font-weight: 700; font-size: 14px; text-decoration: none; text-transform: uppercase; transition: all 0.3s ease; }
+    .btn-view-all:hover { background: var(--accent-red); color: var(--white); transform: translateY(-2px); }
+
+    .brand-partners { padding: 50px 0; background: var(--gray-100); }
+    .brand-logos { display: flex; justify-content: center; align-items: center; gap: 60px; flex-wrap: wrap; }
+    .brand-item { text-align: center; }
+    .brand-item a { text-decoration: none; }
+    .brand-name { font-size: 24px; font-weight: 900; color: var(--gray-300); transition: color 0.3s ease; }
+    .brand-item:hover .brand-name { color: var(--primary-black); }
+
+    @@media (max-width: 991px) {
+        .hero-title { font-size: 36px; }
+        .hero-slide, .min-vh-hero { min-height: 400px; }
+        .brand-filter { display: none; }
     }
-    
-    /* Hero Section */
-    .hero-section {
-        background: var(--neutral-200);
-        padding: 120px 0;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .hero-content {
-        padding-right: 2rem;
-    }
-    
-    .hero-title {
-        font-size: 2.25rem;
-        font-weight: 400;
-        color: var(--neutral-800);
-        line-height: 1.3;
-        margin-bottom: 1.5rem;
-        letter-spacing: -0.025em;
-    }
-    
-    .hero-description {
-        font-size: 1.1rem;
-        color: var(--neutral-600);
-        line-height: 1.7;
-        margin-bottom: 1rem;
-    }
-    
-    .brand-highlight {
-        font-weight: 700;
-        color: var(--black);
-    }
-    
-    .hero-cta {
-        display: flex;
-        gap: 1rem;
-        flex-wrap: wrap;
-        margin-top: 2.5rem;
-    }
-    
-    .btn-primary-action {
-        background: var(--black);
-        color: var(--white);
-        padding: 1rem 2.5rem;
-        border-radius: 0.375rem;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.875rem;
-        letter-spacing: 0.025em;
-        text-transform: uppercase;
-        transition: all 0.2s ease;
-        display: inline-block;
-    }
-    
-    .btn-primary-action:hover {
-        background: var(--neutral-800);
-        color: var(--white);
-        transform: translateY(-1px);
-    }
-    
-    .btn-secondary-action {
-        background: transparent;
-        color: var(--neutral-700);
-        padding: 1rem 2.5rem;
-        border: 1px solid var(--neutral-300);
-        border-radius: 0.375rem;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.875rem;
-        letter-spacing: 0.025em;
-        text-transform: uppercase;
-        transition: all 0.2s ease;
-        display: inline-block;
-    }
-    
-    .btn-secondary-action:hover {
-        background: var(--neutral-100);
-        color: var(--black);
-        border-color: var(--neutral-400);
-    }
-    
-    /* Product Showcase */
-    .product-showcase {
-        position: relative;
-        width: 500px;
-        height: 350px;
-        margin: 0 auto;
-        transform: perspective(800px) rotateY(-8deg) rotateX(5deg);
-    }
-    
-    .product-cards-grid {
-        position: relative;
-        width: 100%;
-        height: 100%;
-    }
-    
-    .product-card {
-        position: absolute;
-        width: 140px;
-        height: 90px;
-        background: var(--white);
-        border-radius: 8px;
-        border: 1px solid var(--neutral-200);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    }
-    
-    .product-card:hover {
-        transform: translateY(-8px) scale(1.02);
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
-    }
-    
-    .card-1 { top: 0; left: 80px; background: #f8f8f8; }
-    .card-2 { top: 30px; right: 0; background: var(--white); }
-    .card-3 { top: 100px; left: 0; background: var(--neutral-100); }
-    .card-4 { top: 130px; right: 80px; background: #e8e8e8; }
-    .card-5 { bottom: 60px; left: 60px; background: var(--neutral-300); }
-    .card-6 { bottom: 30px; right: 40px; background: var(--neutral-400); }
-    
-    .brand-logo {
-        font-size: 16px;
-        font-weight: 700;
-        color: var(--neutral-700);
-        font-family: 'Times New Roman', serif;
-    }
-    
-    /* Featured Products */
-    .featured-products {
-        padding: 120px 0;
-        background: var(--white);
-    }
-    
-    .section-title {
-        font-size: 2rem;
-        font-weight: 300;
-        color: var(--neutral-900);
-        margin-bottom: 0.5rem;
-        letter-spacing: -0.025em;
-    }
-    
-    .section-subtitle {
-        font-size: 1rem;
-        color: var(--neutral-500);
-        font-weight: 400;
-        margin-bottom: 2rem;
-        max-width: 600px;
-        margin-left: auto;
-        margin-right: auto;
-    }
-    
-    .section-divider {
-        width: 60px;
-        height: 1px;
-        background: var(--neutral-400);
-        margin: 0 auto;
-    }
-    
-    /* Product Items */
-    .product-item {
-        background: var(--white);
-        border: 1px solid var(--neutral-200);
-        border-radius: 0.5rem;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        height: 100%;
-    }
-    
-    .product-item:hover {
-        border-color: var(--neutral-300);
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-    }
-    
-    .product-image {
-        position: relative;
-        height: 280px;
-        overflow: hidden;
-    }
-    
-    .product-image img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.4s ease;
-    }
-    
-    .product-item:hover .product-image img {
-        transform: scale(1.05);
-    }
-    
-    .discount-badge {
-        position: absolute;
-        top: 1rem;
-        left: 1rem;
-        background: var(--black);
-        color: var(--white);
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-size: 0.75rem;
-        font-weight: 600;
-    }
-    
-    .product-info {
-        padding: 1.5rem;
-    }
-    
-    .product-name {
-        font-size: 1rem;
-        font-weight: 500;
-        color: var(--neutral-900);
-        margin-bottom: 0.75rem;
-        line-height: 1.4;
-    }
-    
-    .product-meta {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-    
-    .brand-tag {
-        font-size: 0.75rem;
-        color: var(--neutral-600);
-        background: var(--neutral-100);
-        padding: 0.25rem 0.5rem;
-        border-radius: 0.25rem;
-        font-weight: 500;
-    }
-    
-    .product-price {
-        margin-bottom: 1.25rem;
-    }
-    
-    .original-price {
-        font-size: 0.875rem;
-        color: var(--neutral-500);
-        text-decoration: line-through;
-        margin-right: 0.5rem;
-    }
-    
-    .discounted-price {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--black);
-    }
-    
-    .current-price {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--black);
-    }
-    
-    .product-actions {
-        display: grid;
-        gap: 0.5rem;
-    }
-    
-    .btn-view-details {
-        background: transparent;
-        color: var(--neutral-700);
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--neutral-300);
-        border-radius: 0.375rem;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.875rem;
-        text-align: center;
-        transition: all 0.2s ease;
-    }
-    
-    .btn-view-details:hover {
-        background: var(--neutral-100);
-        color: var(--black);
-        border-color: var(--neutral-400);
-    }
-    
-    .btn-view-more {
-        background: var(--black);
-        color: var(--white);
-        padding: 1rem 2.5rem;
-        border-radius: 0.375rem;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.875rem;
-        letter-spacing: 0.025em;
-        text-transform: uppercase;
-        transition: all 0.2s ease;
-        display: inline-block;
-    }
-    
-    .btn-view-more:hover {
-        background: var(--neutral-800);
-        color: var(--white);
-        transform: translateY(-1px);
-    }
-    
-    /* Why Choose Us Section */
-    .why-choose-us {
-        padding: 100px 0;
-        background: var(--neutral-100);
-    }
-    
-    .feature-card {
-        background: var(--white);
-        padding: 2rem;
-        border-radius: 0.5rem;
-        text-align: center;
-        height: 100%;
-        transition: all 0.3s ease;
-        border: 1px solid var(--neutral-200);
-    }
-    
-    .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
-    }
-    
-    .feature-icon {
-        font-size: 2.5rem;
-        color: var(--black);
-        margin-bottom: 1.5rem;
-    }
-    
-    .feature-card h3 {
-        font-size: 1.125rem;
-        font-weight: 600;
-        color: var(--neutral-900);
-        margin-bottom: 1rem;
-    }
-    
-    .feature-card p {
-        font-size: 0.9rem;
-        color: var(--neutral-600);
-        line-height: 1.7;
-        margin: 0;
-    }
-    
-    /* Brand Partners Section */
-    .brand-partners {
-        padding: 80px 0;
-        background: var(--white);
-    }
-    
-    .brand-logo-item {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: var(--neutral-400);
-        padding: 1rem;
-        transition: color 0.3s ease;
-    }
-    
-    .brand-logo-item:hover {
-        color: var(--black);
-    }
-    
-    /* SEO Content Section */
-    .seo-content {
-        padding: 80px 0;
-        background: var(--neutral-50);
-    }
-    
-    .seo-title {
-        font-size: 1.5rem;
-        font-weight: 500;
-        color: var(--neutral-900);
-        margin-bottom: 2rem;
-        text-align: center;
-    }
-    
-    .seo-text {
-        font-size: 1rem;
-        color: var(--neutral-600);
-        line-height: 1.8;
-    }
-    
-    .seo-text p {
-        margin-bottom: 1.5rem;
-    }
-    
-    .seo-text strong {
-        color: var(--neutral-800);
-    }
-    
-    /* Responsive */
     @@media (max-width: 768px) {
-        .hero-section {
-            padding: 80px 0;
-        }
-        
-        .hero-title {
-            font-size: 1.75rem;
-        }
-        
-        .hero-cta {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .product-showcase {
-            width: 350px;
-            height: 250px;
-        }
-        
-        .product-card {
-            width: 100px;
-            height: 65px;
-        }
-        
-        .brand-logo {
-            font-size: 12px;
-        }
-        
-        .featured-products {
-            padding: 80px 0;
-        }
-        
-        .why-choose-us {
-            padding: 60px 0;
-        }
-        
-        .feature-card {
-            margin-bottom: 1rem;
-        }
+        .hero-title { font-size: 28px; }
+        .hero-slide, .min-vh-hero { min-height: 350px; }
+        .section-header { flex-direction: column; text-align: center; }
+        .section-title { font-size: 20px; }
+        .brand-logos { gap: 30px; }
+        .brand-name { font-size: 18px; }
     }
 </style>
+}
 
-<!-- JavaScript for add to cart functionality -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Add to cart functionality
-    document.querySelectorAll('.add-to-cart-btn').forEach(function(button) {
-        button.addEventListener('click', function() {
-            var variantId = this.getAttribute('data-variant-id');
-            var originalText = this.innerHTML;
-            
-            // Show loading state
-            this.innerHTML = 'Đang thêm...';
-            this.disabled = true;
-            
-            // Make AJAX call to add to cart
-            fetch('/Cart/AddToCart', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value || ''
-                },
-                body: JSON.stringify({ productVariantId: parseInt(variantId) })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showToast('Đã thêm sản phẩm vào giỏ hàng!', 'success');
-                    var cartCount = document.querySelector('.cart-count');
-                    if (cartCount && data.cartItemCount) {
-                        cartCount.textContent = data.cartItemCount;
-                    }
-                } else {
-                    showToast(data.message || 'Có lỗi xảy ra khi thêm sản phẩm vào giỏ', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showToast('Có lỗi xảy ra khi thêm sản phẩm vào giỏ', 'error');
-            })
-            .finally(() => {
-                this.innerHTML = originalText;
-                this.disabled = false;
-            });
-        });
-    });
+    fetch('/Cart/GetCartCount')
+        .then(r => r.json())
+        .then(d => {
+            const badge = document.getElementById('cartCount');
+            if (badge && d.count !== undefined) {
+                badge.textContent = d.count;
+                badge.style.display = d.count > 0 ? 'block' : 'none';
+            }
+        }).catch(() => {});
 });
-
-function showToast(message, type) {
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        top: 2rem;
-        right: 2rem;
-        z-index: 1000;
-        background: ${type === 'success' ? 'var(--black)' : '#ef4444'};
-        color: var(--white);
-        padding: 1rem 1.5rem;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        transform: translateX(100%);
-        transition: transform 0.3s ease;
-        max-width: 300px;
-    `;
-    toast.innerHTML = message;
-    
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.transform = 'translateX(0)';
-    }, 100);
-    
-    setTimeout(() => {
-        toast.style.transform = 'translateX(100%)';
-        setTimeout(() => {
-            document.body.removeChild(toast);
-        }, 300);
-    }, 3000);
-}
 </script>

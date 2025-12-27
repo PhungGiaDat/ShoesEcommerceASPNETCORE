@@ -131,42 +131,40 @@ builder.Services.AddScoped<IFavoriteRepository, FavoriteRepository>();
 builder.Services.AddScoped<CheckoutRepository>();
 builder.Services.AddScoped<ShoesEcommerce.Repositories.Interfaces.IPaymentRepository, ShoesEcommerce.Repositories.PaymentRepository>();
 
-// ✅ Register Supabase Storage Service - Use proper binding from configuration
-// This will automatically read from appsettings.Development.json in Development environment
+// ✅ Register HttpClient for Supabase Storage
+builder.Services.AddHttpClient("SupabaseStorage", client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(5); // Allow longer timeout for large file uploads
+});
+
+// ✅ Register Supabase Storage Service using REST API (not S3)
 builder.Services.Configure<SupabaseStorageOptions>(options =>
 {
-    // First, bind from configuration section (appsettings.json / appsettings.Development.json)
+    // Bind from configuration section
     builder.Configuration.GetSection(SupabaseStorageOptions.SectionName).Bind(options);
     
-    // Then allow environment variables to override (for production/CI environments)
+    // Allow environment variables to override
     var envProjectUrl = Environment.GetEnvironmentVariable("SUPABASE_PROJECT_URL");
-    var envS3Endpoint = Environment.GetEnvironmentVariable("SUPABASE_S3_ENDPOINT");
-    var envAccessKeyId = Environment.GetEnvironmentVariable("SUPABASE_ACCESS_KEY_ID");
-    var envSecretAccessKey = Environment.GetEnvironmentVariable("SUPABASE_SECRET_ACCESS_KEY");
+    var envServiceRoleKey = Environment.GetEnvironmentVariable("SUPABASE_SERVICE_ROLE_KEY");
     var envBucketName = Environment.GetEnvironmentVariable("SUPABASE_BUCKET_NAME");
 
-    // Override with environment variables only if they are set
     if (!string.IsNullOrEmpty(envProjectUrl)) options.ProjectUrl = envProjectUrl;
-    if (!string.IsNullOrEmpty(envS3Endpoint)) options.S3Endpoint = envS3Endpoint;
-    if (!string.IsNullOrEmpty(envAccessKeyId)) options.AccessKeyId = envAccessKeyId;
-    if (!string.IsNullOrEmpty(envSecretAccessKey)) options.SecretAccessKey = envSecretAccessKey;
+    if (!string.IsNullOrEmpty(envServiceRoleKey)) options.ServiceRoleKey = envServiceRoleKey;
     if (!string.IsNullOrEmpty(envBucketName)) options.BucketName = envBucketName;
 
-    // Log final configuration
-    Console.WriteLine("📦 Supabase Storage Configuration (after binding):");
+    // Log configuration
+    Console.WriteLine("📦 Supabase Storage Configuration:");
     Console.WriteLine($"   - Project URL: {options.ProjectUrl}");
-    Console.WriteLine($"   - S3 Endpoint: {options.S3Endpoint}");
     Console.WriteLine($"   - Bucket: {options.BucketName}");
-    Console.WriteLine($"   - AccessKeyId: {(string.IsNullOrEmpty(options.AccessKeyId) ? "❌ NOT SET" : options.AccessKeyId.Substring(0, Math.Min(8, options.AccessKeyId.Length)) + "***")})");
-    Console.WriteLine($"   - SecretAccessKey: {(string.IsNullOrEmpty(options.SecretAccessKey) ? "❌ NOT SET" : "✅ SET (length: " + options.SecretAccessKey.Length + ")")}");
+    Console.WriteLine($"   - Service Role Key: {(string.IsNullOrEmpty(options.ServiceRoleKey) ? "❌ NOT SET" : options.ServiceRoleKey.Substring(0, Math.Min(20, options.ServiceRoleKey.Length)) + "...")}");
 
-    if (!string.IsNullOrEmpty(options.AccessKeyId) && !string.IsNullOrEmpty(options.SecretAccessKey))
+    if (!string.IsNullOrEmpty(options.ProjectUrl) && !string.IsNullOrEmpty(options.ServiceRoleKey))
     {
-        Console.WriteLine($"✅ Supabase Storage configured successfully!");
+        Console.WriteLine("✅ Supabase Storage configured successfully!");
     }
     else
     {
-        Console.WriteLine("⚠️ Supabase Storage not fully configured - images will be stored locally!");
+        Console.WriteLine("⚠️ Supabase Storage not fully configured!");
     }
 });
 builder.Services.AddScoped<IStorageService, SupabaseStorageService>();
