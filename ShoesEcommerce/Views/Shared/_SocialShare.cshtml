@@ -1,6 +1,9 @@
 @using Microsoft.AspNetCore.Http.Extensions
+@using Microsoft.Extensions.Options
+@using ShoesEcommerce.Services.Options
+@inject IOptions<TawkToOptions> TawkToOptions
 @*
-    Social Sharing Buttons Partial View - Minimalist Design
+    Social Sharing Buttons Partial View - Using AddToAny
     Usage: @await Html.RenderPartialAsync("_SocialShare")
 *@
 
@@ -9,54 +12,25 @@
     var shareTitle = ViewData["ShareTitle"]?.ToString() ?? ViewData["Title"]?.ToString() ?? "SPORTS - Giày th? thao chính hãng";
     var shareDescription = ViewData["ShareDescription"]?.ToString() ?? ViewData["MetaDescription"]?.ToString() ?? "C?a hàng giày dép chính hãng";
     var shareImage = ViewData["ShareImage"]?.ToString() ?? $"{Context.Request.Scheme}://{Context.Request.Host}/images/og-image.jpg";
-    
-    // Encode for URL
-    var encodedUrl = System.Web.HttpUtility.UrlEncode(shareUrl);
-    var encodedTitle = System.Web.HttpUtility.UrlEncode(shareTitle);
-    var encodedImage = System.Web.HttpUtility.UrlEncode(shareImage);
-    
-    // Social sharing URLs
-    var facebookShareUrl = $"https://www.facebook.com/sharer/sharer.php?u={encodedUrl}";
-    var messengerShareUrl = $"https://www.facebook.com/dialog/send?link={encodedUrl}&app_id=&redirect_uri={encodedUrl}";
-    var zaloShareUrl = $"https://zalo.me/share?url={encodedUrl}";
-    var twitterShareUrl = $"https://twitter.com/intent/tweet?url={encodedUrl}&text={encodedTitle}";
-    var pinterestShareUrl = $"https://pinterest.com/pin/create/button/?url={encodedUrl}&media={encodedImage}&description={encodedTitle}";
 }
 
+<!-- Social Share Buttons using AddToAny -->
 <div class="share-wrapper">
     <span class="share-label">Chia s?:</span>
-    <div class="share-icons">
-        <a href="@facebookShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon share-facebook" 
-           onclick="return openShareWindow(this.href)" title="Chia s? lên Facebook">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-            </svg>
-        </a>
-        <a href="@messengerShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon share-messenger" 
-           onclick="return openShareWindow(this.href)" title="G?i qua Messenger">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.373 0 0 4.974 0 11.111c0 3.498 1.744 6.614 4.469 8.654V24l4.088-2.242c1.092.301 2.246.464 3.443.464 6.627 0 12-4.974 12-11.111S18.627 0 12 0zm1.191 14.963l-3.055-3.26-5.963 3.26L10.732 8l3.131 3.259L19.752 8l-6.561 6.963z"/>
-            </svg>
-        </a>
-        <a href="@zaloShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon share-zalo" 
-           onclick="return openShareWindow(this.href)" title="Chia s? qua Zalo">
-            <svg width="18" height="18" viewBox="0 0 48 48" fill="currentColor">
-                <path d="M24 4C12.954 4 4 12.954 4 24s8.954 20 20 20 20-8.954 20-20S35.046 4 24 4zm7.29 14.5v2h-5.04v-2h5.04zm-12.83 0h3c.55 0 1 .45 1 1s-.45 1-1 1h-2v5c0 .55-.45 1-1 1s-1-.45-1-1v-6c0-.55.45-1 1-1zm5.54 8h-3c-.55 0-1-.45-1-1v-6c0-.55.45-1 1-1h3c.55 0 1 .45 1 1s-.45 1-1 1h-2v1.5h2c.55 0 1 .45 1 1s-.45 1-1 1h-2v.5h2c.55 0 1 .45 1 1s-.45 1-1 1z"/>
-            </svg>
-        </a>
-        <a href="@twitterShareUrl" target="_blank" rel="noopener noreferrer" class="share-icon share-twitter" 
-           onclick="return openShareWindow(this.href)" title="Chia s? lên X (Twitter)">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-            </svg>
-        </a>
-        <button type="button" class="share-icon share-copy" onclick="copyProductLink('@shareUrl')" title="Sao chép liên k?t">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-            </svg>
-        </button>
+    
+    <!-- AddToAny BEGIN -->
+    <div class="a2a_kit a2a_kit_size_32 a2a_default_style" 
+         data-a2a-url="@shareUrl" 
+         data-a2a-title="@shareTitle">
+        <a class="a2a_button_facebook" title="Facebook"></a>
+        <a class="a2a_button_facebook_messenger" title="Messenger"></a>
+        <a class="a2a_button_twitter" title="Twitter"></a>
+        <a class="a2a_button_pinterest" title="Pinterest"></a>
+        <a class="a2a_button_email" title="Email"></a>
+        <a class="a2a_button_copy_link" title="Sao chép liên k?t"></a>
+        <a class="a2a_dd" href="https://www.addtoany.com/share" title="Thêm"></a>
     </div>
+    <!-- AddToAny END -->
 </div>
 
 <style>
@@ -74,71 +48,33 @@
         color: #666;
         font-weight: 500;
     }
-    
-    .share-icons {
-        display: flex;
-        gap: 0.5rem;
-    }
-    
-    .share-icon {
+
+    /* AddToAny custom styles */
+    .a2a_kit {
         display: flex;
         align-items: center;
+        gap: 0.25rem;
+    }
+
+    .a2a_kit a {
+        display: flex !important;
+        align-items: center;
         justify-content: center;
-        width: 36px;
-        height: 36px;
-        border: 1px solid #e5e5e5;
-        border-radius: 50%;
-        color: #525252;
-        background: transparent;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-decoration: none;
-    }
-    
-    .share-icon:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        width: 36px !important;
+        height: 36px !important;
+        border-radius: 50% !important;
+        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
     }
 
-    .share-icon.share-facebook:hover {
-        background: #1877f2;
-        border-color: #1877f2;
-        color: #fff;
+    .a2a_kit a:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
     }
 
-    .share-icon.share-messenger:hover {
-        background: linear-gradient(45deg, #0078ff, #00c6ff);
-        border-color: #0078ff;
-        color: #fff;
-    }
-
-    .share-icon.share-zalo:hover {
-        background: #0068ff;
-        border-color: #0068ff;
-        color: #fff;
-    }
-
-    .share-icon.share-twitter:hover {
-        background: #000;
-        border-color: #000;
-        color: #fff;
-    }
-
-    .share-icon.share-copy:hover {
-        background: #10b981;
-        border-color: #10b981;
-        color: #fff;
-    }
-
-    .share-icon.share-copy.copied {
-        background: #10b981;
-        border-color: #10b981;
-        color: #fff;
-    }
-    
-    .share-icon svg {
-        width: 16px;
-        height: 16px;
+    .a2a_kit a span {
+        width: 20px !important;
+        height: 20px !important;
+        background-size: contain !important;
     }
 
     @@media (max-width: 480px) {
@@ -146,98 +82,9 @@
             flex-wrap: wrap;
         }
         
-        .share-icon {
-            width: 40px;
-            height: 40px;
+        .a2a_kit a {
+            width: 40px !important;
+            height: 40px !important;
         }
     }
 </style>
-
-<script>
-    function openShareWindow(url) {
-        var width = 600;
-        var height = 450;
-        var left = (window.innerWidth - width) / 2 + window.screenX;
-        var top = (window.innerHeight - height) / 2 + window.screenY;
-        window.open(url, 'share', 'width=' + width + ',height=' + height + ',left=' + left + ',top=' + top + ',toolbar=no,menubar=no');
-        return false;
-    }
-
-    function copyProductLink(url) {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-            navigator.clipboard.writeText(url).then(() => {
-                showCopyNotification('?ã sao chép liên k?t!');
-                markCopied();
-            }).catch(() => {
-                fallbackCopy(url);
-            });
-        } else {
-            fallbackCopy(url);
-        }
-    }
-    
-    function fallbackCopy(text) {
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        try {
-            document.execCommand('copy');
-            showCopyNotification('?ã sao chép liên k?t!');
-            markCopied();
-        } catch (err) {
-            showCopyNotification('Không th? sao chép', 'error');
-        }
-        document.body.removeChild(textarea);
-    }
-
-    function markCopied() {
-        const btn = document.querySelector('.share-copy');
-        if (btn) {
-            btn.classList.add('copied');
-            setTimeout(() => btn.classList.remove('copied'), 2000);
-        }
-    }
-    
-    function showCopyNotification(message, type = 'success') {
-        const existing = document.querySelector('.share-notification');
-        if (existing) existing.remove();
-
-        const notification = document.createElement('div');
-        notification.className = 'share-notification';
-        notification.style.cssText = `
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: ${type === 'success' ? '#1a1a1a' : '#dc3545'};
-            color: #fff;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            z-index: 10000;
-            opacity: 0;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        `;
-        notification.innerHTML = type === 'success' 
-            ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg><span>' + message + '</span>'
-            : '<span>' + message + '</span>';
-        document.body.appendChild(notification);
-        
-        requestAnimationFrame(() => {
-            notification.style.opacity = '1';
-            notification.style.transform = 'translateX(-50%) translateY(0)';
-        });
-        
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateX(-50%) translateY(20px)';
-            setTimeout(() => notification.remove(), 300);
-        }, 2500);
-    }
-</script>
