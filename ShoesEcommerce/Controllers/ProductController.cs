@@ -249,6 +249,13 @@ namespace ShoesEcommerce.Controllers
             {
                 var discountedVariants = await _productService.GetDiscountedProductVariantsAsync(page, pageSize);
                 var featuredDiscounts = await _discountService.GetFeaturedDiscountsAsync();
+                
+                // Load categories and brands for sidebar filter
+                var categories = await _productService.GetCategoriesForDropdownAsync();
+                var brands = await _productService.GetBrandsForDropdownAsync();
+                
+                ViewBag.Categories = categories.Select(c => new { c.Id, c.Name }).ToList();
+                ViewBag.Brands = brands.Select(b => new { b.Id, b.Name }).ToList();
 
                 var model = new ProductVariantListViewModel
                 {

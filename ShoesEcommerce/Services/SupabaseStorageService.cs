@@ -1,47 +1,50 @@
-﻿using Amazon.S3;
-using Amazon.S3.Model;
-using Amazon.Runtime;
-using Microsoft.Extensions.Options;
+﻿using Microsoft.Extensions.Options;
 using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.Services.Options;
+using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
 using System.Globalization;
 
 namespace ShoesEcommerce.Services
 {
     /// <summary>
-    /// Supabase S3-compatible storage service implementation
+    /// Supabase Storage service using REST API (not S3)
+    /// Simple and reliable for files up to 50MB
     /// </summary>
-    public class SupabaseStorageService : IStorageService, IDisposable
+    public class SupabaseStorageService : IStorageService
     {
-        private readonly IAmazonS3 _s3Client;
+        private readonly HttpClient _httpClient;
         private readonly SupabaseStorageOptions _options;
         private readonly ILogger<SupabaseStorageService> _logger;
-        private bool _disposed;
 
         public SupabaseStorageService(
             IOptions<SupabaseStorageOptions> options,
-            ILogger<SupabaseStorageService> logger)
+            ILogger<SupabaseStorageService> logger,
+            IHttpClientFactory httpClientFactory)
         {
             _options = options.Value;
             _logger = logger;
+            _httpClient = httpClientFactory.CreateClient("SupabaseStorage");
 
-            // Configure S3 client for Supabase with proper settings
-            var config = new AmazonS3Config
-            {
-                ServiceURL = _options.S3Endpoint,
-                ForcePathStyle = true,
-                //RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName("auto")
-            };
-
-            // Create credentials
-            var credentials = new BasicAWSCredentials(_options.AccessKeyId, _options.SecretAccessKey);
-
-            _s3Client = new AmazonS3Client(credentials, config);
-
-            _logger.LogInformation("Supabase Storage Service initialized");
-            _logger.LogInformation("   - S3 Endpoint: {Endpoint}", _options.S3Endpoint);
+            // Log current environment for debugging
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+            _logger.LogInformation("🔧 Current Environment: {Environment}", env ?? "Unknown");
+            _logger.LogInformation("📦 Supabase Storage Configuration:");
+            _logger.LogInformation("   - Project URL: {ProjectUrl}", _options.ProjectUrl);
             _logger.LogInformation("   - Bucket: {BucketName}", _options.BucketName);
+            _logger.LogInformation("   - API Key: {KeyPrefix}***", 
+                string.IsNullOrEmpty(_options.ServiceRoleKey) ? "NOT SET" : _options.ServiceRoleKey.Substring(0, Math.Min(20, _options.ServiceRoleKey.Length)));
+
+            // Validate configuration
+            if (string.IsNullOrEmpty(_options.ProjectUrl) || string.IsNullOrEmpty(_options.ServiceRoleKey))
+            {
+                _logger.LogWarning("⚠️ Supabase Storage configuration is incomplete. Upload will fail.");
+            }
+            else
+            {
+                _logger.LogInformation("✅ Supabase Storage Service initialized successfully");
+            }
         }
 
         public async Task<StorageUploadResult> UploadFileAsync(IFormFile file, string? folder = null, string? customFileName = null)
@@ -71,51 +74,48 @@ namespace ShoesEcommerce.Services
                 fileName = SanitizeToAscii(fileName);
                 var uniqueFileName = $"{fileName}_{Guid.NewGuid():N}{extension}";
                 
-                // Build the object key (path in bucket) - ensure no special characters
+                // Build the object path
                 var sanitizedFolder = string.IsNullOrEmpty(folder) ? "" : SanitizeFolderPath(folder);
-                var objectKey = string.IsNullOrEmpty(sanitizedFolder) 
+                var objectPath = string.IsNullOrEmpty(sanitizedFolder) 
                     ? uniqueFileName 
                     : $"{sanitizedFolder}/{uniqueFileName}";
 
-                _logger.LogInformation("Uploading to Supabase: {Key}", objectKey);
+                _logger.LogInformation("Uploading to Supabase Storage: {Path}", objectPath);
 
-                // Read file into memory stream
+                // Read file into memory
                 using var memoryStream = new MemoryStream();
                 await file.CopyToAsync(memoryStream);
-                memoryStream.Position = 0;
+                var fileBytes = memoryStream.ToArray();
 
-                // Create put request with minimal settings for Supabase compatibility
-                var putRequest = new PutObjectRequest
+                // Upload using Supabase REST API
+                var uploadUrl = $"{_options.ProjectUrl}/storage/v1/object/{_options.BucketName}/{objectPath}";
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ServiceRoleKey);
+                request.Headers.Add("x-upsert", "true"); // Overwrite if exists
+                
+                var content = new ByteArrayContent(fileBytes);
+                content.Headers.ContentType = new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    BucketName = _options.BucketName,
-                    Key = objectKey,
-                    InputStream = memoryStream,
-                    ContentType = file.ContentType ?? "application/octet-stream",
-                    //DisablePayloadSigning = true // Important for Supabase S3
-                };
-
-                var response = await _s3Client.PutObjectAsync(putRequest);
-
-                if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
-                {
-                    var publicUrl = GetPublicUrl(objectKey);
-                    _logger.LogInformation("File uploaded successfully: {Url}", publicUrl);
-                    return StorageUploadResult.SuccessResult(publicUrl, objectKey, file.Length, file.ContentType ?? "application/octet-stream");
+                    var publicUrl = GetPublicUrl(objectPath);
+                    _logger.LogInformation("✅ File uploaded successfully: {Url}", publicUrl);
+                    return StorageUploadResult.SuccessResult(publicUrl, objectPath, file.Length, file.ContentType ?? "application/octet-stream");
                 }
                 else
                 {
-                    _logger.LogError("Upload failed with status code: {StatusCode}", response.HttpStatusCode);
-                    return StorageUploadResult.FailureResult($"Upload failed with status code: {response.HttpStatusCode}");
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError("❌ Upload failed: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                    return StorageUploadResult.FailureResult($"Upload failed: {response.StatusCode} - {errorContent}");
                 }
-            }
-            catch (AmazonS3Exception ex)
-            {
-                _logger.LogError(ex, "S3 error: {ErrorCode} - {Message}", ex.ErrorCode, ex.Message);
-                return StorageUploadResult.FailureResult($"S3 error: {ex.Message} (Code: {ex.ErrorCode})");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error uploading file: {FileName}", file?.FileName);
+                _logger.LogError(ex, "❌ Error uploading file: {FileName}", file?.FileName);
                 return StorageUploadResult.FailureResult($"Upload error: {ex.Message}");
             }
         }
@@ -134,46 +134,47 @@ namespace ShoesEcommerce.Services
                 var uniqueFileName = $"{sanitizedName}_{Guid.NewGuid():N}{extension}";
                 
                 var sanitizedFolder = string.IsNullOrEmpty(folder) ? "" : SanitizeFolderPath(folder);
-                var objectKey = string.IsNullOrEmpty(sanitizedFolder) 
+                var objectPath = string.IsNullOrEmpty(sanitizedFolder) 
                     ? uniqueFileName 
                     : $"{sanitizedFolder}/{uniqueFileName}";
 
-                // Ensure stream is at beginning
+                // Read stream to bytes
+                using var memoryStream = new MemoryStream();
                 if (stream.CanSeek)
                 {
                     stream.Position = 0;
                 }
-
-                // Copy to memory stream for reliable upload
-                using var memoryStream = new MemoryStream();
                 await stream.CopyToAsync(memoryStream);
-                memoryStream.Position = 0;
+                var fileBytes = memoryStream.ToArray();
 
-                var putRequest = new PutObjectRequest
+                // Upload using Supabase REST API
+                var uploadUrl = $"{_options.ProjectUrl}/storage/v1/object/{_options.BucketName}/{objectPath}";
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ServiceRoleKey);
+                request.Headers.Add("x-upsert", "true");
+                
+                var content = new ByteArrayContent(fileBytes);
+                content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                request.Content = content;
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    BucketName = _options.BucketName,
-                    Key = objectKey,
-                    InputStream = memoryStream,
-                    ContentType = contentType,
-                    DisablePayloadSigning = true
-                };
-
-                var response = await _s3Client.PutObjectAsync(putRequest);
-
-                if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
-                {
-                    var publicUrl = GetPublicUrl(objectKey);
-                    _logger.LogInformation("File uploaded from stream: {Key}", objectKey);
-                    return StorageUploadResult.SuccessResult(publicUrl, objectKey, memoryStream.Length, contentType);
+                    var publicUrl = GetPublicUrl(objectPath);
+                    _logger.LogInformation("✅ File uploaded from stream: {Path}", objectPath);
+                    return StorageUploadResult.SuccessResult(publicUrl, objectPath, fileBytes.Length, contentType);
                 }
                 else
                 {
-                    return StorageUploadResult.FailureResult($"Upload failed with status: {response.HttpStatusCode}");
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    return StorageUploadResult.FailureResult($"Upload failed: {response.StatusCode} - {errorContent}");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error uploading file from stream: {FileName}", fileName);
+                _logger.LogError(ex, "❌ Error uploading file from stream: {FileName}", fileName);
                 return StorageUploadResult.FailureResult($"Upload error: {ex.Message}");
             }
         }
@@ -188,28 +189,31 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                var objectKey = ExtractKeyFromUrl(fileUrl);
-                if (string.IsNullOrEmpty(objectKey))
+                var objectPath = ExtractPathFromUrl(fileUrl);
+                if (string.IsNullOrEmpty(objectPath))
                 {
-                    _logger.LogWarning("Could not extract object key from URL: {Url}", fileUrl);
+                    _logger.LogWarning("Could not extract object path from URL: {Url}", fileUrl);
                     return false;
                 }
 
-                var deleteRequest = new DeleteObjectRequest
+                var deleteUrl = $"{_options.ProjectUrl}/storage/v1/object/{_options.BucketName}/{objectPath}";
+
+                using var request = new HttpRequestMessage(HttpMethod.Delete, deleteUrl);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ServiceRoleKey);
+
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
                 {
-                    BucketName = _options.BucketName,
-                    Key = objectKey
-                };
-
-                await _s3Client.DeleteObjectAsync(deleteRequest);
-
-                _logger.LogInformation("File deleted: {Key}", objectKey);
-                return true;
-            }
-            catch (AmazonS3Exception ex)
-            {
-                _logger.LogError(ex, "S3 error deleting file: {Url}", fileUrl);
-                return false;
+                    _logger.LogInformation("File deleted: {Path}", objectPath);
+                    return true;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogWarning("Failed to delete file: {StatusCode} - {Error}", response.StatusCode, errorContent);
+                    return false;
+                }
             }
             catch (Exception ex)
             {
@@ -220,59 +224,28 @@ namespace ShoesEcommerce.Services
 
         public async Task<bool> DeleteFilesAsync(IEnumerable<string> fileUrls)
         {
-            try
-            {
-                var keys = fileUrls
-                    .Select(ExtractKeyFromUrl)
-                    .Where(k => !string.IsNullOrEmpty(k))
-                    .Select(k => new KeyVersion { Key = k })
-                    .ToList();
-
-                if (!keys.Any())
-                {
-                    return true;
-                }
-
-                var deleteRequest = new DeleteObjectsRequest
-                {
-                    BucketName = _options.BucketName,
-                    Objects = keys
-                };
-
-                var response = await _s3Client.DeleteObjectsAsync(deleteRequest);
-
-                _logger.LogInformation("Deleted {Count} files", response.DeletedObjects.Count);
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting multiple files");
-                return false;
-            }
+            var results = await Task.WhenAll(fileUrls.Select(DeleteFileAsync));
+            return results.All(r => r);
         }
 
         public async Task<bool> FileExistsAsync(string fileUrl)
         {
             try
             {
-                var objectKey = ExtractKeyFromUrl(fileUrl);
-                if (string.IsNullOrEmpty(objectKey))
+                var objectPath = ExtractPathFromUrl(fileUrl);
+                if (string.IsNullOrEmpty(objectPath))
                 {
                     return false;
                 }
 
-                var request = new GetObjectMetadataRequest
-                {
-                    BucketName = _options.BucketName,
-                    Key = objectKey
-                };
+                // Use HEAD request to check if file exists
+                var checkUrl = $"{_options.ProjectUrl}/storage/v1/object/{_options.BucketName}/{objectPath}";
 
-                await _s3Client.GetObjectMetadataAsync(request);
-                return true;
-            }
-            catch (AmazonS3Exception ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
-            {
-                return false;
+                using var request = new HttpRequestMessage(HttpMethod.Head, checkUrl);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _options.ServiceRoleKey);
+
+                var response = await _httpClient.SendAsync(request);
+                return response.IsSuccessStatusCode;
             }
             catch (Exception ex)
             {
@@ -281,40 +254,27 @@ namespace ShoesEcommerce.Services
             }
         }
 
-        public string GetPublicUrl(string fileKey)
+        public string GetPublicUrl(string objectPath)
         {
-            // Supabase public URL format: {ProjectUrl}/storage/v1/object/public/{BucketName}/{Key}
-            return $"{_options.ProjectUrl}/storage/v1/object/public/{_options.BucketName}/{fileKey}";
+            // Supabase public URL format: {ProjectUrl}/storage/v1/object/public/{BucketName}/{Path}
+            return $"{_options.ProjectUrl}/storage/v1/object/public/{_options.BucketName}/{objectPath}";
         }
 
-        public async Task<string> GetPresignedUrlAsync(string fileKey, TimeSpan expiration)
+        public Task<string> GetPresignedUrlAsync(string fileKey, TimeSpan expiration)
         {
-            try
-            {
-                var request = new GetPreSignedUrlRequest
-                {
-                    BucketName = _options.BucketName,
-                    Key = fileKey,
-                    Expires = DateTime.UtcNow.Add(expiration)
-                };
-
-                return await Task.FromResult(_s3Client.GetPreSignedURL(request));
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error generating presigned URL for: {Key}", fileKey);
-                throw;
-            }
+            // For public buckets, just return the public URL
+            // For private buckets, you'd need to implement signed URL generation
+            return Task.FromResult(GetPublicUrl(fileKey));
         }
 
-        private string? ExtractKeyFromUrl(string url)
+        private string? ExtractPathFromUrl(string url)
         {
             if (string.IsNullOrEmpty(url))
             {
                 return null;
             }
 
-            // If it's already a key (not a URL), return as is
+            // If it's already a path (not a URL), return as is
             if (!url.StartsWith("http"))
             {
                 return url;
@@ -332,7 +292,7 @@ namespace ShoesEcommerce.Services
                     return path.Substring(prefix.Length);
                 }
 
-                // Try alternative prefix without bucket
+                // Try alternative prefix
                 var altPrefix = "/storage/v1/object/public/";
                 if (path.StartsWith(altPrefix))
                 {
@@ -354,7 +314,6 @@ namespace ShoesEcommerce.Services
 
         /// <summary>
         /// Sanitize text to ASCII only - removes all non-ASCII characters including Vietnamese diacritics
-        /// This is critical for S3 signature compatibility
         /// </summary>
         private string SanitizeToAscii(string text)
         {
@@ -379,17 +338,16 @@ namespace ShoesEcommerce.Services
                 {
                     sb.Append(c);
                 }
-                // Replace common Vietnamese d with d
-                else if (c == '\u0111' || c == '\u0110') // đ or Đ
+                // Replace Vietnamese đ with d
+                else if (c == '\u0111' || c == '\u0110')
                 {
                     sb.Append('d');
                 }
-                // Replace spaces and some punctuation with underscore
+                // Replace spaces and punctuation with underscore
                 else if (c == ' ' || c == '-' || c == '_')
                 {
                     sb.Append('_');
                 }
-                // Skip all other characters
             }
 
             var result = sb.ToString().ToLowerInvariant();
@@ -419,28 +377,9 @@ namespace ShoesEcommerce.Services
             if (string.IsNullOrEmpty(folder))
                 return "";
 
-            // Split by / and sanitize each part
             var parts = folder.Split('/', StringSplitOptions.RemoveEmptyEntries);
             var sanitizedParts = parts.Select(p => SanitizeToAscii(p)).Where(p => !string.IsNullOrEmpty(p));
             return string.Join("/", sanitizedParts);
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed) return;
-
-            if (disposing)
-            {
-                _s3Client?.Dispose();
-            }
-
-            _disposed = true;
         }
     }
 }

@@ -1,7 +1,7 @@
 namespace ShoesEcommerce.Services.Options
 {
     /// <summary>
-    /// Configuration options for Supabase S3-compatible storage
+    /// Configuration options for Supabase Storage using REST API
     /// </summary>
     public class SupabaseStorageOptions
     {
@@ -13,19 +13,10 @@ namespace ShoesEcommerce.Services.Options
         public string ProjectUrl { get; set; } = string.Empty;
 
         /// <summary>
-        /// S3 endpoint URL (e.g., https://xxxxx.storage.supabase.co/storage/v1/s3)
+        /// Supabase service_role key for server-side uploads
+        /// Get this from Supabase Dashboard -> Settings -> API -> service_role key
         /// </summary>
-        public string S3Endpoint { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Access Key ID for S3 authentication
-        /// </summary>
-        public string AccessKeyId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// Secret Access Key for S3 authentication
-        /// </summary>
-        public string SecretAccessKey { get; set; } = string.Empty;
+        public string ServiceRoleKey { get; set; } = string.Empty;
 
         /// <summary>
         /// Default bucket name for storing files
@@ -33,19 +24,14 @@ namespace ShoesEcommerce.Services.Options
         public string BucketName { get; set; } = "images";
 
         /// <summary>
-        /// AWS region (use any value for Supabase, e.g., "us-east-1")
-        /// </summary>
-        public string Region { get; set; } = "us-east-1";
-
-        /// <summary>
         /// Base URL for accessing public files
         /// </summary>
         public string PublicUrl => $"{ProjectUrl}/storage/v1/object/public/{BucketName}";
 
         /// <summary>
-        /// Maximum file size in bytes (default: 5MB)
+        /// Maximum file size in bytes (default: 50MB for Supabase free tier)
         /// </summary>
-        public long MaxFileSizeBytes { get; set; } = 5 * 1024 * 1024;
+        public long MaxFileSizeBytes { get; set; } = 50 * 1024 * 1024;
 
         /// <summary>
         /// Allowed file extensions for images

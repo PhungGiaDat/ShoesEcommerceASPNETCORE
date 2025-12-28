@@ -1,6 +1,7 @@
 ﻿@model ShoesEcommerce.ViewModels.Account.RegisterViewModel
 @{
     ViewData["Title"] = "Đăng ký tài khoản";
+    ViewData["MetaDescription"] = "Đăng ký thành viên SPORTS để nhận ưu đãi độc quyền, theo dõi đơn hàng và mua giày thể thao chính hãng.";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var returnUrl = ViewData["ReturnUrl"] as string;
 }
@@ -13,36 +14,26 @@
         <div class="register-brand">
             <div class="brand-content">
                 <div class="brand-logo">
-                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                        <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
-                        <line x1="3" y1="6" x2="21" y2="6"/>
-                        <path d="M16 10a4 4 0 0 1-8 0"/>
-                    </svg>
+                    <span class="logo-text">sports</span>
                 </div>
-                <h1>NHTP Shoes</h1>
-                <p class="tagline">Chào mừng bạn đến với thế giới thời trang giày</p>
+                <p class="tagline">Tham gia cộng đồng thể thao</p>
                 
                 <div class="features">
                     <div class="feature">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                            <path d="M22 4 12 14.01l-3-3"/>
-                        </svg>
+                        <i class="fas fa-check-circle"></i>
                         <span>Miễn phí vận chuyển toàn quốc</span>
                     </div>
                     <div class="feature">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                            <path d="M22 4 12 14.01l-3-3"/>
-                        </svg>
+                        <i class="fas fa-check-circle"></i>
                         <span>Đổi trả trong 30 ngày</span>
                     </div>
                     <div class="feature">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-                            <path d="M22 4 12 14.01l-3-3"/>
-                        </svg>
+                        <i class="fas fa-check-circle"></i>
                         <span>Ưu đãi độc quyền cho thành viên</span>
+                    </div>
+                    <div class="feature">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Tích điểm đổi quà hấp dẫn</span>
                     </div>
                 </div>
             </div>
@@ -51,18 +42,14 @@
         <!-- Right Side - Form -->
         <div class="register-form-wrapper">
             <div class="form-header">
-                <h2>Tạo tài khoản</h2>
+                <h1>Tạo tài khoản</h1>
                 <p>Đăng ký để trải nghiệm mua sắm tuyệt vời</p>
             </div>
 
             @if (TempData["ErrorMessage"] != null)
             {
                 <div class="alert alert-error">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="15" y1="9" x2="9" y2="15"/>
-                        <line x1="9" y1="9" x2="15" y2="15"/>
-                    </svg>
+                    <i class="fas fa-exclamation-circle"></i>
                     <span>@TempData["ErrorMessage"]</span>
                 </div>
             }
@@ -70,13 +57,9 @@
             @if (!ViewData.ModelState.IsValid)
             {
                 <div class="alert alert-error">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="10"/>
-                        <line x1="12" y1="8" x2="12" y2="12"/>
-                        <line x1="12" y1="16" x2="12.01" y2="16"/>
-                    </svg>
+                    <i class="fas fa-exclamation-triangle"></i>
                     <div>
-                        <strong>Vui lòng kiểm tra lại thông tin:</strong>
+                        <strong>Vui lòng kiểm tra lại:</strong>
                         <ul>
                             @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors).Take(3))
                             {
@@ -109,11 +92,8 @@
                 <div class="form-group">
                     <label asp-for="Email">Email</label>
                     <div class="input-with-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                            <polyline points="22,6 12,13 2,6"/>
-                        </svg>
-                        <input asp-for="Email" class="form-input" placeholder="example@email.com" type="email" autocomplete="email" />
+                        <i class="fas fa-envelope"></i>
+                        <input asp-for="Email" class="form-input" placeholder="example@@email.com" type="email" autocomplete="email" />
                     </div>
                     <span asp-validation-for="Email" class="error-text"></span>
                     <span id="emailStatus" class="status-text"></span>
@@ -123,9 +103,7 @@
                 <div class="form-group">
                     <label asp-for="PhoneNumber">Số điện thoại</label>
                     <div class="input-with-icon">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72"/>
-                        </svg>
+                        <i class="fas fa-phone"></i>
                         <input asp-for="PhoneNumber" class="form-input" placeholder="0901234567" type="tel" autocomplete="tel" />
                     </div>
                     <span asp-validation-for="PhoneNumber" class="error-text"></span>
@@ -145,18 +123,10 @@
                         </select>
                         <select id="birthMonth" class="form-input date-select">
                             <option value="">Tháng</option>
-                            <option value="1">Tháng 1</option>
-                            <option value="2">Tháng 2</option>
-                            <option value="3">Tháng 3</option>
-                            <option value="4">Tháng 4</option>
-                            <option value="5">Tháng 5</option>
-                            <option value="6">Tháng 6</option>
-                            <option value="7">Tháng 7</option>
-                            <option value="8">Tháng 8</option>
-                            <option value="9">Tháng 9</option>
-                            <option value="10">Tháng 10</option>
-                            <option value="11">Tháng 11</option>
-                            <option value="12">Tháng 12</option>
+                            @for (int m = 1; m <= 12; m++)
+                            {
+                                <option value="@m">Tháng @m</option>
+                            }
                         </select>
                         <select id="birthYear" class="form-input date-select">
                             <option value="">Năm</option>
@@ -173,7 +143,6 @@
                             }
                         </select>
                     </div>
-                    <!-- Hidden input for actual form submission -->
                     <input type="hidden" asp-for="DateOfBirth" id="dateOfBirthHidden" />
                     <span asp-validation-for="DateOfBirth" class="error-text"></span>
                     <span id="dateStatus" class="status-text"></span>
@@ -183,20 +152,11 @@
                 <div class="form-group">
                     <label asp-for="Password">Mật khẩu</label>
                     <div class="input-with-icon password-input">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
+                        <i class="fas fa-lock"></i>
                         <input asp-for="Password" class="form-input" placeholder="Ít nhất 6 ký tự" type="password" id="passwordInput" autocomplete="new-password" />
                         <button type="button" class="toggle-password" onclick="togglePassword('passwordInput', this)">
-                            <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
-                                <line x1="1" y1="1" x2="23" y2="23"/>
-                            </svg>
+                            <i class="fas fa-eye eye-open"></i>
+                            <i class="fas fa-eye-slash eye-closed" style="display:none"></i>
                         </button>
                     </div>
                     <div class="password-strength" id="passwordStrength"></div>
@@ -207,20 +167,11 @@
                 <div class="form-group">
                     <label asp-for="ConfirmPassword">Xác nhận mật khẩu</label>
                     <div class="input-with-icon password-input">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                        </svg>
+                        <i class="fas fa-lock"></i>
                         <input asp-for="ConfirmPassword" class="form-input" placeholder="Nhập lại mật khẩu" type="password" id="confirmPasswordInput" autocomplete="new-password" />
                         <button type="button" class="toggle-password" onclick="togglePassword('confirmPasswordInput', this)">
-                            <svg class="eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-                                <circle cx="12" cy="12" r="3"/>
-                            </svg>
-                            <svg class="eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none">
-                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                                <line x1="1" y1="1" x2="23" y2="23"/>
-                            </svg>
+                            <i class="fas fa-eye eye-open"></i>
+                            <i class="fas fa-eye-slash eye-closed" style="display:none"></i>
                         </button>
                     </div>
                     <span asp-validation-for="ConfirmPassword" class="error-text"></span>
@@ -233,7 +184,7 @@
                         <input asp-for="AcceptTerms" type="checkbox" class="checkbox-input" />
                         <span class="checkbox-custom"></span>
                         <span class="checkbox-text">
-                            Tôi đồng ý với <a href="#" class="link">Điều khoản dịch vụ</a> và <a href="#" class="link">Chính sách bảo mật</a>
+                            Tôi đồng ý với <a href="/dieu-khoan" class="link">Điều khoản dịch vụ</a> và <a href="/bao-mat" class="link">Chính sách bảo mật</a>
                         </span>
                     </label>
                     <span asp-validation-for="AcceptTerms" class="error-text"></span>
@@ -243,10 +194,7 @@
                 <button type="submit" class="btn-submit" id="submitBtn">
                     <span class="btn-text">Đăng ký</span>
                     <span class="btn-loading" style="display:none">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin">
-                            <circle cx="12" cy="12" r="10"/>
-                        </svg>
-                        Đang xử lý...
+                        <i class="fas fa-spinner fa-spin"></i> Đang xử lý...
                     </span>
                 </button>
 
@@ -261,22 +209,20 @@
 
 <style>
     :root {
-        --primary-color: #c9a227;
-        --primary-hover: #b08d1f;
-        --primary-light: rgba(201, 162, 39, 0.1);
-        --accent-color: #d4af37;
-        --success-color: #22c55e;
-        --error-color: #ef4444;
-        --warning-color: #f59e0b;
-        --text-dark: #1f2937;
-        --text-muted: #6b7280;
-        --border-color: #e5e7eb;
-        --bg-light: #faf9f7;
+        --sports-black: #1a1a1a;
+        --sports-accent: #e63946;
+        --sports-white: #ffffff;
+        --sports-gray-100: #f8f9fa;
+        --sports-gray-200: #e9ecef;
+        --sports-gray-500: #6c757d;
+        --sports-success: #28a745;
+        --sports-error: #dc3545;
+        --sports-warning: #ffc107;
     }
 
     .register-page {
         min-height: 100vh;
-        background: linear-gradient(135deg, #faf9f7 0%, #f5f3ef 100%);
+        background: var(--sports-gray-100);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -285,73 +231,39 @@
 
     .register-container {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1.2fr;
         max-width: 1000px;
         width: 100%;
-        background: #fff;
-        border-radius: 24px;
+        background: var(--sports-white);
+        border-radius: 16px;
         overflow: hidden;
-        box-shadow: 0 25px 80px rgba(201, 162, 39, 0.15);
+        box-shadow: 0 10px 40px rgba(0,0,0,0.1);
     }
 
     /* Brand Side */
     .register-brand {
-        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 50%, #1a1a1a 100%);
-        color: #fff;
+        background: var(--sports-black);
+        color: var(--sports-white);
         padding: 3rem;
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
-        overflow: hidden;
     }
 
-    .register-brand::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(201, 162, 39, 0.1) 0%, transparent 50%);
-        animation: pulse 4s ease-in-out infinite;
-    }
+    .brand-content { text-align: center; }
 
-    .brand-content {
-        text-align: center;
-        position: relative;
-        z-index: 1;
-    }
-
-    .brand-logo {
-        width: 90px;
-        height: 90px;
-        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 1.5rem;
-        box-shadow: 0 8px 32px rgba(201, 162, 39, 0.4);
-    }
-
-    .brand-logo svg { color: #1a1a1a; }
-
-    .brand-content h1 {
-        font-size: 2.25rem;
-        font-weight: 700;
-        margin: 0 0 0.5rem;
-        background: linear-gradient(135deg, #fff, var(--accent-color));
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
+    .brand-logo .logo-text {
+        font-family: 'Arial Black', Arial, sans-serif;
+        font-size: 48px;
+        font-weight: 900;
+        color: var(--sports-white);
+        text-transform: lowercase;
     }
 
     .tagline {
-        font-size: 1rem;
-        opacity: 0.8;
-        margin-bottom: 2.5rem;
-        color: #ccc;
+        font-size: 1.1rem;
+        margin: 1rem 0 2.5rem;
+        color: rgba(255,255,255,0.8);
     }
 
     .features { text-align: left; }
@@ -361,42 +273,41 @@
         align-items: center;
         gap: 0.75rem;
         padding: 0.75rem 0;
+        color: rgba(255,255,255,0.9);
     }
 
-    .feature svg { color: var(--primary-color); flex-shrink: 0; }
-    .feature span { color: #e5e5e5; }
+    .feature i { color: var(--sports-accent); }
 
     /* Form Side */
-    .register-form-wrapper { padding: 3rem; }
-    .form-header { margin-bottom: 2rem; }
+    .register-form-wrapper { padding: 2.5rem; }
+    
+    .form-header { margin-bottom: 1.5rem; }
 
-    .form-header h2 {
+    .form-header h1 {
         font-size: 1.75rem;
         font-weight: 700;
         margin: 0 0 0.5rem;
-        color: var(--text-dark);
+        color: var(--sports-black);
     }
 
-    .form-header p { color: var(--text-muted); margin: 0; }
+    .form-header p { color: var(--sports-gray-500); margin: 0; }
 
     /* Alert */
     .alert {
         display: flex;
         gap: 0.75rem;
         padding: 1rem;
-        border-radius: 12px;
+        border-radius: 10px;
         margin-bottom: 1.5rem;
     }
 
     .alert-error {
-        background: #fef2f2;
-        color: var(--error-color);
-        border: 1px solid #fecaca;
+        background: #fff5f5;
+        color: var(--sports-error);
+        border: 1px solid #fed7d7;
     }
 
-    .alert-error svg { flex-shrink: 0; margin-top: 2px; }
     .alert ul { margin: 0.5rem 0 0 1rem; padding: 0; }
-    .alert li { margin-bottom: 0.25rem; }
 
     /* Form */
     .form-row {
@@ -411,84 +322,61 @@
         display: block;
         font-size: 0.875rem;
         font-weight: 600;
-        color: var(--text-dark);
+        color: var(--sports-black);
         margin-bottom: 0.5rem;
     }
 
     .form-input {
         width: 100%;
-        padding: 0.875rem 1rem;
-        border: 2px solid var(--border-color);
-        border-radius: 12px;
-        font-size: 0.95rem;
+        padding: 0.75rem 1rem;
+        border: 2px solid var(--sports-gray-200);
+        border-radius: 10px;
+        font-size: 0.9rem;
         transition: all 0.2s;
-        background: #fff;
-        color: var(--text-dark);
+        background: var(--sports-white);
+        color: var(--sports-black);
         box-sizing: border-box;
     }
 
     .form-input:focus {
         outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 4px var(--primary-light);
+        border-color: var(--sports-black);
+        box-shadow: 0 0 0 3px rgba(26,26,26,0.1);
     }
 
-    .form-input.error { border-color: var(--error-color); }
-    .form-input.success { border-color: var(--success-color); }
+    .form-input.error { border-color: var(--sports-error); }
+    .form-input.success { border-color: var(--sports-success); }
 
     .input-with-icon { position: relative; }
 
-    .input-with-icon > svg:first-of-type {
+    .input-with-icon > i:first-of-type {
         position: absolute;
         left: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        color: var(--text-muted);
-        pointer-events: none;
+        color: var(--sports-gray-500);
         z-index: 1;
     }
 
     .input-with-icon .form-input { padding-left: 2.75rem; }
-    .password-input .form-input { padding-right: 3.5rem; }
+    .password-input .form-input { padding-right: 3rem; }
 
-    /* Toggle Password Button - Fixed */
     .toggle-password {
         position: absolute;
-        right: 0.5rem;
+        right: 0.75rem;
         top: 50%;
         transform: translateY(-50%);
         background: transparent;
         border: none;
         cursor: pointer;
-        color: var(--text-muted);
+        color: var(--sports-gray-500);
         padding: 0.5rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 8px;
-        transition: all 0.2s;
         z-index: 2;
-        width: 36px;
-        height: 36px;
     }
 
-    .toggle-password:hover {
-        color: var(--primary-color);
-        background: var(--primary-light);
-    }
+    .toggle-password:hover { color: var(--sports-black); }
 
-    .toggle-password svg {
-        width: 20px;
-        height: 20px;
-        display: block;
-    }
-
-    .toggle-password .eye-open,
-    .toggle-password .eye-closed {
-        pointer-events: none;
-    }
-
-    /* Date Input Group */
+    /* Date Input */
     .date-input-group {
         display: grid;
         grid-template-columns: 1fr 1.5fr 1.2fr;
@@ -496,17 +384,15 @@
     }
 
     .date-select {
-        padding: 0.875rem;
-        appearance: none;
-        background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 0.75rem center;
+        padding: 0.75rem;
         cursor: pointer;
     }
 
-    /* Status & Error Text */
+    /* Status Text */
     .error-text {
         display: block;
         font-size: 0.8rem;
-        color: var(--error-color);
+        color: var(--sports-error);
         margin-top: 0.25rem;
     }
 
@@ -516,15 +402,15 @@
         margin-top: 0.25rem;
     }
 
-    .status-text.error { color: var(--error-color); }
-    .status-text.success { color: var(--success-color); }
+    .status-text.error { color: var(--sports-error); }
+    .status-text.success { color: var(--sports-success); }
 
     /* Password Strength */
     .password-strength { margin-top: 0.5rem; }
 
     .strength-bar {
         height: 4px;
-        background: var(--border-color);
+        background: var(--sports-gray-200);
         border-radius: 2px;
         overflow: hidden;
         margin-bottom: 0.25rem;
@@ -536,11 +422,8 @@
     }
 
     .strength-text { font-size: 0.75rem; }
-    .strength-weak { color: var(--error-color); }
-    .strength-medium { color: var(--warning-color); }
-    .strength-strong { color: var(--success-color); }
 
-    /* Terms Checkbox - Fixed */
+    /* Terms Checkbox */
     .terms-group { margin-top: 1.5rem; }
 
     .checkbox-label {
@@ -548,65 +431,53 @@
         align-items: flex-start;
         gap: 0.75rem;
         cursor: pointer;
-        user-select: none;
     }
 
     .checkbox-input {
         position: absolute;
         opacity: 0;
-        width: 0;
-        height: 0;
     }
 
     .checkbox-custom {
-        width: 24px;
-        height: 24px;
-        min-width: 24px;
-        border: 2px solid var(--border-color);
-        border-radius: 6px;
-        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        min-width: 22px;
+        border: 2px solid var(--sports-gray-200);
+        border-radius: 5px;
         position: relative;
         transition: all 0.2s;
-        background: #fff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        background: var(--sports-white);
     }
 
     .checkbox-label:hover .checkbox-custom {
-        border-color: var(--primary-color);
+        border-color: var(--sports-black);
     }
 
     .checkbox-input:checked + .checkbox-custom {
-        background: var(--primary-color);
-        border-color: var(--primary-color);
+        background: var(--sports-black);
+        border-color: var(--sports-black);
     }
 
     .checkbox-input:checked + .checkbox-custom::after {
         content: '';
         position: absolute;
-        left: 7px;
-        top: 3px;
+        left: 6px;
+        top: 2px;
         width: 6px;
-        height: 11px;
-        border: solid #fff;
+        height: 10px;
+        border: solid var(--sports-white);
         border-width: 0 2.5px 2.5px 0;
         transform: rotate(45deg);
     }
 
-    .checkbox-input:focus + .checkbox-custom {
-        box-shadow: 0 0 0 4px var(--primary-light);
-    }
-
     .checkbox-text {
         font-size: 0.875rem;
-        color: var(--text-muted);
+        color: var(--sports-gray-500);
         line-height: 1.5;
-        padding-top: 2px;
     }
 
     .link {
-        color: var(--primary-color);
+        color: var(--sports-accent);
         text-decoration: none;
         font-weight: 500;
     }
@@ -617,10 +488,10 @@
     .btn-submit {
         width: 100%;
         padding: 1rem;
-        background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
-        color: #1a1a1a;
+        background: var(--sports-black);
+        color: var(--sports-white);
         border: none;
-        border-radius: 12px;
+        border-radius: 10px;
         font-size: 1rem;
         font-weight: 700;
         cursor: pointer;
@@ -630,12 +501,11 @@
         justify-content: center;
         gap: 0.5rem;
         margin-top: 1.5rem;
-        box-shadow: 0 4px 16px rgba(201, 162, 39, 0.3);
     }
 
     .btn-submit:hover {
+        background: var(--sports-accent);
         transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(201, 162, 39, 0.4);
     }
 
     .btn-submit:disabled {
@@ -644,28 +514,16 @@
         transform: none;
     }
 
-    .spin { animation: spin 1s linear infinite; }
-
-    @@keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    @@keyframes pulse {
-        0%, 100% { opacity: 0.5; }
-        50% { opacity: 1; }
-    }
-
     /* Login Link */
     .login-link {
         text-align: center;
         margin-top: 1.5rem;
-        color: var(--text-muted);
+        color: var(--sports-gray-500);
         font-size: 0.9rem;
     }
 
     .login-link a {
-        color: var(--primary-color);
+        color: var(--sports-accent);
         font-weight: 600;
         text-decoration: none;
     }
@@ -678,7 +536,6 @@
             grid-template-columns: 1fr;
             max-width: 500px;
         }
-
         .register-brand { display: none; }
         .register-form-wrapper { padding: 2rem; }
     }
@@ -693,13 +550,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var defaultYear = 1990;
-    var defaultMonth = 1;
-    var defaultDay = 1;
-    
-    document.getElementById('birthDay').value = defaultDay;
-    document.getElementById('birthMonth').value = defaultMonth;
-    document.getElementById('birthYear').value = defaultYear;
+    // Initialize date
+    document.getElementById('birthDay').value = 1;
+    document.getElementById('birthMonth').value = 1;
+    document.getElementById('birthYear').value = 1990;
     updateHiddenDate();
 
     ['birthDay', 'birthMonth', 'birthYear'].forEach(function(id) {
@@ -728,7 +582,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (!day || !month || !year) {
             statusEl.textContent = '';
-            statusEl.className = 'status-text';
             return true;
         }
 
@@ -743,10 +596,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
         if (age < 13) {
             statusEl.textContent = 'Bạn phải trên 13 tuổi để đăng ký';
-            statusEl.className = 'status-text error';
-            return false;
-        } else if (age > 120) {
-            statusEl.textContent = 'Ngày sinh không hợp lệ';
             statusEl.className = 'status-text error';
             return false;
         } else {
@@ -764,14 +613,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (input.type === 'password') {
             input.type = 'text';
             eyeOpen.style.display = 'none';
-            eyeClosed.style.display = 'block';
+            eyeClosed.style.display = 'inline';
         } else {
             input.type = 'password';
-            eyeOpen.style.display = 'block';
+            eyeOpen.style.display = 'inline';
             eyeClosed.style.display = 'none';
         }
     };
 
+    // Password strength
     document.getElementById('passwordInput').addEventListener('input', function() {
         var password = this.value;
         var strengthDiv = document.getElementById('passwordStrength');
@@ -789,19 +639,16 @@ document.addEventListener('DOMContentLoaded', function() {
         if (/[^A-Za-z0-9]/.test(password)) strength++;
 
         var percent = (strength / 5) * 100;
-        var color, text, cls;
+        var color, text;
         
-        if (strength < 2) {
-            color = '#ef4444'; text = 'Yếu'; cls = 'strength-weak';
-        } else if (strength < 4) {
-            color = '#f59e0b'; text = 'Trung bình'; cls = 'strength-medium';
-        } else {
-            color = '#22c55e'; text = 'Mạnh'; cls = 'strength-strong';
-        }
+        if (strength < 2) { color = '#dc3545'; text = 'Yếu'; }
+        else if (strength < 4) { color = '#ffc107'; text = 'Trung bình'; }
+        else { color = '#28a745'; text = 'Mạnh'; }
 
-        strengthDiv.innerHTML = '<div class="strength-bar"><div class="strength-fill" style="width:' + percent + '%;background:' + color + '"></div></div><span class="strength-text ' + cls + '">' + text + '</span>';
+        strengthDiv.innerHTML = '<div class="strength-bar"><div class="strength-fill" style="width:' + percent + '%;background:' + color + '"></div></div><span class="strength-text" style="color:' + color + '">' + text + '</span>';
     });
 
+    // Confirm password
     document.getElementById('confirmPasswordInput').addEventListener('input', function() {
         var password = document.getElementById('passwordInput').value;
         var confirm = this.value;
@@ -821,6 +668,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    // Email check
     var emailTimeout;
     document.getElementById('Email').addEventListener('input', function() {
         clearTimeout(emailTimeout);
@@ -849,18 +697,17 @@ document.addEventListener('DOMContentLoaded', function() {
                     statusEl.textContent = 'Email đã được sử dụng';
                     statusEl.className = 'status-text error';
                     input.classList.add('error');
-                    input.classList.remove('success');
                 } else {
                     statusEl.textContent = 'Email hợp lệ ✓';
                     statusEl.className = 'status-text success';
                     input.classList.add('success');
-                    input.classList.remove('error');
                 }
             })
             .catch(function() { statusEl.textContent = ''; });
         }, 500);
     });
 
+    // Phone check
     var phoneTimeout;
     document.getElementById('PhoneNumber').addEventListener('input', function() {
         clearTimeout(phoneTimeout);
@@ -879,7 +726,6 @@ document.addEventListener('DOMContentLoaded', function() {
             statusEl.textContent = 'Số điện thoại không hợp lệ';
             statusEl.className = 'status-text error';
             input.classList.add('error');
-            input.classList.remove('success');
             return;
         }
 
@@ -891,25 +737,24 @@ document.addEventListener('DOMContentLoaded', function() {
                     'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
                 },
                 body: 'phoneNumber=' + encodeURIComponent(phone)
-            })
+            )
             .then(function(r) { return r.json(); })
             .then(function(data) {
                 if (data.exists) {
                     statusEl.textContent = 'Số điện thoại đã được sử dụng';
                     statusEl.className = 'status-text error';
                     input.classList.add('error');
-                    input.classList.remove('success');
                 } else {
                     statusEl.textContent = 'Số điện thoại hợp lệ ✓';
                     statusEl.className = 'status-text success';
                     input.classList.add('success');
-                    input.classList.remove('error');
                 }
             })
             .catch(function() { statusEl.textContent = ''; });
         }, 500);
     });
 
+    // Form submit
     document.getElementById('registerForm').addEventListener('submit', function(e) {
         var btn = document.getElementById('submitBtn');
         var btnText = btn.querySelector('.btn-text');

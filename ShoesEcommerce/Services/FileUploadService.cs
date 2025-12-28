@@ -28,23 +28,22 @@ namespace ShoesEcommerce.Services
             _storageService = storageService;
             _storageOptions = storageOptions.Value;
             
-            // Use cloud storage if configured with valid credentials
-            _useCloudStorage = !string.IsNullOrEmpty(_storageOptions.AccessKeyId) 
-                && !string.IsNullOrEmpty(_storageOptions.SecretAccessKey)
+            // Use cloud storage if configured with ServiceRoleKey
+            _useCloudStorage = !string.IsNullOrEmpty(_storageOptions.ServiceRoleKey) 
                 && !string.IsNullOrEmpty(_storageOptions.ProjectUrl);
 
             if (_useCloudStorage)
             {
-                _logger.LogInformation("?? FileUploadService using Supabase cloud storage");
+                _logger.LogInformation("☁️ FileUploadService using Supabase cloud storage");
                 _logger.LogInformation("   - Project URL: {ProjectUrl}", _storageOptions.ProjectUrl);
                 _logger.LogInformation("   - Bucket: {BucketName}", _storageOptions.BucketName);
-                _logger.LogInformation("   - Access Key ID: {AccessKeyId}", _storageOptions.AccessKeyId?.Substring(0, Math.Min(8, _storageOptions.AccessKeyId?.Length ?? 0)) + "***");
+                _logger.LogInformation("   - Service Role Key: {KeyPrefix}...", 
+                    _storageOptions.ServiceRoleKey?.Substring(0, Math.Min(20, _storageOptions.ServiceRoleKey?.Length ?? 0)));
             }
             else
             {
-                _logger.LogWarning("?? FileUploadService using LOCAL file storage - Supabase credentials not configured!");
-                _logger.LogWarning("   - AccessKeyId configured: {HasAccessKey}", !string.IsNullOrEmpty(_storageOptions.AccessKeyId));
-                _logger.LogWarning("   - SecretAccessKey configured: {HasSecretKey}", !string.IsNullOrEmpty(_storageOptions.SecretAccessKey));
+                _logger.LogWarning("📁 FileUploadService using LOCAL file storage - Supabase credentials not configured!");
+                _logger.LogWarning("   - ServiceRoleKey configured: {HasKey}", !string.IsNullOrEmpty(_storageOptions.ServiceRoleKey));
                 _logger.LogWarning("   - ProjectUrl configured: {HasProjectUrl}", !string.IsNullOrEmpty(_storageOptions.ProjectUrl));
             }
         }
