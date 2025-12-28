@@ -232,6 +232,9 @@ builder.Services.AddScoped<ISubizChatService, SubizChatService>();
 // Register Social Chat Options (Facebook, Zalo)
 builder.Services.Configure<SocialChatOptions>(builder.Configuration.GetSection(SocialChatOptions.SectionName));
 
+// Register Tawk.to Chat Options
+builder.Services.Configure<TawkToOptions>(builder.Configuration.GetSection(TawkToOptions.SectionName));
+
 // Register PayPal HttpClient
 builder.Services.AddHttpClient("PayPal", client =>
 {

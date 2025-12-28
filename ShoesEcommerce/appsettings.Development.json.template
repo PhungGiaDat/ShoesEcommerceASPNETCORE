@@ -15,10 +15,9 @@
 
   "SupabaseStorage": {
     "ProjectUrl": "https://wrrlgzyxojhlgwpunpud.supabase.co",
-    "S3Endpoint": "https://wrrlgzyxojhlgwpunpud.storage.supabase.co/storage/v1/s3",
-    "AccessKeyId": "MY-ACCESS-KEY",
-    "SecretAccessKey": "MY-SECRET",
-    "BucketName": "images"
+    "ServiceRoleKey": "YOUR_SUPABASE_SERVICE_ROLE_KEY",
+    "BucketName": "images",
+    "MaxFileSizeBytes": 52428800
   },
 
   "PayPalOptions": {

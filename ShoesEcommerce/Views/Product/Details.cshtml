@@ -17,50 +17,69 @@
     
     // SEO and Social Sharing Meta Data
     var productImage = variants?.FirstOrDefault()?.ImageUrl ?? "/images/no-image.svg";
-    var productImageUrl = productImage.StartsWith("http") ? productImage : $"{Context.Request.Scheme}://{Context.Request.Host}{productImage}";
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+    var productImageUrl = productImage.StartsWith("http") ? productImage : $"{baseUrl}{productImage}";
     var productUrl = Context.Request.GetDisplayUrl();
     var productDescription = !string.IsNullOrEmpty(Model.Description) && Model.Description.Length > 160
         ? Model.Description.Substring(0, 157) + "..."
-        : Model.Description ?? $"Mua {Model.Name} chính hãng với giá tốt nhất";
+        : Model.Description ?? $"Mua {Model.Name} chính hãng với giá tốt nhất tại SPORTS";
     
+    // Set ViewData for Layout to pick up OG meta tags
     ViewData["MetaDescription"] = productDescription;
+    ViewData["OgType"] = "product";
+    ViewData["OgImage"] = productImageUrl;
+    ViewData["OgImageAlt"] = Model.Name;
+    ViewData["CanonicalUrl"] = productUrl;
+    
+    // For _SocialShare partial
     ViewData["ShareUrl"] = productUrl;
     ViewData["ShareTitle"] = Model.Name;
     ViewData["ShareDescription"] = productDescription;
     ViewData["ShareImage"] = productImageUrl;
+    
+    // Price info for OG product meta
+    var minPrice = variants?.Min(v => v.Price) ?? 0;
+    var maxPrice = variants?.Max(v => v.Price) ?? 0;
+    var displayPrice = discountInfo?.HasActiveDiscount == true ? discountInfo.DiscountedPrice : minPrice;
+    ViewData["ProductPrice"] = displayPrice.ToString("F0");
+    ViewData["ProductCurrency"] = "VND";
+    ViewData["ProductAvailability"] = variants?.Any(v => v.StockQuantity > 0) == true ? "in stock" : "out of stock";
 }
 
-<!-- SEO Meta Tags -->
-<meta property="og:type" content="product">
-<meta property="og:url" content="@productUrl">
-<meta property="og:title" content="@Model.Name">
-<meta property="og:description" content="@productDescription">
-<meta property="og:image" content="@productImageUrl">
-<meta property="og:site_name" content="NHTP ShoesEcommerce">
-<meta property="og:locale" content="vi_VN">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="@Model.Name">
-<meta name="twitter:description" content="@productDescription">
-<meta name="twitter:image" content="@productImageUrl">
-
-<!-- Product Schema -->
-<script type="application/ld+json">
-{
-  "@@context": "https://schema.org/",
-  "@@type": "Product",
-  "name": "@Model.Name",
-  "image": "@productImageUrl",
-  "description": "@Html.Raw(System.Text.Json.JsonSerializer.Serialize(productDescription))",
-  "brand": { "@@type": "Brand", "name": "@Model.Brand?.Name" },
-  "offers": {
-    "@@type": "AggregateOffer",
-    "priceCurrency": "VND",
-    "lowPrice": "@(variants?.Min(v => v.Price) ?? 0)",
-    "highPrice": "@(variants?.Max(v => v.Price) ?? 0)",
-    "availability": "@(variants?.Any(v => v.StockQuantity > 0) == true ? "https://schema.org/InStock" : "https://schema.org/OutOfStock")"
-  }
+@section StructuredData {
+    <!-- Product Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@@context": "https://schema.org/",
+        "@@type": "Product",
+        "name": "@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Name))",
+        "image": "@productImageUrl",
+        "description": @Html.Raw(System.Text.Json.JsonSerializer.Serialize(productDescription)),
+        "brand": {
+            "@@type": "Brand",
+            "name": "@Model.Brand?.Name"
+        },
+        "category": "@Model.Category?.Name",
+        "offers": {
+            "@@type": "AggregateOffer",
+            "priceCurrency": "VND",
+            "lowPrice": "@minPrice",
+            "highPrice": "@maxPrice",
+            "offerCount": "@(variants?.Count() ?? 0)",
+            "availability": "@(variants?.Any(v => v.StockQuantity > 0) == true ? "https://schema.org/InStock" : "https://schema.org/OutOfStock")"
+        }
+        @if (comments != null && comments.Any())
+        {
+            <text>,
+            "aggregateRating": {
+                "@@type": "AggregateRating",
+                "ratingValue": "4.5",
+                "reviewCount": "@comments.Count"
+            }</text>
+        }
+    }
+    </script>
 }
-</script>
 
 @Html.AntiForgeryToken()
 
@@ -111,16 +130,13 @@
                 <h1 class="product-name">@Model.Name</h1>
             </div>
             
-            <!-- Social Share -->
+            <!-- Social Share Buttons -->
             @{ await Html.RenderPartialAsync("_SocialShare"); }
             
             <!-- Price -->
             <div class="product-price">
                 @if (variants != null && variants.Any())
                 {
-                    var minPrice = variants.Min(v => v.Price);
-                    var maxPrice = variants.Max(v => v.Price);
-                    
                     @if (discountInfo != null && discountInfo.HasActiveDiscount)
                     {
                         <span class="price-old">@minPrice.ToString("N0") ₫</span>

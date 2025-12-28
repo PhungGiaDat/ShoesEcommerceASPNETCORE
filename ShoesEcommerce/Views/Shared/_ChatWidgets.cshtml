@@ -2,10 +2,12 @@
 @using ShoesEcommerce.Services.Options
 @inject IOptions<SubizChatOptions> SubizOptions
 @inject IOptions<SocialChatOptions> SocialChatOptions
+@inject IOptions<TawkToOptions> TawkToOptions
 
 @{
     var subiz = SubizOptions.Value;
     var social = SocialChatOptions.Value;
+    var tawkTo = TawkToOptions.Value;
 }
 
 <!-- Chat Widgets Container -->
@@ -22,6 +24,23 @@
                 b=u.cloneNode(false),b.async=1,b.src='//static.subiz.net/sbz/app.js?accid='+z,
                 u.parentNode.insertBefore(b,u))
             })(window,document,'script','sbz','@subiz.AccountId');
+        </script>
+    }
+
+    @* Tawk.to Chat Widget *@
+    @if (tawkTo.Enabled && !string.IsNullOrEmpty(tawkTo.PropertyId) && !string.IsNullOrEmpty(tawkTo.WidgetId))
+    {
+        <!-- Tawk.to Live Chat -->
+        <script type="text/javascript">
+            var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
+            (function(){
+                var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
+                s1.async = true;
+                s1.src = 'https://embed.tawk.to/@tawkTo.PropertyId/@tawkTo.WidgetId';
+                s1.charset = 'UTF-8';
+                s1.setAttribute('crossorigin', '*');
+                s0.parentNode.insertBefore(s1, s0);
+            })();
         </script>
     }
 
@@ -88,10 +107,19 @@
 
     /* Facebook widget is automatically positioned by FB SDK */
     
-    /* If Subiz is also present, adjust positions */
-    @if (subiz.Enabled && social.Zalo.Enabled)
+    /* Adjust positions when multiple widgets are enabled */
+    @{
+        var widgetCount = 0;
+        if (subiz.Enabled) widgetCount++;
+        if (tawkTo.Enabled) widgetCount++;
+        if (social.Zalo.Enabled) widgetCount++;
+        if (social.Facebook.Enabled) widgetCount++;
+    }
+
+    @if (widgetCount > 1)
     {
         <text>
+        /* When Subiz or Tawk.to is present, adjust Zalo position */
         .zalo-chat-widget {
             bottom: 160px !important;
         }
@@ -104,7 +132,9 @@
         .zalo-chat-widget,
         #fb-root,
         #fb-customer-chat,
-        [id*="subiz"] {
+        [id*="subiz"],
+        iframe[title*="chat"],
+        iframe[src*="tawk.to"] {
             display: none !important;
         }
     }
