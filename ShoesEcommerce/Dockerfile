@@ -27,8 +27,9 @@ RUN dotnet publish "ShoesEcommerce.csproj" -c Release -o /app/publish /p:UseAppH
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
 WORKDIR /app
 
-# Install required dependencies for image processing (if needed)
+# Install curl for health check and other dependencies
 RUN apt-get update && apt-get install -y \
+    curl \
     libgdiplus \
     libc6-dev \
     && rm -rf /var/lib/apt/lists/*
@@ -47,9 +48,8 @@ ENV TZ=Asia/Ho_Chi_Minh
 # Expose the port Render expects
 EXPOSE 10000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 
-    CMD curl --fail http://localhost:10000/health || exit 1
+# Health check (must be on single line or use backslash for continuation)
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl --fail http://localhost:10000/health || exit 1
 
 # Run the application
 ENTRYPOINT ["dotnet", "ShoesEcommerce.dll"]
