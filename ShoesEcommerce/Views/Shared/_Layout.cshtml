@@ -325,11 +325,10 @@
                     <p class="footer-desc">
                         Chuyên cung cấp giày thể thao, giày đá bóng, futsal chính hãng từ các thương hiệu hàng đầu thế giới: Nike, Adidas, Puma, Mizuno, Joma...
                     </p>
-                    <div class="footer-social">
-                        <a href="#" class="social-link" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="social-link" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="social-link" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
-                        <a href="#" class="social-link" aria-label="TikTok"><i class="fab fa-tiktok"></i></a>
+                    <!-- ShareThis Follow Buttons -->
+                    <div class="footer-follow-section">
+                        <span class="follow-label-footer">Theo dõi chúng tôi:</span>
+                        <div class="sharethis-inline-follow-buttons"></div>
                     </div>
                 </div>
                 
@@ -893,29 +892,22 @@
             margin-bottom: 20px;
         }
 
-        .footer-social {
-            display: flex;
-            gap: 10px;
+        /* ShareThis Follow Buttons in Footer */
+        .footer-follow-section {
+            margin-top: 15px;
         }
-
-        .social-link {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.1);
-            color: var(--sports-white);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            transition: all 0.2s ease;
-            text-decoration: none;
+        
+        .follow-label-footer {
+            display: block;
+            font-size: 13px;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 10px;
         }
-
-        .social-link:hover {
-            background: var(--sports-accent);
-            color: var(--sports-white);
-            transform: translateY(-2px);
+        
+        .footer-follow-section .sharethis-inline-follow-buttons {
+            display: flex !important;
+            flex-wrap: wrap;
+            gap: 8px;
         }
 
         .footer-title {
@@ -1291,8 +1283,8 @@
         });
     </script>
     
-    <!-- AddToAny Share Buttons Script -->
-    <script defer src="https://static.addtoany.com/menu/page.js"></script>
+    <!-- ShareThis Share & Follow Buttons Script -->
+    <script type="text/javascript" src="https://platform-api.sharethis.com/js/sharethis.js#property=69510a6be0891b98fd79a9c6&product=inline-share-buttons&product=inline-follow-buttons" async="async"></script>
     
     <!-- Chat Widgets -->
     @{ await Html.RenderPartialAsync("_ChatWidgets"); }

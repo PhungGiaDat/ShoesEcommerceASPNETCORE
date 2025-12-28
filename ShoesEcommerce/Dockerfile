@@ -13,12 +13,21 @@ RUN dotnet restore "ShoesEcommerce.csproj"
 
 # Copy everything else and build
 COPY . .
+
+# Remove any files with special characters that cause issues on Linux
+RUN find . -name "*,*" -type f -delete 2>/dev/null || true
+RUN find . -name "*'*" -type f -delete 2>/dev/null || true
+
 RUN dotnet build "ShoesEcommerce.csproj" -c Release -o /app/build
 
 # ============================================
 # Stage 2: Publish Stage
 # ============================================
 FROM build AS publish
+
+# Create the output directory structure first
+RUN mkdir -p /app/publish/wwwroot/images
+
 RUN dotnet publish "ShoesEcommerce.csproj" -c Release -o /app/publish /p:UseAppHost=false
 
 # ============================================
@@ -37,8 +46,8 @@ RUN apt-get update && apt-get install -y \
 # Copy published application
 COPY --from=publish /app/publish .
 
-# Create directory for logs
-RUN mkdir -p /app/logs
+# Create directory for logs and ensure images directory exists
+RUN mkdir -p /app/logs /app/wwwroot/images /app/wwwroot/Images
 
 # Set environment variables
 ENV ASPNETCORE_ENVIRONMENT=Production
@@ -48,7 +57,7 @@ ENV TZ=Asia/Ho_Chi_Minh
 # Expose the port Render expects
 EXPOSE 10000
 
-# Health check (must be on single line or use backslash for continuation)
+# Health check (must be on single line)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl --fail http://localhost:10000/health || exit 1
 
 # Run the application

@@ -27,11 +27,10 @@ namespace ShoesEcommerce.Controllers
         }
 
         // GET: Product - NOW DISPLAYS PRODUCT VARIANTS INSTEAD OF PRODUCTS
-        // SEO-friendly URL: /san-pham or /product
+        // SEO-friendly URL: /san-pham
         [Route("san-pham")]
-        [Route("product")]
-        [Route("Product")]
-        [Route("Product/Index")]
+        [Route("[controller]")]
+        [Route("[controller]/[action]")]
         public async Task<IActionResult> Index(string searchString, int? categoryId, int? brandId, int page = 1, int pageSize = 12)
         {
             ViewData["Title"] = "Danh sách sản phẩm";

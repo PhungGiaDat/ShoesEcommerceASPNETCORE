@@ -93,3 +93,8 @@ credentials/
 *.key
 *.pem
 firebase-adminsdk*.json
+
+# Exclude uploaded images with special characters (problematic on Linux)
+# These should be stored in cloud storage (Supabase) not in wwwroot
+wwwroot/Images/product-variants/
+wwwroot/images/uploads/
