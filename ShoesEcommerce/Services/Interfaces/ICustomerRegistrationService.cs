@@ -20,6 +20,19 @@ namespace ShoesEcommerce.Services.Interfaces
         Task<CustomerRegistrationResult> RegisterCustomerWithCartAsync(RegisterViewModel model);
 
         /// <summary>
+        /// Complete customer registration process with Google OAuth including:
+        /// - Creating customer account with GoogleId
+        /// - Setting profile picture from Google
+        /// - Creating empty cart for customer
+        /// - Assigning default "Customer" role
+        /// </summary>
+        /// <param name="model">Registration view model</param>
+        /// <param name="googleId">Google user ID</param>
+        /// <param name="profilePicture">Google profile picture URL</param>
+        /// <returns>Registration result with customer and cart information</returns>
+        Task<CustomerRegistrationResult> RegisterCustomerWithGoogleAsync(RegisterViewModel model, string? googleId, string? profilePicture);
+
+        /// <summary>
         /// Ensures the default "Customer" role exists in the system
         /// </summary>
         /// <returns>The Customer role</returns>

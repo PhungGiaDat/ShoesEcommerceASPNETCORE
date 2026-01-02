@@ -775,3 +775,196 @@ body {
 .navbar-nav .nav-link.active::after {
     width: 80%;
 }
+
+/* ============================================
+   LOGIN MODAL STYLES
+   ============================================ */
+.login-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(4px);
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.login-modal-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 2.5rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideUp {
+    from { 
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.login-modal-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #999;
+    padding: 0.5rem;
+    transition: color 0.2s ease;
+}
+
+.login-modal-close:hover {
+    color: #333;
+}
+
+.login-modal-icon {
+    width: 80px;
+    height: 80px;
+    background: #f5f5f5;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1.5rem;
+    color: #666;
+}
+
+.login-modal-box h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 0.5rem;
+}
+
+.login-modal-box p {
+    color: #666;
+    margin-bottom: 1.5rem;
+    font-size: 0.95rem;
+}
+
+.login-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.btn-login-primary {
+    padding: 14px 24px;
+    background: #1a1a1a;
+    color: #fff;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.btn-login-primary:hover {
+    background: #c41e3a;
+    color: #fff;
+    transform: translateY(-1px);
+}
+
+.btn-register-secondary {
+    padding: 14px 24px;
+    background: #fff;
+    color: #1a1a1a;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+
+.btn-register-secondary:hover {
+    border-color: #1a1a1a;
+    color: #1a1a1a;
+}
+
+/* ============================================
+   TOAST NOTIFICATION STYLES
+   ============================================ */
+.site-toast {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background: #1a1a1a;
+    color: #fff;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 10001;
+    opacity: 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 90%;
+}
+
+.site-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.site-toast-success { background: #10b981; }
+.site-toast-error { background: #ef4444; }
+.site-toast-warning { background: #f59e0b; }
+.site-toast-info { background: #3b82f6; }
+
+.site-toast svg {
+    flex-shrink: 0;
+}
+
+.site-toast span {
+    flex: 1;
+    font-size: 0.95rem;
+}
+
+.site-toast .toast-close {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.25rem;
+    cursor: pointer;
+    padding: 0;
+    margin-left: 0.5rem;
+    line-height: 1;
+}
+
+.site-toast .toast-close:hover {
+    color: #fff;
+}
+
+@media (max-width: 480px) {
+    .site-toast {
+        bottom: 1rem;
+        left: 1rem;
+        right: 1rem;
+        transform: translateX(0) translateY(100px);
+    }
+    
+    .site-toast.show {
+        transform: translateX(0) translateY(0);
+    }
+}

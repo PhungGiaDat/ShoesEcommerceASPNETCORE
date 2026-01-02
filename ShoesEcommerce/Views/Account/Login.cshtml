@@ -1,8 +1,14 @@
 @model ShoesEcommerce.ViewModels.Account.LoginViewModel
+@inject IConfiguration Configuration
 @{
     ViewData["Title"] = "Đăng nhập tài khoản";
     ViewData["MetaDescription"] = "Đăng nhập vào SPORTS để mua giày thể thao, giày đá bóng, futsal chính hãng với nhiều ưu đãi hấp dẫn.";
     Layout = "~/Views/Shared/_Layout.cshtml";
+    
+    // Check if Google OAuth is properly configured
+    var googleClientId = Environment.GetEnvironmentVariable("GOOGLE_CLIENT_ID") 
+                         ?? Configuration["Authentication:Google:ClientId"];
+    var isGoogleConfigured = !string.IsNullOrEmpty(googleClientId) && googleClientId != "not-configured";
 }
 
 <div class="login-page">
@@ -122,18 +128,21 @@
                     </span>
                 </button>
 
-                <!-- Divider -->
-                <div class="divider">
-                    <span>hoặc</span>
-                </div>
+                @if (isGoogleConfigured)
+                {
+                    <!-- Divider -->
+                    <div class="divider">
+                        <span>hoặc</span>
+                    </div>
 
-                <!-- Social Login -->
-                <div class="social-login">
-                    <a href="/Account/GoogleLogin?returnUrl=@(Model?.ReturnUrl ?? "/")" class="btn-social btn-google">
-                        <i class="fab fa-google"></i>
-                        Đăng nhập với Google
-                    </a>
-                </div>
+                    <!-- Social Login -->
+                    <div class="social-login">
+                        <a href="/Account/GoogleLogin?returnUrl=@(Model?.ReturnUrl ?? "/")" class="btn-social btn-google">
+                            <i class="fab fa-google"></i>
+                            Đăng nhập với Google
+                        </a>
+                    </div>
+                }
 
                 <!-- Register Link -->
                 <div class="register-link">

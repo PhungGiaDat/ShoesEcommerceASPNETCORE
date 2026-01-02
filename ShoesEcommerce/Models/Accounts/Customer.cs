@@ -47,6 +47,15 @@ namespace ShoesEcommerce.Models.Accounts
         
         [MaxLength(50)]
         public string? State { get; set; }
+
+        // OAuth Provider Information
+        [MaxLength(100)]
+        public string? GoogleId { get; set; }
+
+        [MaxLength(50)]
+        public string? AuthProvider { get; set; } // "Local", "Google", "Facebook", etc.
+
+        public bool IsExternalLogin => !string.IsNullOrEmpty(AuthProvider) && AuthProvider != "Local";
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;

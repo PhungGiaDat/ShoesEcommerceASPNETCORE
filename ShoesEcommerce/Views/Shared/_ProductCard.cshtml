@@ -1,12 +1,19 @@
 ﻿@model ShoesEcommerce.ViewModels.Product.ProductVariantDisplayInfo
 
+@{
+    // Display name format: "ProductName - Color" for variant display
+    var displayName = !string.IsNullOrEmpty(Model.Color) 
+        ? $"{Model.ProductName} - {Model.Color}" 
+        : Model.ProductName;
+}
+
 <div class="col-6 col-md-3">
     <article class="product-card">
         <a href="/san-pham/@(Model.ProductName?.ToLower().Replace(" ", "-"))-@Model.ProductId" class="product-link">
             <div class="product-image">
                 @if (!string.IsNullOrEmpty(Model.ImageUrl))
                 {
-                    <img src="@Model.ImageUrl" alt="@Model.ProductName - @Model.Color" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'no-image-placeholder\'><i class=\'fas fa-image\'></i><span>No Image</span></div>'">
+                    <img src="@Model.ImageUrl" alt="@displayName" loading="lazy" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\'no-image-placeholder\'><i class=\'fas fa-image\'></i><span>No Image</span></div>'">
                 }
                 else
                 {
@@ -29,20 +36,7 @@
                 {
                     <span class="product-brand">@Model.BrandName</span>
                 }
-                <h3 class="product-name">@Model.ProductName</h3>
-                @if (!string.IsNullOrEmpty(Model.Color) || !string.IsNullOrEmpty(Model.Size))
-                {
-                    <div class="product-variant-tags">
-                        @if (!string.IsNullOrEmpty(Model.Color))
-                        {
-                            <span class="variant-tag">@Model.Color</span>
-                        }
-                        @if (!string.IsNullOrEmpty(Model.Size))
-                        {
-                            <span class="variant-tag">@Model.Size</span>
-                        }
-                    </div>
-                }
+                <h3 class="product-name">@displayName</h3>
                 <div class="product-price">
                     @if (Model.HasActiveDiscount)
                     {
@@ -173,26 +167,13 @@
         font-size: 14px;
         font-weight: 600;
         color: #1a1a1a;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
         line-height: 1.4;
         min-height: 40px;
         overflow: hidden;
         display: -webkit-box;
         -webkit-line-clamp: 2;
         -webkit-box-orient: vertical;
-    }
-    .product-variant-tags {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 8px;
-        flex-wrap: wrap;
-    }
-    .variant-tag {
-        font-size: 11px;
-        color: #666;
-        background: #f5f5f5;
-        padding: 3px 8px;
-        border-radius: 4px;
     }
     .product-price {
         display: flex;

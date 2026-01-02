@@ -261,7 +261,7 @@
         background: linear-gradient(135deg, #1a1a1a 0%, #3d1f1f 50%, #1a1a1a 100%);
     }
     .min-vh-hero { min-height: 500px; }
-    .hero-content { position: relative; z-index: 2; color: white; }
+    .hero-content { position: relative; z-index: 2; color: white; padding-left: 60px; }
     .hero-badge { display: inline-block; background: rgba(255,255,255,0.15); color: #fff; padding: 8px 20px; border-radius: 4px; font-size: 12px; font-weight: 700; letter-spacing: 2px; margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.3); }
     .hero-badge.hot { background: var(--accent-red); border-color: var(--accent-red); }
     .hero-title { font-size: 48px; font-weight: 900; line-height: 1.1; margin-bottom: 20px; text-transform: uppercase; }
@@ -300,10 +300,24 @@
         50% { transform: translateY(-15px); }
     }
     
-    .carousel-control-prev, .carousel-control-next { width: 50px; height: 50px; background: rgba(255,255,255,0.15); border-radius: 4px; top: 50%; transform: translateY(-50%); opacity: 1; }
+    .carousel-control-prev, .carousel-control-next { 
+        width: 50px; 
+        height: 50px; 
+        background: rgba(255,255,255,0.15); 
+        border-radius: 4px; 
+        top: 50%; 
+        transform: translateY(-50%); 
+        opacity: 1; 
+    }
     .carousel-control-prev:hover, .carousel-control-next:hover { background: var(--accent-red); }
-    .carousel-control-prev { left: 20px; }
-    .carousel-control-next { right: 20px; }
+    .carousel-control-prev { left: 10px; }
+    .carousel-control-next { right: 10px; }
+    
+    /* Add padding to hero content to avoid overlap with arrows */
+    .hero-content {
+        padding-left: 60px;
+    }
+    
     .carousel-indicators button { width: 40px; height: 4px; border-radius: 2px; margin: 0 5px; opacity: 0.5; }
     .carousel-indicators button.active { opacity: 1; background: var(--accent-red); }
 

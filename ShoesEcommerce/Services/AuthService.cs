@@ -101,23 +101,17 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                _logger.LogInformation("Registering customer with Google OAuth: {Email}", model.Email);
+                _logger.LogInformation("Registering customer with Google OAuth: {Email}, GoogleId: {GoogleId}", model.Email, googleId);
 
-                var result = await _customerRegistrationService.RegisterCustomerWithCartAsync(model);
+                var result = await _customerRegistrationService.RegisterCustomerWithGoogleAsync(model, googleId, profilePicture);
                 
                 if (result.Success && result.Customer != null)
                 {
-                    // Update customer with Google-specific info if available
-                    if (!string.IsNullOrEmpty(profilePicture))
-                    {
-                        // Could store profile picture URL - would need to update customer entity
-                        _logger.LogDebug("Google profile picture URL: {ProfilePicture}", profilePicture);
-                    }
-
                     // Automatically sign in the customer
                     await SignInCustomerAsync(result.Customer.Id);
 
-                    _logger.LogInformation("Customer registered via Google and signed in: {Email}", model.Email);
+                    _logger.LogInformation("Customer registered via Google and signed in: {Email}, CustomerId: {CustomerId}", 
+                        model.Email, result.Customer.Id);
                 }
 
                 return result;

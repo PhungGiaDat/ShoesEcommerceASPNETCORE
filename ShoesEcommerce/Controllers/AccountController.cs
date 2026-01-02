@@ -509,6 +509,14 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
+        // AJAX: Check if user is authenticated
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult IsAuthenticated()
+        {
+            return Json(new { isAuthenticated = User?.Identity?.IsAuthenticated == true });
+        }
+
         #region Google OAuth
 
         // GET: /Account/GoogleLogin - Initiate Google OAuth login
