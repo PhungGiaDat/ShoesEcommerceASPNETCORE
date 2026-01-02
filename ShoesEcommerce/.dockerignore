@@ -94,7 +94,12 @@ credentials/
 *.pem
 firebase-adminsdk*.json
 
-# Exclude uploaded images with special characters (problematic on Linux)
-# These should be stored in cloud storage (Supabase) not in wwwroot
+# Exclude only uploaded product images with special characters
+# Keep static assets like hero, banners, placeholders
 wwwroot/Images/product-variants/
 wwwroot/images/uploads/
+
+# Keep these directories (do NOT exclude)
+!wwwroot/images/hero/
+!wwwroot/images/placeholders/
+!wwwroot/images/og-*.jpg

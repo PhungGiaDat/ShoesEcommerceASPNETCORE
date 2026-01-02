@@ -34,7 +34,19 @@
         }
         
         var ogType = ViewData["OgType"]?.ToString() ?? "website";
-        var ogImage = ViewData["OgImage"]?.ToString() ?? $"{baseUrl}/images/og-default.jpg";
+        // Use placeholder image service for default OG image to ensure it always works
+        var defaultOgImage = "https://placehold.co/1200x630/1a1a1a/ffffff?text=SPORTS+Vietnam";
+        var ogImage = ViewData["OgImage"]?.ToString();
+        // If OgImage is empty or points to a local path that might not exist, use placeholder
+        if (string.IsNullOrEmpty(ogImage) || ogImage.StartsWith("/images/og-"))
+        {
+            ogImage = defaultOgImage;
+        }
+        // If OgImage is a relative path, make it absolute
+        else if (ogImage.StartsWith("/"))
+        {
+            ogImage = $"{baseUrl}{ogImage}";
+        }
         var ogImageWidth = ViewData["OgImageWidth"]?.ToString() ?? "1200";
         var ogImageHeight = ViewData["OgImageHeight"]?.ToString() ?? "630";
         var ogImageAlt = ViewData["OgImageAlt"]?.ToString() ?? pageTitle;
