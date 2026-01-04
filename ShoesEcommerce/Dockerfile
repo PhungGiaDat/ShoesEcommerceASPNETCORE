@@ -18,6 +18,13 @@ COPY . .
 RUN find . -name "*,*" -type f -delete 2>/dev/null || true
 RUN find . -name "*'*" -type f -delete 2>/dev/null || true
 
+# Rename Images to images for Linux consistency (case-sensitive filesystem)
+RUN if [ -d "wwwroot/Images" ]; then \
+        mkdir -p wwwroot/images && \
+        cp -r wwwroot/Images/* wwwroot/images/ 2>/dev/null || true && \
+        rm -rf wwwroot/Images; \
+    fi
+
 RUN dotnet build "ShoesEcommerce.csproj" -c Release -o /app/build
 
 # ============================================
@@ -29,6 +36,13 @@ FROM build AS publish
 RUN mkdir -p /app/publish/wwwroot/images
 
 RUN dotnet publish "ShoesEcommerce.csproj" -c Release -o /app/publish /p:UseAppHost=false
+
+# Ensure images directory exists with correct case after publish
+RUN if [ -d "/app/publish/wwwroot/Images" ]; then \
+        mkdir -p /app/publish/wwwroot/images && \
+        cp -r /app/publish/wwwroot/Images/* /app/publish/wwwroot/images/ 2>/dev/null || true && \
+        rm -rf /app/publish/wwwroot/Images; \
+    fi
 
 # ============================================
 # Stage 3: Runtime Stage
@@ -47,7 +61,7 @@ RUN apt-get update && apt-get install -y \
 COPY --from=publish /app/publish .
 
 # Create directory for logs and ensure images directory exists
-RUN mkdir -p /app/logs /app/wwwroot/images /app/wwwroot/Images
+RUN mkdir -p /app/logs /app/wwwroot/images
 
 # Set environment variables
 ENV ASPNETCORE_ENVIRONMENT=Production
