@@ -605,5 +605,110 @@ namespace ShoesEcommerce.Services
                 CustomerPhone = o.Customer?.PhoneNumber ?? ""
             }).ToList();
         }
+
+        public async Task<OrderViewModel?> GetOrderByOrderNumberAndPhoneAsync(string orderNumber, string phone)
+        {
+            try
+            {
+                _logger.LogInformation("Tracking order {OrderNumber} with phone {Phone}", orderNumber, phone);
+
+                // Clean up order number - extract ID if format is ORD000001
+                int orderId = 0;
+                if (orderNumber.StartsWith("ORD", StringComparison.OrdinalIgnoreCase))
+                {
+                    var idPart = orderNumber.Substring(3);
+                    int.TryParse(idPart, out orderId);
+                }
+                else
+                {
+                    int.TryParse(orderNumber, out orderId);
+                }
+
+                // Clean phone number
+                var cleanPhone = phone.Replace(" ", "").Replace("-", "").Replace(".", "");
+                if (cleanPhone.StartsWith("84"))
+                {
+                    cleanPhone = "0" + cleanPhone.Substring(2);
+                }
+
+                var order = await _context.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.ShippingAddress)
+                    .Include(o => o.Payment)
+                    .Include(o => o.OrderDetails)
+                        .ThenInclude(od => od.ProductVariant)
+                            .ThenInclude(pv => pv.Product)
+                    .FirstOrDefaultAsync(o => 
+                        o.Id == orderId && 
+                        (o.ShippingAddress.PhoneNumber.Replace(" ", "").Replace("-", "") == cleanPhone ||
+                         o.Customer.PhoneNumber.Replace(" ", "").Replace("-", "") == cleanPhone));
+
+                if (order == null)
+                {
+                    _logger.LogWarning("Order not found for {OrderNumber} with phone {Phone}", orderNumber, phone);
+                    return null;
+                }
+
+                _logger.LogInformation("Found order {OrderId} for tracking", order.Id);
+
+                return new OrderViewModel
+                {
+                    Id = order.Id,
+                    OrderNumber = $"ORD{order.Id:D6}",
+                    CreatedAt = order.CreatedAt,
+                    TotalAmount = order.TotalAmount,
+                    Status = order.Status,
+                    PaymentStatus = order.Payment?.Status ?? "Chưa thanh toán",
+                    OrderDetails = order.OrderDetails.Select(od => new OrderDetailViewModel
+                    {
+                        Id = od.Id,
+                        ProductVariant = od.ProductVariant != null && od.ProductVariant.Product != null
+                            ? new ProductVariantViewModel
+                            {
+                                Id = od.ProductVariant.Id,
+                                Name = od.ProductVariant.Product.Name,
+                                ImageUrl = od.ProductVariant.ImageUrl,
+                                Color = od.ProductVariant.Color,
+                                Size = od.ProductVariant.Size,
+                                Price = od.UnitPrice
+                            }
+                            : new ProductVariantViewModel
+                            {
+                                Id = od.ProductVariant?.Id ?? 0,
+                                Name = "(Sản phẩm đã bị xóa)",
+                                ImageUrl = "/images/no-image.svg",
+                                Color = "",
+                                Size = "",
+                                Price = od.UnitPrice
+                            },
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice,
+                        SubTotal = od.Quantity * od.UnitPrice
+                    }).ToList(),
+                    ShippingAddress = new ShippingAddressViewModel
+                    {
+                        Id = order.ShippingAddress.Id,
+                        FullName = order.ShippingAddress.FullName,
+                        PhoneNumber = order.ShippingAddress.PhoneNumber,
+                        Address = order.ShippingAddress.Address,
+                        City = order.ShippingAddress.City,
+                        District = order.ShippingAddress.District
+                    },
+                    Payment = new PaymentViewModel
+                    {
+                        Id = order.Payment?.Id ?? 0,
+                        Method = order.Payment?.Method ?? "",
+                        Status = order.Payment?.Status ?? "",
+                        PaidAt = order.Payment?.PaidAt,
+                        TransactionId = order.Payment?.TransactionId
+                    }
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error tracking order {OrderNumber}", orderNumber);
+                return null;
+            }
+        }
     }
 }

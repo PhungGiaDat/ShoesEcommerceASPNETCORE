@@ -16,6 +16,75 @@ namespace ShoesEcommerce.Controllers
             _orderService = orderService;
         }
 
+        // GET: /tra-cuu-don-hang - Public (no auth required)
+        [AllowAnonymous]
+        public IActionResult Track()
+        {
+            return View();
+        }
+
+        // POST: /Order/TrackOrder - Public API
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TrackOrder(string orderNumber, string phone)
+        {
+            if (string.IsNullOrWhiteSpace(orderNumber) || string.IsNullOrWhiteSpace(phone))
+            {
+                return Json(new { success = false, message = "Vui lòng nhập mã đơn hàng và số điện thoại" });
+            }
+
+            var order = await _orderService.GetOrderByOrderNumberAndPhoneAsync(orderNumber, phone);
+            
+            if (order == null)
+            {
+                return Json(new { success = false, message = "Không tìm thấy đơn hàng. Vui lòng kiểm tra lại mã đơn hàng và số điện thoại." });
+            }
+
+            return Json(new { 
+                success = true, 
+                order = new {
+                    orderNumber = order.OrderNumber,
+                    createdAt = order.CreatedAt.ToString("dd/MM/yyyy HH:mm"),
+                    status = order.Status,
+                    statusText = GetStatusText(order.Status),
+                    paymentStatus = order.PaymentStatus,
+                    paymentStatusText = order.PaymentStatus == "Paid" ? "Đã thanh toán" : "Chưa thanh toán",
+                    totalAmount = order.TotalAmount.ToString("N0"),
+                    shippingAddress = new {
+                        fullName = order.ShippingAddress.FullName,
+                        phone = order.ShippingAddress.PhoneNumber,
+                        address = order.ShippingAddress.Address,
+                        district = order.ShippingAddress.District,
+                        city = order.ShippingAddress.City
+                    },
+                    items = order.OrderDetails.Select(od => new {
+                        name = od.ProductVariant.Name,
+                        color = od.ProductVariant.Color,
+                        size = od.ProductVariant.Size,
+                        quantity = od.Quantity,
+                        price = od.UnitPrice.ToString("N0"),
+                        imageUrl = od.ProductVariant.ImageUrl
+                    })
+                }
+            });
+        }
+
+        private string GetStatusText(string status)
+        {
+            return status?.ToLower() switch
+            {
+                "pending" => "Chờ xử lý",
+                "confirmed" => "Đã xác nhận",
+                "processing" => "Đang xử lý",
+                "shipping" => "Đang giao hàng",
+                "delivered" => "Đã giao hàng",
+                "completed" => "Hoàn thành",
+                "cancelled" => "Đã hủy",
+                _ => status ?? "Không xác định"
+            };
+        }
+
         // GET: /Order
         public async Task<IActionResult> Index()
         {

@@ -18,5 +18,6 @@ namespace ShoesEcommerce.Services.Interfaces
         Task<string> GenerateOrderNumberAsync();
         Task<decimal> CalculateShippingFeeAsync(string city, string district);
         Task<List<OrderViewModel>> GetOrdersByStatusAsync(string status);
+        Task<OrderViewModel?> GetOrderByOrderNumberAndPhoneAsync(string orderNumber, string phone);
     }
 }
