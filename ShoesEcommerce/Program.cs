@@ -405,6 +405,8 @@ try
     app.MapControllerRoute(name: "register_seo", pattern: "dang-ky", defaults: new { controller = "Account", action = "Register" });
     app.MapControllerRoute(name: "orders_seo", pattern: "don-hang", defaults: new { controller = "Order", action = "Index" });
     app.MapControllerRoute(name: "order_detail_seo", pattern: "don-hang/{id}", defaults: new { controller = "Order", action = "Details" });
+    app.MapControllerRoute(name: "favorites_seo", pattern: "yeu-thich", defaults: new { controller = "Favorite", action = "Index" });
+    app.MapControllerRoute(name: "profile_seo", pattern: "tai-khoan", defaults: new { controller = "Account", action = "Profile" });
 
     // Default route
     app.MapControllerRoute(name: "default", pattern: "{controller=Home}/{action=Index}/{id?}");

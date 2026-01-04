@@ -1,6 +1,7 @@
 ﻿@model ShoesEcommerce.Models.Products.Product
 @using ShoesEcommerce.ViewModels.Product
 @using Microsoft.AspNetCore.Http.Extensions
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 @{
     ViewData["Title"] = Model.Name;
     var variants = ViewBag.Variants as IEnumerable<ShoesEcommerce.ViewModels.Product.ProductVariantInfo>;
@@ -15,11 +16,30 @@
     var colors = variantsByColor.Keys.ToList();
     var defaultColor = colors.FirstOrDefault() ?? "";
     
-    // SEO and Social Sharing Meta Data
+    // SEO and Social Sharing Meta Data - Use configured SiteUrl for production
+    var siteUrl = Configuration["SiteUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}";
     var productImage = variants?.FirstOrDefault()?.ImageUrl ?? "/images/no-image.svg";
-    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
-    var productImageUrl = productImage.StartsWith("http") ? productImage : $"{baseUrl}{productImage}";
-    var productUrl = Context.Request.GetDisplayUrl();
+    
+    // Always create absolute URL for OG image
+    string productImageUrl;
+    if (string.IsNullOrEmpty(productImage) || productImage == "/images/no-image.svg")
+    {
+        // Use a placeholder for products without images
+        productImageUrl = "https://placehold.co/1200x630/1a1a1a/ffffff?text=" + Uri.EscapeDataString(Model.Name ?? "SPORTS");
+    }
+    else if (productImage.StartsWith("http"))
+    {
+        productImageUrl = productImage;
+    }
+    else
+    {
+        productImageUrl = $"{siteUrl}{productImage}";
+    }
+    
+    // Use SEO-friendly URL for canonical
+    var productSlug = ShoesEcommerce.Helpers.SlugHelper.ToSlugWithId(Model.Name ?? "", Model.Id);
+    var canonicalUrl = $"{siteUrl}/san-pham/{productSlug}";
+    
     var productDescription = !string.IsNullOrEmpty(Model.Description) && Model.Description.Length > 160
         ? Model.Description.Substring(0, 157) + "..."
         : Model.Description ?? $"Mua {Model.Name} chính hãng với giá tốt nhất tại SPORTS";
@@ -28,11 +48,13 @@
     ViewData["MetaDescription"] = productDescription;
     ViewData["OgType"] = "product";
     ViewData["OgImage"] = productImageUrl;
+    ViewData["OgImageWidth"] = "1200";
+    ViewData["OgImageHeight"] = "630";
     ViewData["OgImageAlt"] = Model.Name;
-    ViewData["CanonicalUrl"] = productUrl;
+    ViewData["CanonicalUrl"] = canonicalUrl;
     
     // For _SocialShare partial
-    ViewData["ShareUrl"] = productUrl;
+    ViewData["ShareUrl"] = canonicalUrl;
     ViewData["ShareTitle"] = Model.Name;
     ViewData["ShareDescription"] = productDescription;
     ViewData["ShareImage"] = productImageUrl;
@@ -60,6 +82,7 @@
             "name": "@Model.Brand?.Name"
         },
         "category": "@Model.Category?.Name",
+        "url": "@canonicalUrl",
         "offers": {
             "@@type": "AggregateOffer",
             "priceCurrency": "VND",

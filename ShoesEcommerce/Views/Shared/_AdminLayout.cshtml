@@ -1,263 +1,596 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - ShoesEcommerce</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-9ndCyUaIbzAi2FUVXJi0CjmCapSmO7SnpJef0486qhLnuZ2cdeRhO02iuK6FUUVM" crossorigin="anonymous">
+    <title>@ViewData["Title"] - SPORTS Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="stylesheet" href="~/css/admin.css" />
-    <!-- Chart.js for charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --sidebar-collapsed: 72px;
+            --header-height: 60px;
+            --primary: #1a1a1a;
+            --primary-hover: #333;
+            --accent: #3b82f6;
+            --text-primary: #1f2937;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border-color: #e5e7eb;
+            --bg-white: #ffffff;
+            --bg-gray: #f9fafb;
+            --bg-hover: #f3f4f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-gray);
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        /* Sidebar - ERP Style */
+        .admin-sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background: var(--bg-white);
+            border-right: 1px solid var(--border-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+        }
+
+        /* Brand */
+        .sidebar-brand {
+            padding: 1.25rem 1rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .brand-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            text-decoration: none;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+
+        .brand-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-name {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.5px;
+        }
+
+        .brand-subtitle {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Navigation */
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 0.75rem 0;
+        }
+
+        .sidebar-nav::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .sidebar-nav::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        /* Menu Items */
+        .menu-item {
+            margin: 0 0.75rem 2px;
+        }
+
+        .menu-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.625rem 0.875rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            border-radius: 8px;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+
+        .menu-link:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .menu-link.active {
+            color: var(--accent);
+            background: rgba(59, 130, 246, 0.08);
+            font-weight: 600;
+        }
+
+        .menu-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 20px;
+            background: var(--accent);
+            border-radius: 0 3px 3px 0;
+        }
+
+        .menu-icon {
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            opacity: 0.7;
+        }
+
+        .menu-link.active .menu-icon,
+        .menu-link:hover .menu-icon {
+            opacity: 1;
+        }
+
+        .menu-text {
+            flex: 1;
+        }
+
+        /* Submenu - Expandable */
+        .menu-submenu .menu-link {
+            cursor: pointer;
+        }
+
+        .menu-arrow {
+            font-size: 0.6rem;
+            transition: transform 0.2s ease;
+            opacity: 0.5;
+        }
+
+        .menu-submenu.open .menu-arrow {
+            transform: rotate(90deg);
+        }
+
+        .submenu-list {
+            display: none;
+            padding: 4px 0 4px 0;
+            margin: 0;
+            list-style: none;
+        }
+
+        .menu-submenu.open .submenu-list {
+            display: block;
+        }
+
+        .submenu-item {
+            margin: 0;
+        }
+
+        .submenu-link {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.875rem 0.5rem 2.75rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.8125rem;
+            font-weight: 400;
+            border-radius: 6px;
+            margin: 0 0.75rem;
+            transition: all 0.15s ease;
+            position: relative;
+        }
+
+        .submenu-link::before {
+            content: '';
+            position: absolute;
+            left: 1.75rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 4px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            transition: all 0.15s ease;
+        }
+
+        .submenu-link:hover {
+            color: var(--text-primary);
+            background: var(--bg-hover);
+        }
+
+        .submenu-link:hover::before {
+            background: var(--accent);
+        }
+
+        .submenu-link.active {
+            color: var(--accent);
+            background: rgba(59, 130, 246, 0.06);
+            font-weight: 500;
+        }
+
+        .submenu-link.active::before {
+            background: var(--accent);
+            width: 6px;
+            height: 6px;
+        }
+
+        /* Section Divider */
+        .menu-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 0.75rem 1rem;
+        }
+
+        .menu-section-title {
+            padding: 0.75rem 1rem 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        /* Main Content */
+        .admin-main {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+            transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .admin-header {
+            position: sticky;
+            top: 0;
+            height: var(--header-height);
+            background: var(--bg-white);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            z-index: 100;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .mobile-toggle {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+
+        .mobile-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--text-primary);
+        }
+
+        .page-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .btn-header {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: all 0.15s;
+            border: 1px solid transparent;
+        }
+
+        .btn-header-outline {
+            background: var(--bg-white);
+            border-color: var(--border-color);
+            color: var(--text-secondary);
+        }
+
+        .btn-header-outline:hover {
+            border-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        .btn-header-primary {
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .btn-header-primary:hover {
+            background: var(--primary-hover);
+            color: #fff;
+        }
+
+        .admin-content {
+            padding: 1.5rem;
+        }
+
+        /* Mobile Overlay */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 999;
+            backdrop-filter: blur(2px);
+        }
+
+        @@media (max-width: 1024px) {
+            .admin-sidebar {
+                transform: translateX(-100%);
+            }
+
+            .admin-sidebar.show {
+                transform: translateX(0);
+            }
+
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .admin-main {
+                margin-left: 0;
+            }
+
+            .mobile-toggle {
+                display: block;
+            }
+        }
+
+        /* Animations */
+        .submenu-list {
+            animation: slideDown 0.2s ease;
+        }
+
+        @@keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+
     @await RenderSectionAsync("Styles", required: false)
 </head>
 <body>
-    <!-- Mobile Menu Toggle -->
-    <button class="mobile-menu-toggle" id="mobileMenuToggle">
-        <i class="fas fa-bars"></i>
-    </button>
-
-    <!-- Sidebar Overlay for Mobile -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
     <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
-        <!-- Brand Section -->
+    <aside class="admin-sidebar" id="sidebar">
         <div class="sidebar-brand">
-            <a class="brand-logo" asp-area="" asp-controller="Admin" asp-action="Index">
-                <img src="~/images/logo.png" alt="ShoesEcommerce Logo" class="logo">
+            <a href="/Admin" class="brand-link">
+                <div class="brand-icon">S</div>
+                <div class="brand-text">
+                    <span class="brand-name">SPORTS</span>
+                    <span class="brand-subtitle">Admin Panel</span>
+                </div>
             </a>
         </div>
 
-        <!-- Navigation -->
-        <nav>
-            <ul class="sidebar-nav">
-                <!-- Home -->
-                <li class="nav-item">
-                    <a class="nav-link @(ViewContext.RouteData.Values["action"].ToString() == "Index" ? "active" : "")" asp-area="" asp-controller="Admin" asp-action="Index">
-                        <i class="fas fa-home"></i> Trang chủ
-                    </a>
-                </li>
+        <nav class="sidebar-nav">
+            <!-- Dashboard -->
+            <div class="menu-item">
+                <a class="menu-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" && ViewContext.RouteData.Values["controller"]?.ToString() == "Admin" ? "active" : "")" href="/Admin">
+                    <span class="menu-icon"><i class="fas fa-th-large"></i></span>
+                    <span class="menu-text">Dashboard</span>
+                </a>
+            </div>
 
-                <!-- Account Dropdown -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="accountDropdown" role="button" aria-expanded="false">
-                        <i class="fas fa-user"></i> Tài khoản
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="accountDropdown">
-                        <li><a class="dropdown-item" asp-controller="AdminStaff" asp-action="Index">
-                            <i class="fas fa-users me-2"></i>Nhân viên
-                        </a></li>
-                        <li><a class="dropdown-item" asp-controller="Admin" asp-action="Customer">
-                            <i class="fas fa-user-friends me-2"></i>Khách hàng
-                        </a></li>
-                    </ul>
-                </li>
+            <div class="menu-divider"></div>
+            <div class="menu-section-title">Quản lý</div>
 
-                <!-- Product Management Dropdown -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="productDropdown" role="button" aria-expanded="false">
-                        <i class="fas fa-box-open"></i> Quản lý Sản phẩm
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="productDropdown">
-                        <li><a class="dropdown-item" href="/Admin/Product">
-                            <i class="fas fa-shopping-bag me-2"></i>Sản phẩm
-                        </a></li>
-                        <li><a class="dropdown-item" href="/Admin/Product/Categories">
-                            <i class="fas fa-tags me-2"></i>Danh mục
-                        </a></li>
-                        <li><a class="dropdown-item" href="/Admin/Product/Brands">
-                            <i class="fas fa-award me-2"></i>Thương hiệu
-                        </a></li>
-                        <li><a class="dropdown-item" href="/Admin/Product/Suppliers">
-                            <i class="fas fa-truck me-2"></i>Nhà cung cấp
-                        </a></li>
-                    </ul>
-                </li>
+            <!-- Products -->
+            <div class="menu-item menu-submenu @(ViewContext.RouteData.Values["controller"]?.ToString()?.Contains("Product") == true ? "open" : "")">
+                <a class="menu-link" href="javascript:void(0)">
+                    <span class="menu-icon"><i class="fas fa-box"></i></span>
+                    <span class="menu-text">Sản phẩm</span>
+                    <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+                </a>
+                <ul class="submenu-list">
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Product">Danh sách sản phẩm</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Product/Categories">Danh mục</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Product/Brands">Thương hiệu</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Product/Suppliers">Nhà cung cấp</a></li>
+                </ul>
+            </div>
 
-                <!-- Orders Dropdown -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="orderDropdown" role="button" aria-expanded="false">
-                        <i class="fas fa-shopping-cart"></i> Danh sách order
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="orderDropdown">
-                        <li><a class="dropdown-item" href="/Admin/Order/Pending">Phê duyệt</a></li>
-                        <li><a class="dropdown-item" href="/Admin/Order/Confirmed">Xác nhận</a></li>
-                        <li><a class="dropdown-item" href="/Admin/Order/Completed">Thành công</a></li>
-                    </ul>
-                </li>
+            <!-- Orders -->
+            <div class="menu-item menu-submenu @(ViewContext.RouteData.Values["controller"]?.ToString()?.Contains("Order") == true ? "open" : "")">
+                <a class="menu-link" href="javascript:void(0)">
+                    <span class="menu-icon"><i class="fas fa-shopping-bag"></i></span>
+                    <span class="menu-text">Đơn hàng</span>
+                    <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+                </a>
+                <ul class="submenu-list">
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Order">Tất cả đơn hàng</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Order/Pending">Chờ xử lý</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Order/Confirmed">Đã xác nhận</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Order/Completed">Hoàn thành</a></li>
+                </ul>
+            </div>
 
-                <!-- Inventory Dropdown -->
-                <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" href="#" id="inventoryDropdown" role="button" aria-expanded="false">
-                        <i class="fas fa-box"></i> Hàng hóa
-                    </a>
-                    <ul class="dropdown-menu" aria-labelledby="inventoryDropdown">
-                        <li><a class="dropdown-item" href="/Admin/Stock/Inventory">Tồn kho</a></li>
-                        <li><a class="dropdown-item" href="/Admin/Stock/Check">Kiểm kho</a></li>
-                        <li><a class="dropdown-item" href="/Admin/Stock/Import">Nhập hàng</a></li>
-                    </ul>
-                </li>
+            <!-- Inventory -->
+            <div class="menu-item menu-submenu @(ViewContext.RouteData.Values["controller"]?.ToString()?.Contains("Stock") == true ? "open" : "")">
+                <a class="menu-link" href="javascript:void(0)">
+                    <span class="menu-icon"><i class="fas fa-warehouse"></i></span>
+                    <span class="menu-text">Kho hàng</span>
+                    <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+                </a>
+                <ul class="submenu-list">
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Stock/Inventory">Tồn kho</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Stock/Check">Kiểm kho</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Stock/Import">Nhập hàng</a></li>
+                </ul>
+            </div>
 
-                <!-- Promotions -->
-                <li class="nav-item">
-                    <a class="nav-link" href="/Admin/Discount/Index">
-                        <i class="fas fa-tag"></i> Khuyến mãi
-                    </a>
-                </li>
-            </ul>
+            <div class="menu-divider"></div>
+            <div class="menu-section-title">Kinh doanh</div>
+
+            <!-- Promotions -->
+            <div class="menu-item">
+                <a class="menu-link @(ViewContext.RouteData.Values["controller"]?.ToString()?.Contains("Discount") == true ? "active" : "")" href="/Admin/Discount">
+                    <span class="menu-icon"><i class="fas fa-percent"></i></span>
+                    <span class="menu-text">Khuyến mãi</span>
+                </a>
+            </div>
+
+            <div class="menu-divider"></div>
+            <div class="menu-section-title">Hệ thống</div>
+
+            <!-- Users -->
+            <div class="menu-item menu-submenu @(ViewContext.RouteData.Values["controller"]?.ToString()?.Contains("Staff") == true || ViewContext.RouteData.Values["controller"]?.ToString()?.Contains("Customer") == true ? "open" : "")">
+                <a class="menu-link" href="javascript:void(0)">
+                    <span class="menu-icon"><i class="fas fa-users"></i></span>
+                    <span class="menu-text">Người dùng</span>
+                    <span class="menu-arrow"><i class="fas fa-chevron-right"></i></span>
+                </a>
+                <ul class="submenu-list">
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Staff">Nhân viên</a></li>
+                    <li class="submenu-item"><a class="submenu-link" href="/Admin/Customer">Khách hàng</a></li>
+                </ul>
+            </div>
         </nav>
-    </div>
+    </aside>
 
     <!-- Main Content -->
-    <div class="main-content" id="mainContent">
-        <!-- Page Header -->
-        <div class="content-header">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center">
-                    <button class="mobile-menu-toggle d-md-none me-3" id="mobileMenuToggleHeader">
-                        <i class="fas fa-bars"></i>
-                    </button>
-                    <h1 class="page-title mb-0">@ViewData["Title"]</h1>
-                </div>
-                <div class="header-actions">
-                    <div class="d-flex align-items-center">
-                        <i class="fas fa-lightbulb me-2"></i>
-                        <span class="me-3">Đăng xuất</span>
-                        <button class="btn btn-sm btn-outline-secondary me-2">Bán hàng</button>
-                        <a href="/Account/Profile" class="btn btn-sm btn-primary">Người dùng</a>
-                    </div>
-                </div>
+    <main class="admin-main">
+        <header class="admin-header">
+            <div class="header-left">
+                <button class="mobile-toggle" id="mobileToggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <h1 class="page-title">@ViewData["Title"]</h1>
             </div>
-        </div>
+            <div class="header-actions">
+                <a href="/" class="btn-header btn-header-outline" target="_blank">
+                    <i class="fas fa-external-link-alt"></i>
+                    <span>Cửa hàng</span>
+                </a>
+                <a href="/Account/Profile" class="btn-header btn-header-primary">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Tài khoản</span>
+                </a>
+            </div>
+        </header>
 
-        <!-- Content Body -->
-        <div class="content-body">
-            <main role="main">
-                @RenderBody()
-            </main>
+        <div class="admin-content">
+            @RenderBody()
         </div>
-    </div>
+    </main>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
     <script>
-        // Mobile menu functionality
         document.addEventListener('DOMContentLoaded', function() {
-            const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-            const mobileMenuToggleHeader = document.getElementById('mobileMenuToggleHeader');
             const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebarOverlay');
+            const overlay = document.getElementById('sidebarOverlay');
+            const mobileToggle = document.getElementById('mobileToggle');
 
-            // Toggle sidebar on mobile
-            function toggleSidebar() {
+            // Mobile toggle
+            mobileToggle?.addEventListener('click', () => {
                 sidebar.classList.toggle('show');
-                sidebarOverlay.classList.toggle('show');
+                overlay.classList.toggle('show');
                 document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
-            }
+            });
 
-            // Close sidebar
-            function closeSidebar() {
+            overlay?.addEventListener('click', () => {
                 sidebar.classList.remove('show');
-                sidebarOverlay.classList.remove('show');
+                overlay.classList.remove('show');
                 document.body.style.overflow = '';
-            }
-
-            // Event listeners
-            if (mobileMenuToggle) {
-                mobileMenuToggle.addEventListener('click', toggleSidebar);
-            }
-            
-            if (mobileMenuToggleHeader) {
-                mobileMenuToggleHeader.addEventListener('click', toggleSidebar);
-            }
-
-            if (sidebarOverlay) {
-                sidebarOverlay.addEventListener('click', closeSidebar);
-            }
-
-            // Close sidebar when clicking on nav links in mobile
-            const navLinks = sidebar.querySelectorAll('.nav-link');
-            navLinks.forEach(link => {
-                link.addEventListener('click', function() {
-                    if (window.innerWidth <= 768) {
-                        setTimeout(closeSidebar, 100);
-                    }
-                });
             });
 
-            // Handle window resize
-            window.addEventListener('resize', function() {
-                if (window.innerWidth > 768) {
-                    closeSidebar();
-                }
-            });
-
-            // Improved dropdown functionality
-            const dropdownToggles = document.querySelectorAll('.dropdown-toggle');
-            dropdownToggles.forEach(function(toggle) {
-                toggle.addEventListener('click', function(e) {
+            // Submenu toggle
+            document.querySelectorAll('.menu-submenu > .menu-link').forEach(link => {
+                link.addEventListener('click', function(e) {
                     e.preventDefault();
-                    e.stopPropagation();
+                    const parent = this.closest('.menu-submenu');
                     
-                    const dropdownMenu = this.nextElementSibling;
-                    const parentItem = this.closest('.nav-item');
-                    const isCurrentlyOpen = dropdownMenu.classList.contains('show');
+                    // Close other submenus (accordion style) - optional
+                    // document.querySelectorAll('.menu-submenu.open').forEach(m => {
+                    //     if (m !== parent) m.classList.remove('open');
+                    // });
                     
-                    // Close all other dropdowns
-                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                        menu.classList.remove('show');
-                        menu.style.display = 'none';
-                    });
-                    
-                    document.querySelectorAll('.nav-item.dropdown').forEach(item => {
-                        item.classList.remove('show');
-                    });
-                    
-                    // Toggle current dropdown
-                    if (!isCurrentlyOpen) {
-                        dropdownMenu.classList.add('show');
-                        dropdownMenu.style.display = 'block';
-                        parentItem.classList.add('show');
-                        this.setAttribute('aria-expanded', 'true');
-                    } else {
-                        dropdownMenu.classList.remove('show');
-                        dropdownMenu.style.display = 'none';
-                        parentItem.classList.remove('show');
-                        this.setAttribute('aria-expanded', 'false');
-                    }
+                    parent.classList.toggle('open');
                 });
             });
 
-            // Close dropdowns when clicking outside
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.nav-item.dropdown')) {
-                    document.querySelectorAll('.dropdown-menu').forEach(menu => {
-                        menu.classList.remove('show');
-                        menu.style.display = 'none';
-                    });
-                    document.querySelectorAll('.nav-item.dropdown').forEach(item => {
-                        item.classList.remove('show');
-                    });
-                    document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
-                        toggle.setAttribute('aria-expanded', 'false');
-                    });
+            // Mark current page as active
+            const currentPath = window.location.pathname;
+            document.querySelectorAll('.submenu-link').forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                    link.closest('.menu-submenu')?.classList.add('open');
                 }
-            });
-
-            // Prevent dropdown items from closing the dropdown when clicked
-            document.querySelectorAll('.dropdown-item').forEach(item => {
-                item.addEventListener('click', function(e) {
-                    // Let the navigation happen normally
-                });
             });
         });
     </script>
 
     @{ await Html.RenderPartialAsync("_SubizChat"); }
-
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

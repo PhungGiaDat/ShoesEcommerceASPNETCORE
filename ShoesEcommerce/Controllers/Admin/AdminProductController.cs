@@ -339,6 +339,120 @@ namespace ShoesEcommerce.Controllers.Admin
             return View(model);
         }
 
+        // GET: Admin/Product/EditCategory/5
+        public async Task<IActionResult> EditCategory(int id)
+        {
+            ViewData["Title"] = "Chỉnh sửa Danh mục";
+            
+            try
+            {
+                var category = await _productService.GetCategoryByIdAsync(id);
+                if (category == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy danh mục!";
+                    return RedirectToAction(nameof(Categories));
+                }
+                
+                var model = new EditCategoryViewModel
+                {
+                    Id = category.Id,
+                    Name = category.Name,
+                    Description = category.Description
+                };
+                
+                return View(model);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading category for edit: {Id}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
+                return RedirectToAction(nameof(Categories));
+            }
+        }
+
+        // POST: Admin/Product/EditCategory/5
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCategory(int id, EditCategoryViewModel model)
+        {
+            if (id != model.Id)
+            {
+                TempData["ErrorMessage"] = "ID không hợp lệ!";
+                return RedirectToAction(nameof(Categories));
+            }
+
+            if (ModelState.IsValid)
+            {
+                try
+                {
+                    var success = await _productService.UpdateCategoryAsync(id, model);
+                    if (success)
+                    {
+                        TempData["SuccessMessage"] = "Cập nhật danh mục thành công!";
+                        return RedirectToAction(nameof(Categories));
+                    }
+                    ModelState.AddModelError("", "Không thể cập nhật danh mục.");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error updating category: {Id}", id);
+                    ModelState.AddModelError("", "Có lỗi xảy ra: " + ex.Message);
+                }
+            }
+
+            return View(model);
+        }
+
+        // GET: Admin/Product/DeleteCategory/5
+        public async Task<IActionResult> DeleteCategory(int id)
+        {
+            ViewData["Title"] = "Xóa Danh mục";
+            
+            try
+            {
+                var category = await _productService.GetCategoryByIdAsync(id);
+                if (category == null)
+                {
+                    TempData["ErrorMessage"] = "Không tìm thấy danh mục!";
+                    return RedirectToAction(nameof(Categories));
+                }
+                
+                return View(category);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading category for delete: {Id}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra: " + ex.Message;
+                return RedirectToAction(nameof(Categories));
+            }
+        }
+
+        // POST: Admin/Product/DeleteCategory/5
+        [HttpPost, ActionName("DeleteCategory")]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCategoryConfirmed(int id)
+        {
+            try
+            {
+                var success = await _productService.DeleteCategoryAsync(id);
+                if (success)
+                {
+                    TempData["SuccessMessage"] = "Xóa danh mục thành công!";
+                }
+                else
+                {
+                    TempData["ErrorMessage"] = "Không thể xóa danh mục. Có thể danh mục đang được sử dụng.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting category: {Id}", id);
+                TempData["ErrorMessage"] = "Có lỗi xảy ra khi xóa danh mục: " + ex.Message;
+            }
+
+            return RedirectToAction(nameof(Categories));
+        }
+
         // === BRANDS ===
 
         // GET: Admin/Product/Brands
