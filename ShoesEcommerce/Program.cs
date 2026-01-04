@@ -15,6 +15,7 @@ using Microsoft.AspNetCore.Localization;
 using ShoesEcommerce.Services.Payment;
 using ShoesEcommerce.Services.Options;
 using ShoesEcommerce.Services.Interfaces;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -366,10 +367,17 @@ try
     // Configure HTTP pipeline
     if (!app.Environment.IsDevelopment())
     {
+        // ✅ Configure ForwardedHeaders for reverse proxy (Render, Heroku, etc.)
+        // This ensures the correct scheme (HTTPS) is used for OAuth callbacks
+        app.UseForwardedHeaders(new ForwardedHeadersOptions
+        {
+            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+        });
+        
         app.UseExceptionHandler("/Error");
         app.UseStatusCodePagesWithReExecute("/Error/{0}");
         app.UseHsts();
-        logger.LogInformation("🔒 Production error handling configured");
+        logger.LogInformation("🔒 Production error handling configured with ForwardedHeaders");
     }
     else
     {

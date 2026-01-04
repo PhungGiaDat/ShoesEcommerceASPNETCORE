@@ -1,4 +1,6 @@
-@using Microsoft.AspNetCore.Http.Extensions
+﻿@using Microsoft.AspNetCore.Http.Extensions
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
 @*
     Social Sharing & Follow Buttons Partial View - Using ShareThis
     Usage: @await Html.RenderPartialAsync("_SocialShare")
@@ -6,29 +8,52 @@
     Options via ViewData:
     - ShareUrl: Custom URL to share (default: current page URL)
     - ShareTitle: Custom title (default: page title)
+    - ShareDescription: Description for sharing
+    - ShareImage: Image URL for sharing
     - ShowFollowButtons: Show follow buttons (default: false)
 *@
 
 @{
-    var shareUrl = ViewData["ShareUrl"]?.ToString() ?? Context.Request.GetDisplayUrl();
-    var shareTitle = ViewData["ShareTitle"]?.ToString() ?? ViewData["Title"]?.ToString() ?? "SPORTS - Gi�y th? thao ch�nh h�ng";
+    // Get SiteUrl from configuration for production HTTPS support
+    var siteUrl = Configuration["SiteUrl"];
+    var baseUrl = !string.IsNullOrEmpty(siteUrl) 
+        ? siteUrl.TrimEnd('/') 
+        : $"{Context.Request.Scheme}://{Context.Request.Host}";
+    
+    // Get share URL - prefer ViewData, fallback to current URL with proper scheme
+    var shareUrl = ViewData["ShareUrl"]?.ToString();
+    if (string.IsNullOrEmpty(shareUrl))
+    {
+        shareUrl = $"{baseUrl}{Context.Request.Path}";
+    }
+    else if (!shareUrl.StartsWith("http"))
+    {
+        shareUrl = $"{baseUrl}{shareUrl}";
+    }
+    
+    var shareTitle = ViewData["ShareTitle"]?.ToString() ?? ViewData["Title"]?.ToString() ?? "SPORTS - Giày thể thao chính hãng";
+    var shareDescription = ViewData["ShareDescription"]?.ToString() ?? "Mua sắm giày thể thao chính hãng tại SPORTS Vietnam";
+    var shareImage = ViewData["ShareImage"]?.ToString() ?? "";
     var showFollowButtons = ViewData["ShowFollowButtons"] as bool? ?? false;
 }
 
 <!-- Social Share & Follow Buttons using ShareThis -->
 <div class="share-wrapper">
-    <span class="share-label">Chia s?:</span>
+    <span class="share-label">Chia sẻ:</span>
     
     <!-- ShareThis Inline Share Buttons -->
     <div class="sharethis-inline-share-buttons" 
          data-url="@shareUrl" 
-         data-title="@shareTitle"></div>
+         data-title="@shareTitle"
+         data-description="@shareDescription"
+         @if (!string.IsNullOrEmpty(shareImage)) { <text>data-image="@shareImage"</text> }>
+    </div>
 </div>
 
 @if (showFollowButtons)
 {
     <div class="follow-wrapper">
-        <span class="follow-label">Theo d�i:</span>
+        <span class="follow-label">Theo dõi:</span>
         
         <!-- ShareThis Inline Follow Buttons -->
         <div class="sharethis-inline-follow-buttons"></div>

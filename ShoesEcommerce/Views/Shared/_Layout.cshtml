@@ -9,6 +9,7 @@
     @using Microsoft.Extensions.Options
     @using ShoesEcommerce.Services.Options
     @inject IOptions<SocialChatOptions> SocialChatOptionsAccessor
+    @inject IConfiguration Configuration
     @{
         var pageTitle = ViewData["Title"]?.ToString() ?? "Giày Thể Thao Chính Hãng";
         var siteName = "SPORTS";
@@ -25,28 +26,43 @@
             metaDescription = metaDescription.Substring(0, 152) + "...";
         }
         
-        var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
-        var canonicalUrl = ViewData["CanonicalUrl"]?.ToString() 
-            ?? $"{baseUrl}{Context.Request.Path}";
+        // Use configured SiteUrl for production to ensure HTTPS and correct domain
+        var siteUrl = Configuration["SiteUrl"];
+        var baseUrl = !string.IsNullOrEmpty(siteUrl) 
+            ? siteUrl.TrimEnd('/') 
+            : $"{Context.Request.Scheme}://{Context.Request.Host}";
+        
+        var canonicalUrl = ViewData["CanonicalUrl"]?.ToString();
+        if (string.IsNullOrEmpty(canonicalUrl))
+        {
+            canonicalUrl = $"{baseUrl}{Context.Request.Path}";
+        }
+        else if (!canonicalUrl.StartsWith("http"))
+        {
+            canonicalUrl = $"{baseUrl}{canonicalUrl}";
+        }
         if (canonicalUrl.Contains("?"))
         {
             canonicalUrl = canonicalUrl.Split('?')[0];
         }
         
         var ogType = ViewData["OgType"]?.ToString() ?? "website";
-        // Use placeholder image service for default OG image to ensure it always works
-        var defaultOgImage = "https://placehold.co/1200x630/1a1a1a/ffffff?text=SPORTS+Vietnam";
+        
+        // Use a guaranteed publicly accessible image for OG
+        // Priority: ViewData OgImage -> Default placeholder
         var ogImage = ViewData["OgImage"]?.ToString();
-        // If OgImage is empty or points to a local path that might not exist, use placeholder
-        if (string.IsNullOrEmpty(ogImage) || ogImage.StartsWith("/images/og-"))
+        if (string.IsNullOrEmpty(ogImage) || ogImage.StartsWith("/images/og-") || ogImage == "/images/no-image.svg")
         {
-            ogImage = defaultOgImage;
+            // Use a CDN-hosted placeholder that Facebook can access
+            ogImage = "https://placehold.co/1200x630/1a1a1a/ffffff/png?text=SPORTS+Vietnam+-+Giay+The+Thao";
         }
-        // If OgImage is a relative path, make it absolute
         else if (ogImage.StartsWith("/"))
         {
+            // Convert relative path to absolute
             ogImage = $"{baseUrl}{ogImage}";
         }
+        // Note: Supabase URLs are already absolute, so they pass through unchanged
+        
         var ogImageWidth = ViewData["OgImageWidth"]?.ToString() ?? "1200";
         var ogImageHeight = ViewData["OgImageHeight"]?.ToString() ?? "630";
         var ogImageAlt = ViewData["OgImageAlt"]?.ToString() ?? pageTitle;
@@ -73,6 +89,8 @@
     <meta property="og:title" content="@fullTitle">
     <meta property="og:description" content="@metaDescription">
     <meta property="og:image" content="@ogImage">
+    <meta property="og:image:secure_url" content="@ogImage">
+    <meta property="og:image:type" content="image/png">
     <meta property="og:image:width" content="@ogImageWidth">
     <meta property="og:image:height" content="@ogImageHeight">
     <meta property="og:image:alt" content="@ogImageAlt">
