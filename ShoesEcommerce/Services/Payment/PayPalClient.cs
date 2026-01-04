@@ -88,7 +88,7 @@ namespace ShoesEcommerce.Services.Payment
         }
 
         /// <summary>
-        /// Create a PayPal order with amount breakdown including discounts
+        /// Create a PayPal order with item details, invoice ID, and amount breakdown
         /// </summary>
         public async Task<CreateOrderResponse> CreateOrderAsync(
             decimal subtotal,
@@ -97,13 +97,15 @@ namespace ShoesEcommerce.Services.Payment
             string referenceId,
             string returnUrl,
             string cancelUrl,
-            string? description = null)
+            string? description = null,
+            string? invoiceId = null,
+            List<Item>? items = null)
         {
             try
             {
                 _logger.LogInformation(
-                    "Creating PayPal order - Subtotal: {Subtotal} VND, Discount: {Discount} VND, Total: {Total} VND, Reference: {Reference}",
-                    subtotal, discountAmount, totalAmount, referenceId);
+                    "Creating PayPal order - Subtotal: {Subtotal} VND, Discount: {Discount} VND, Total: {Total} VND, Reference: {Reference}, InvoiceId: {InvoiceId}",
+                    subtotal, discountAmount, totalAmount, referenceId, invoiceId);
 
                 var auth = await AuthenticateAsync();
 
@@ -117,76 +119,135 @@ namespace ShoesEcommerce.Services.Payment
                     "Converted to USD - Subtotal: ${SubtotalUsd}, Discount: ${DiscountUsd}, Total: ${TotalUsd}",
                     subtotalInUsd, discountInUsd, totalInUsd);
 
-                // Build amount object - PayPal requires item_total - discount = value
-                var amount = new Amount
+                // Convert items to USD
+                List<Item>? itemsInUsd = null;
+                decimal itemTotalUsd = 0m;
+                
+                if (items != null && items.Any())
                 {
-                    currency_code = "USD",
-                    value = totalInUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
-                };
-
-                // Only add breakdown if there's a discount, otherwise PayPal might reject it
-                if (discountAmount > 0 && discountInUsd > 0)
-                {
-                    amount.breakdown = new Breakdown
+                    itemsInUsd = items.Select(item => new Item
                     {
-                        item_total = new Amount
+                        name = TruncateString(item.name, 127), // PayPal limit
+                        quantity = item.quantity,
+                        description = TruncateString(item.description, 127),
+                        sku = item.sku,
+                        category = item.category ?? "PHYSICAL_GOODS",
+                        unit_amount = new UnitAmount
                         {
                             currency_code = "USD",
-                            value = subtotalInUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
-                        },
-                        discount = new Amount
-                        {
-                            currency_code = "USD",
-                            value = discountInUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                            value = (Math.Round(decimal.Parse(item.unit_amount.value) / vndToUsdRate, 2))
+                                .ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
                         }
-                    };
+                    }).ToList();
 
-                    // Verify the math: item_total - discount should equal value
-                    var calculatedTotal = subtotalInUsd - discountInUsd;
-                    if (Math.Abs(calculatedTotal - totalInUsd) > 0.01m)
-                    {
-                        _logger.LogWarning(
-                            "PayPal amount mismatch - Calculated: ${Calculated}, Expected: ${Expected}. Adjusting breakdown.",
-                            calculatedTotal, totalInUsd);
-                        
-                        // Adjust to match PayPal's expectations
-                        amount.breakdown.item_total.value = totalInUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
-                        amount.breakdown.discount = null; // Remove discount to avoid mismatch
-                    }
+                    // ? FIX: Calculate item_total from converted items to avoid rounding mismatch
+                    itemTotalUsd = itemsInUsd.Sum(i => 
+                        decimal.Parse(i.unit_amount.value, System.Globalization.CultureInfo.InvariantCulture) * 
+                        int.Parse(i.quantity));
+                    itemTotalUsd = Math.Round(itemTotalUsd, 2);
+
+                    _logger.LogInformation("PayPal order includes {ItemCount} items, ItemTotal: ${ItemTotal}", 
+                        itemsInUsd.Count, itemTotalUsd);
                 }
                 else
                 {
-                    // No discount - simpler structure
-                    amount.breakdown = new Breakdown
-                    {
-                        item_total = new Amount
-                        {
-                            currency_code = "USD",
-                            value = totalInUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
-                        }
-                    };
+                    // No items provided - use subtotal as item_total
+                    itemTotalUsd = subtotalInUsd;
                 }
+
+                // ? FIX: Calculate final amount from item_total and discount to ensure they match
+                decimal calculatedTotalUsd;
+                if (discountInUsd > 0)
+                {
+                    calculatedTotalUsd = itemTotalUsd - discountInUsd;
+                }
+                else
+                {
+                    calculatedTotalUsd = itemTotalUsd;
+                }
+                calculatedTotalUsd = Math.Round(calculatedTotalUsd, 2);
+
+                // Log if there's a difference between calculated and expected total
+                if (Math.Abs(calculatedTotalUsd - totalInUsd) > 0.01m)
+                {
+                    _logger.LogWarning(
+                        "PayPal amount adjustment needed - Original Total: ${Original}, Calculated: ${Calculated} (item_total: ${ItemTotal} - discount: ${Discount}). Using calculated value.",
+                        totalInUsd, calculatedTotalUsd, itemTotalUsd, discountInUsd);
+                }
+
+                // Build amount object - use calculated total to ensure breakdown matches
+                var amount = new Amount
+                {
+                    currency_code = "USD",
+                    value = calculatedTotalUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                };
+
+                // ? FIX: Only add breakdown if we have items OR discount
+                // PayPal requires: amount.value = item_total + tax + shipping + handling + insurance - shipping_discount - discount
+                if (itemsInUsd != null && itemsInUsd.Any())
+                {
+                    if (discountInUsd > 0)
+                    {
+                        amount.breakdown = new Breakdown
+                        {
+                            item_total = new Amount
+                            {
+                                currency_code = "USD",
+                                value = itemTotalUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                            },
+                            discount = new Amount
+                            {
+                                currency_code = "USD",
+                                value = discountInUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                            }
+                        };
+                    }
+                    else
+                    {
+                        // No discount - item_total should equal amount.value
+                        amount.breakdown = new Breakdown
+                        {
+                            item_total = new Amount
+                            {
+                                currency_code = "USD",
+                                value = itemTotalUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
+                            }
+                        };
+                        
+                        // ? FIX: Ensure amount.value equals item_total when no discount
+                        amount.value = itemTotalUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
+                    }
+                }
+                // If no items, don't include breakdown at all - simpler structure
+
+                _logger.LogInformation(
+                    "Final PayPal amounts - Value: ${Value}, ItemTotal: ${ItemTotal}, Discount: ${Discount}",
+                    amount.value, 
+                    amount.breakdown?.item_total?.value ?? "N/A",
+                    amount.breakdown?.discount?.value ?? "0");
+
+                var purchaseUnit = new PurchaseUnit
+                {
+                    reference_id = referenceId,
+                    description = TruncateString(description ?? "ShoesEcommerce Order", 127),
+                    invoice_id = invoiceId,
+                    custom_id = referenceId,
+                    amount = amount,
+                    items = itemsInUsd
+                };
 
                 var request = new CreateOrderRequest
                 {
                     intent = "CAPTURE",
                     application_context = new ApplicationContext
                     {
-                        brand_name = "ShoesEcommerce",
+                        brand_name = "SPORTS Vietnam",
                         landing_page = "BILLING",
                         user_action = "PAY_NOW",
                         return_url = returnUrl,
                         cancel_url = cancelUrl
                     },
-                    purchase_units = new List<PurchaseUnit>
-                    {
-                        new()
-                        {
-                            reference_id = referenceId,
-                            description = description ?? "ShoesEcommerce Order",
-                            amount = amount
-                        }
-                    }
+                    purchase_units = new List<PurchaseUnit> { purchaseUnit }
                 };
 
                 _httpClient.DefaultRequestHeaders.Authorization = 
@@ -223,6 +284,15 @@ namespace ShoesEcommerce.Services.Payment
                 _logger.LogError(ex, "Error creating PayPal order");
                 throw;
             }
+        }
+
+        /// <summary>
+        /// Truncate string to max length for PayPal API limits
+        /// </summary>
+        private static string? TruncateString(string? input, int maxLength)
+        {
+            if (string.IsNullOrEmpty(input)) return input;
+            return input.Length <= maxLength ? input : input.Substring(0, maxLength);
         }
 
         /// <summary>

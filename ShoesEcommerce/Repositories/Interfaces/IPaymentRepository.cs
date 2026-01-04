@@ -38,6 +38,11 @@ namespace ShoesEcommerce.Repositories.Interfaces
         Task<Order?> GetOrderWithDetailsAsync(int orderId);
 
         /// <summary>
+        /// Get order with items for PayPal (includes product names)
+        /// </summary>
+        Task<Order?> GetOrderWithItemsForPaymentAsync(int orderId);
+
+        /// <summary>
         /// Check if order exists
         /// </summary>
         Task<bool> OrderExistsAsync(int orderId);
@@ -46,5 +51,50 @@ namespace ShoesEcommerce.Repositories.Interfaces
         /// Check if order belongs to customer
         /// </summary>
         Task<bool> OrderBelongsToCustomerAsync(int orderId, int customerId);
+
+        /// <summary>
+        /// Get invoice by order ID
+        /// </summary>
+        Task<Invoice?> GetInvoiceByOrderIdAsync(int orderId);
+
+        /// <summary>
+        /// Create or update invoice for an order
+        /// </summary>
+        Task<Invoice> CreateOrUpdateInvoiceAsync(int orderId, string invoiceNumber, decimal amount);
+
+        /// <summary>
+        /// Update invoice with payment transaction details
+        /// </summary>
+        Task<bool> UpdateInvoiceOnPaymentAsync(int orderId, string transactionId, DateTime paidAt);
+
+        /// <summary>
+        /// Update invoice status
+        /// </summary>
+        Task<bool> UpdateInvoiceStatusAsync(int orderId, InvoiceStatus status);
+
+        /// <summary>
+        /// Set PayPal Order ID on invoice for tracking
+        /// </summary>
+        Task<bool> SetInvoicePayPalOrderIdAsync(int orderId, string paypalOrderId);
+
+        /// <summary>
+        /// Cancel invoice with reason
+        /// </summary>
+        Task<bool> CancelInvoiceAsync(int orderId, string reason);
+
+        /// <summary>
+        /// Finalize invoice after successful payment
+        /// </summary>
+        Task<bool> FinalizeInvoiceAsync(int orderId, string transactionId, DateTime paidAt);
+
+        /// <summary>
+        /// Update order status
+        /// </summary>
+        Task<bool> UpdateOrderStatusAsync(int orderId, string status);
+
+        /// <summary>
+        /// Get invoice by PayPal Order ID
+        /// </summary>
+        Task<Invoice?> GetInvoiceByPayPalOrderIdAsync(string paypalOrderId);
     }
 }

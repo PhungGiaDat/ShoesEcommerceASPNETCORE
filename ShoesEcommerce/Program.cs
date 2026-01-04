@@ -342,6 +342,19 @@ try
     logger.LogInformation("🚀 ShoesEcommerce application starting up...");
     logger.LogInformation("📍 Environment: {Environment}", app.Environment.EnvironmentName);
 
+    // ✅ CRITICAL: Configure ForwardedHeaders FIRST for reverse proxy (Render, Heroku, etc.)
+    // This MUST be before any other middleware to ensure correct scheme detection
+    // Required for Google OAuth to generate correct redirect_uri with HTTPS
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost
+    };
+    // Clear default limits to accept headers from any proxy (Render, Cloudflare, etc.)
+    forwardedHeadersOptions.KnownNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwardedHeadersOptions);
+    logger.LogInformation("✅ ForwardedHeaders middleware configured for reverse proxy support");
+
     // Seed database
     try
     {
@@ -367,23 +380,20 @@ try
     // Configure HTTP pipeline
     if (!app.Environment.IsDevelopment())
     {
-        // ✅ Configure ForwardedHeaders for reverse proxy (Render, Heroku, etc.)
-        // This ensures the correct scheme (HTTPS) is used for OAuth callbacks
-        app.UseForwardedHeaders(new ForwardedHeadersOptions
-        {
-            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-        });
-        
         app.UseExceptionHandler("/Error");
         app.UseStatusCodePagesWithReExecute("/Error/{0}");
         app.UseHsts();
-        logger.LogInformation("🔒 Production error handling configured with ForwardedHeaders");
+        logger.LogInformation("🔒 Production error handling configured");
     }
     else
     {
         app.UseDeveloperExceptionPage();
         logger.LogInformation("🔧 Developer exception page enabled");
     }
+
+    // ✅ Add Social Crawler support BEFORE authentication
+    // This allows Facebook, Twitter, etc. to scrape OG tags without authentication issues
+    app.UseSocialCrawlerSupport();
 
     app.UseSession();
     app.UseRequestLocalization();

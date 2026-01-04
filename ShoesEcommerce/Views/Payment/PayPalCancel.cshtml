@@ -1,5 +1,5 @@
-@{
-    ViewData["Title"] = "Thanh to�n b? h?y";
+﻿@{
+    ViewData["Title"] = "Thanh toán bị hủy";
     Layout = "~/Views/Shared/_Layout.cshtml";
     var orderId = ViewBag.OrderId as int?;
     var orderTotal = ViewBag.OrderTotal as decimal?;
@@ -13,8 +13,8 @@
                 <div class="cancel-icon mb-3">
                     <i class="fas fa-times-circle text-warning" style="font-size: 5rem;"></i>
                 </div>
-                <h2 class="fw-bold text-warning">Thanh to�n b? h?y</h2>
-                <p class="text-muted">B?n ?� h?y thanh to�n qua PayPal</p>
+                <h2 class="fw-bold text-warning">Thanh toán bị hủy</h2>
+                <p class="text-muted">Bạn đã hủy thanh toán qua PayPal</p>
             </div>
 
             <!-- Info Card -->
@@ -22,7 +22,7 @@
                 <div class="card-body">
                     <h5 class="card-title mb-3">
                         <i class="fas fa-info-circle text-primary"></i>
-                        Th�ng tin ??n h�ng
+                        Thông tin đơn hàng
                     </h5>
                     
                     @if (orderId.HasValue)
@@ -30,11 +30,11 @@
                         <div class="alert alert-warning" role="alert">
                             <h6 class="alert-heading">
                                 <i class="fas fa-exclamation-triangle"></i>
-                                ??n h�ng #@orderId ?� b? h?y thanh to�n
+                                Đơn hàng #@orderId đã bị hủy thanh toán
                             </h6>
                             <p class="mb-0">
-                                ??n h�ng c?a b?n v?n ???c l?u trong h? th?ng v?i tr?ng th�i "Ch? thanh to�n".
-                                B?n c� th? quay l?i v� th? thanh to�n l?i ho?c ch?n ph??ng th?c thanh to�n kh�c.
+                                Đơn hàng của bạn vẫn được lưu trong hệ thống với trạng thái "Chờ thanh toán".
+                                Bạn có thể quay lại và thử thanh toán lại hoặc chọn phương thức thanh toán khác.
                             </p>
                         </div>
 
@@ -42,9 +42,9 @@
                         {
                             <div class="border rounded p-3 bg-light">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold">T?ng ti?n ??n h�ng:</span>
+                                    <span class="fw-bold">Tổng tiền đơn hàng:</span>
                                     <span class="fs-5 text-primary fw-bold">
-                                        @orderTotal.Value.ToString("N0") ?
+                                        @orderTotal.Value.ToString("N0") đ
                                     </span>
                                 </div>
                             </div>
@@ -55,8 +55,8 @@
                         <div class="alert alert-info" role="alert">
                             <p class="mb-0">
                                 <i class="fas fa-info-circle"></i>
-                                Thanh to�n c?a b?n ?� b? h?y. N?u b?n mu?n ti?p t?c mua h�ng, 
-                                vui l�ng quay l?i gi? h�ng v� th?c hi?n l?i qu� tr�nh thanh to�n.
+                                Thanh toán của bạn đã bị hủy. Nếu bạn muốn tiếp tục mua hàng, 
+                                vui lòng quay lại giỏ hàng và thực hiện lại quá trình thanh toán.
                             </p>
                         </div>
                     }
@@ -68,27 +68,27 @@
                 <div class="card-body">
                     <h5 class="card-title mb-3">
                         <i class="fas fa-question-circle text-primary"></i>
-                        T?i sao thanh to�n b? h?y?
+                        Tại sao thanh toán bị hủy?
                     </h5>
                     
-                    <p>C� m?t s? l� do ph? bi?n khi?n thanh to�n PayPal b? h?y:</p>
+                    <p>Có một số lý do phổ biến khiến thanh toán PayPal bị hủy:</p>
                     
                     <ul class="list-unstyled">
                         <li class="mb-2">
                             <i class="fas fa-times text-danger me-2"></i>
-                            B?n ?� nh?n n�t "H?y" trong trang thanh to�n PayPal
+                            Bạn đã nhấn nút "Hủy" trong trang thanh toán PayPal
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-credit-card text-danger me-2"></i>
-                            Kh�ng ?? s? d? trong t�i kho?n PayPal
+                            Không đủ số dư trong tài khoản PayPal
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-clock text-danger me-2"></i>
-                            Phi�n thanh to�n ?� h?t h?n
+                            Phiên thanh toán đã hết hạn
                         </li>
                         <li class="mb-2">
                             <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                            L?i k? thu?t t? PayPal
+                            Lỗi kỹ thuật từ PayPal
                         </li>
                     </ul>
                 </div>
@@ -99,7 +99,7 @@
                 <div class="card-body">
                     <h5 class="card-title mb-3">
                         <i class="fas fa-lightbulb text-primary"></i>
-                        B?n c� th? l�m g� ti?p theo?
+                        Bạn có thể làm gì tiếp theo?
                     </h5>
                     
                     <div class="list-group list-group-flush">
@@ -108,9 +108,9 @@
                                 <i class="fas fa-redo text-success fs-4"></i>
                             </div>
                             <div>
-                                <h6 class="mb-1">Th? l?i thanh to�n PayPal</h6>
+                                <h6 class="mb-1">Thử lại thanh toán PayPal</h6>
                                 <p class="mb-0 text-muted small">
-                                    Ki?m tra l?i t�i kho?n PayPal v� th? thanh to�n l?i
+                                    Kiểm tra lại tài khoản PayPal và thử thanh toán lại
                                 </p>
                             </div>
                         </div>
@@ -120,9 +120,9 @@
                                 <i class="fas fa-exchange-alt text-primary fs-4"></i>
                             </div>
                             <div>
-                                <h6 class="mb-1">Ch?n ph??ng th?c thanh to�n kh�c</h6>
+                                <h6 class="mb-1">Chọn phương thức thanh toán khác</h6>
                                 <p class="mb-0 text-muted small">
-                                    S? d?ng COD (thanh to�n khi nh?n h�ng) ho?c VNPay
+                                    Sử dụng COD (thanh toán khi nhận hàng) hoặc VNPay
                                 </p>
                             </div>
                         </div>
@@ -132,9 +132,9 @@
                                 <i class="fas fa-headset text-info fs-4"></i>
                             </div>
                             <div>
-                                <h6 class="mb-1">Li�n h? h? tr?</h6>
+                                <h6 class="mb-1">Liên hệ hỗ trợ</h6>
                                 <p class="mb-0 text-muted small">
-                                    N?u b?n g?p kh� kh?n, h�y li�n h? v?i ch�ng t�i
+                                    Nếu bạn gặp khó khăn, hãy liên hệ với chúng tôi
                                 </p>
                             </div>
                         </div>
@@ -147,19 +147,19 @@
                 <div class="col-md-4">
                     <a href="@Url.Action("Index", "Cart")" class="btn btn-outline-primary w-100">
                         <i class="fas fa-shopping-cart"></i>
-                        Gi? h�ng
+                        Giỏ hàng
                     </a>
                 </div>
                 <div class="col-md-4">
                     <a href="@Url.Action("Index", "Checkout")" class="btn btn-warning w-100">
                         <i class="fas fa-redo"></i>
-                        Th? l?i
+                        Thử lại
                     </a>
                 </div>
                 <div class="col-md-4">
                     <a href="@Url.Action("Index", "Home")" class="btn btn-primary w-100">
                         <i class="fas fa-home"></i>
-                        Trang ch?
+                        Trang chủ
                     </a>
                 </div>
             </div>
@@ -168,12 +168,12 @@
             <div class="alert alert-light border mt-4" role="alert">
                 <h6 class="alert-heading">
                     <i class="fas fa-phone-alt"></i>
-                    C?n tr? gi�p?
+                    Cần trợ giúp?
                 </h6>
                 <p class="mb-0">
                     Hotline: <strong>1900-xxxx</strong> | 
-                    Email: <a href="mailto:support@shoesecommerce.com">support@shoesecommerce.com</a> |
-                    Gi? l�m vi?c: 8:00 - 22:00 h�ng ng�y
+                    Email: <a href="mailto:support@sportsshop.com">support@sportsshop.com</a> |
+                    Giờ làm việc: 8:00 - 22:00 hàng ngày
                 </p>
             </div>
         </div>

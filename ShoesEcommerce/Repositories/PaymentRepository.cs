@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using ShoesEcommerce.Data;
 using ShoesEcommerce.Models.Orders;
 using ShoesEcommerce.Repositories.Interfaces;
@@ -97,7 +97,6 @@ namespace ShoesEcommerce.Repositories
                     payment.PaidAt = paidAt.Value;
                 }
 
-                // ? FIX: Save TransactionId from PayPal/VNPay
                 if (!string.IsNullOrEmpty(transactionId))
                 {
                     payment.TransactionId = transactionId;
@@ -128,11 +127,30 @@ namespace ShoesEcommerce.Repositories
                             .ThenInclude(pv => pv!.Product)
                     .Include(o => o.Payment)
                     .Include(o => o.ShippingAddress)
+                    .Include(o => o.Invoice)
                     .FirstOrDefaultAsync(o => o.Id == orderId);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting order with details {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<Order?> GetOrderWithItemsForPaymentAsync(int orderId)
+        {
+            try
+            {
+                return await _context.Orders
+                    .Include(o => o.OrderDetails)
+                        .ThenInclude(od => od.ProductVariant)
+                            .ThenInclude(pv => pv!.Product)
+                    .Include(o => o.Invoice)
+                    .FirstOrDefaultAsync(o => o.Id == orderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting order with items for payment {OrderId}", orderId);
                 throw;
             }
         }
@@ -160,6 +178,261 @@ namespace ShoesEcommerce.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error checking order ownership {OrderId}, {CustomerId}", orderId, customerId);
+                throw;
+            }
+        }
+
+        public async Task<Invoice?> GetInvoiceByOrderIdAsync(int orderId)
+        {
+            try
+            {
+                return await _context.Invoices
+                    .FirstOrDefaultAsync(i => i.OrderId == orderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting invoice for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<Invoice> CreateOrUpdateInvoiceAsync(int orderId, string invoiceNumber, decimal amount)
+        {
+            try
+            {
+                var existingInvoice = await GetInvoiceByOrderIdAsync(orderId);
+                
+                if (existingInvoice != null)
+                {
+                    existingInvoice.InvoiceNumber = invoiceNumber;
+                    existingInvoice.Amount = amount;
+                    existingInvoice.IssuedAt = DateTime.UtcNow;
+                    existingInvoice.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogInformation("Invoice updated for order {OrderId}: {InvoiceNumber}", orderId, invoiceNumber);
+                    return existingInvoice;
+                }
+                
+                var invoice = new Invoice
+                {
+                    OrderId = orderId,
+                    InvoiceNumber = invoiceNumber,
+                    Amount = amount,
+                    IssuedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    Status = InvoiceStatus.Draft,
+                    Currency = "VND"
+                };
+                
+                _context.Invoices.Add(invoice);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation("Invoice created for order {OrderId}: {InvoiceNumber}", orderId, invoiceNumber);
+                return invoice;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error creating/updating invoice for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateInvoiceOnPaymentAsync(int orderId, string transactionId, DateTime paidAt)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                
+                if (invoice == null)
+                {
+                    // Create invoice if it doesn't exist
+                    var order = await _context.Orders.FindAsync(orderId);
+                    if (order == null)
+                    {
+                        _logger.LogWarning("Order {OrderId} not found when updating invoice", orderId);
+                        return false;
+                    }
+                    
+                    invoice = new Invoice
+                    {
+                        OrderId = orderId,
+                        InvoiceNumber = $"INV-{orderId:D6}-{paidAt:yyyyMMdd}",
+                        Amount = order.TotalAmount,
+                        IssuedAt = paidAt
+                    };
+                    
+                    _context.Invoices.Add(invoice);
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogInformation(
+                        "Invoice created on payment completion for order {OrderId}: {InvoiceNumber}, TransactionId: {TransactionId}",
+                        orderId, invoice.InvoiceNumber, transactionId);
+                }
+                else
+                {
+                    // Update existing invoice
+                    invoice.IssuedAt = paidAt;
+                    invoice.UpdatedAt = DateTime.UtcNow;
+                    await _context.SaveChangesAsync();
+                    
+                    _logger.LogInformation(
+                        "Invoice updated on payment completion for order {OrderId}: {InvoiceNumber}, TransactionId: {TransactionId}",
+                        orderId, invoice.InvoiceNumber, transactionId);
+                }
+                
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating invoice on payment for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        // ✅ NEW METHODS FOR INVOICE TRANSACTION SAFETY
+
+        public async Task<bool> UpdateInvoiceStatusAsync(int orderId, InvoiceStatus status)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice not found for order {OrderId} when updating status", orderId);
+                    return false;
+                }
+
+                invoice.Status = status;
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Invoice status updated for order {OrderId}: {Status}", orderId, status);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating invoice status for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> SetInvoicePayPalOrderIdAsync(int orderId, string paypalOrderId)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice not found for order {OrderId} when setting PayPal Order ID", orderId);
+                    return false;
+                }
+
+                invoice.PayPalOrderId = paypalOrderId;
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("PayPal Order ID set for invoice, Order {OrderId}: {PayPalOrderId}", orderId, paypalOrderId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error setting PayPal Order ID for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> CancelInvoiceAsync(int orderId, string reason)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice not found for order {OrderId} when cancelling", orderId);
+                    return false;
+                }
+
+                invoice.Status = InvoiceStatus.Cancelled;
+                invoice.CancelledAt = DateTime.UtcNow;
+                invoice.CancellationReason = reason;
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Invoice cancelled for order {OrderId}: {Reason}", orderId, reason);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cancelling invoice for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> FinalizeInvoiceAsync(int orderId, string transactionId, DateTime paidAt)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice not found for order {OrderId} when finalizing", orderId);
+                    return false;
+                }
+
+                invoice.Status = InvoiceStatus.Paid;
+                invoice.PayPalTransactionId = transactionId;
+                invoice.PaidAt = paidAt;
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "Invoice finalized for order {OrderId}: TransactionId={TransactionId}, PaidAt={PaidAt}",
+                    orderId, transactionId, paidAt);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error finalizing invoice for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateOrderStatusAsync(int orderId, string status)
+        {
+            try
+            {
+                var order = await _context.Orders.FindAsync(orderId);
+                if (order == null)
+                {
+                    _logger.LogWarning("Order not found: {OrderId}", orderId);
+                    return false;
+                }
+
+                order.Status = status;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Order status updated: {OrderId} -> {Status}", orderId, status);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating order status for {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<Invoice?> GetInvoiceByPayPalOrderIdAsync(string paypalOrderId)
+        {
+            try
+            {
+                return await _context.Invoices
+                    .Include(i => i.Order)
+                    .FirstOrDefaultAsync(i => i.PayPalOrderId == paypalOrderId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting invoice by PayPal Order ID {PayPalOrderId}", paypalOrderId);
                 throw;
             }
         }

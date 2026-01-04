@@ -10,21 +10,33 @@
     var qas = ViewBag.QAs as List<ProductQAViewModel>;
     var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
     
+    // Get pre-selected variant from query params
+    var selectedColorParam = ViewBag.SelectedColor as string;
+    var selectedSizeParam = ViewBag.SelectedSize as string;
+    
     // Group variants by color for better UX
     var variantsByColor = variants?.GroupBy(v => v.Color).ToDictionary(g => g.Key, g => g.ToList()) 
                           ?? new Dictionary<string, List<ProductVariantInfo>>();
     var colors = variantsByColor.Keys.ToList();
-    var defaultColor = colors.FirstOrDefault() ?? "";
+    
+    // Use pre-selected color if available, otherwise first color
+    var defaultColor = !string.IsNullOrEmpty(selectedColorParam) && colors.Contains(selectedColorParam) 
+                       ? selectedColorParam 
+                       : colors.FirstOrDefault() ?? "";
     
     // SEO and Social Sharing Meta Data - Use configured SiteUrl for production
     var siteUrl = Configuration["SiteUrl"] ?? $"{Context.Request.Scheme}://{Context.Request.Host}";
-    var productImage = variants?.FirstOrDefault()?.ImageUrl ?? "/images/no-image.svg";
+    
+    // Get image for selected variant/color if available
+    var selectedVariant = !string.IsNullOrEmpty(selectedColorParam) 
+        ? variants?.FirstOrDefault(v => v.Color == selectedColorParam && (string.IsNullOrEmpty(selectedSizeParam) || v.Size == selectedSizeParam))
+        : null;
+    var productImage = selectedVariant?.ImageUrl ?? variants?.FirstOrDefault()?.ImageUrl ?? "/images/no-image.svg";
     
     // Always create absolute URL for OG image
     string productImageUrl;
     if (string.IsNullOrEmpty(productImage) || productImage == "/images/no-image.svg")
     {
-        // Use a placeholder for products without images
         productImageUrl = "https://placehold.co/1200x630/1a1a1a/ffffff?text=" + Uri.EscapeDataString(Model.Name ?? "SPORTS");
     }
     else if (productImage.StartsWith("http"))
@@ -36,13 +48,20 @@
         productImageUrl = $"{siteUrl}{productImage}";
     }
     
-    // Use SEO-friendly URL for canonical
+    // Use SEO-friendly URL for canonical (with variant params if selected)
     var productSlug = ShoesEcommerce.Helpers.SlugHelper.ToSlugWithId(Model.Name ?? "", Model.Id);
-    var canonicalUrl = $"{siteUrl}/san-pham/{productSlug}";
+    var canonicalUrl = ShoesEcommerce.Helpers.SlugHelper.ToProductUrl(siteUrl, Model.Name ?? "", Model.Id, selectedColorParam, selectedSizeParam);
+    
+    // Create share title with variant info
+    var shareTitle = ShoesEcommerce.Helpers.SlugHelper.ToShareTitle(
+        Model.Name ?? "", 
+        Model.Brand?.Name, 
+        selectedColorParam, 
+        selectedSizeParam);
     
     var productDescription = !string.IsNullOrEmpty(Model.Description) && Model.Description.Length > 160
         ? Model.Description.Substring(0, 157) + "..."
-        : Model.Description ?? $"Mua {Model.Name} chính hãng với giá tốt nhất tại SPORTS";
+        : Model.Description ?? $"Mua {Model.Name} chính hãng với giá tốt nhất tại Sports Shop";
     
     // Set ViewData for Layout to pick up OG meta tags
     ViewData["MetaDescription"] = productDescription;
@@ -50,12 +69,12 @@
     ViewData["OgImage"] = productImageUrl;
     ViewData["OgImageWidth"] = "1200";
     ViewData["OgImageHeight"] = "630";
-    ViewData["OgImageAlt"] = Model.Name;
+    ViewData["OgImageAlt"] = shareTitle;
     ViewData["CanonicalUrl"] = canonicalUrl;
     
     // For _SocialShare partial
     ViewData["ShareUrl"] = canonicalUrl;
-    ViewData["ShareTitle"] = Model.Name;
+    ViewData["ShareTitle"] = shareTitle;
     ViewData["ShareDescription"] = productDescription;
     ViewData["ShareImage"] = productImageUrl;
     
@@ -970,6 +989,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     const isAuthenticated = @(isAuthenticated ? "true" : "false");
     const productId = @Model.Id;
+    const productName = '@Html.Raw(Model.Name?.Replace("'", "\\'") ?? "")';
+    const productSlug = '@productSlug';
+    const brandName = '@Html.Raw(Model.Brand?.Name?.Replace("'", "\\'") ?? "")';
+    const siteUrl = '@siteUrl';
+    
+    // Pre-selected variant from URL params
+    const preSelectedColor = '@Html.Raw(selectedColorParam?.Replace("'", "\\'") ?? "")';
+    const preSelectedSize = '@Html.Raw(selectedSizeParam?.Replace("'", "\\'") ?? "")';
     
     // Load favorite state
     loadFavoriteState();
@@ -987,11 +1014,68 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     let selectedColor = '@defaultColor';
-    let selectedSize = '';
+    let selectedSize = preSelectedSize || '';
     let selectedVariant = null;
 
     if (selectedColor) {
         updateSizesForColor(selectedColor);
+        
+        // Auto-select size if provided in URL
+        if (preSelectedSize) {
+            selectSize(preSelectedSize);
+        }
+    }
+
+    // Update browser URL and ShareThis when variant changes
+    function updateShareUrl() {
+        // Build new URL with variant params
+        let newUrl = `/san-pham/${productSlug}`;
+        const params = new URLSearchParams();
+        
+        if (selectedColor) {
+            params.set('color', selectedColor);
+        }
+        if (selectedSize) {
+            params.set('size', selectedSize);
+        }
+        
+        if (params.toString()) {
+            newUrl += '?' + params.toString();
+        }
+        
+        // Update browser URL without reload
+        if (window.history && window.history.replaceState) {
+            window.history.replaceState({}, '', newUrl);
+        }
+        
+        // Build share title
+        let shareTitle = '';
+        if (brandName) shareTitle += brandName + ' ';
+        shareTitle += productName;
+        if (selectedColor || selectedSize) {
+            const variantParts = [];
+            if (selectedColor) variantParts.push(selectedColor);
+            if (selectedSize) variantParts.push('Size ' + selectedSize);
+            shareTitle += ' (' + variantParts.join(' - ') + ')';
+        }
+        
+        // Update ShareThis buttons data
+        const shareContainer = document.querySelector('.sharethis-inline-share-buttons');
+        if (shareContainer) {
+            const fullUrl = siteUrl + newUrl;
+            shareContainer.setAttribute('data-url', fullUrl);
+            shareContainer.setAttribute('data-title', shareTitle);
+            
+            // Try to refresh ShareThis if available
+            if (typeof __sharethis__ !== 'undefined' && __sharethis__.load) {
+                __sharethis__.load('inline-share-buttons', {
+                    url: fullUrl,
+                    title: shareTitle
+                });
+            }
+        }
+        
+        console.log('Share URL updated:', siteUrl + newUrl, 'Title:', shareTitle);
     }
 
     // Favorite functionality
@@ -1081,6 +1165,9 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selectedSizeName').textContent = 'Chọn size';
         document.getElementById('stockInfo').textContent = '';
         updateAddToCartButton();
+        
+        // Update share URL when color changes
+        updateShareUrl();
     };
 
     function updateSizesForColor(color) {
@@ -1131,6 +1218,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         updateAddToCartButton();
+        
+        // Update share URL when size changes
+        updateShareUrl();
     };
 
     function updateAddToCartButton() {

@@ -94,15 +94,28 @@ namespace ShoesEcommerce.Repositories
             }
         }
 
+        public async Task<Order> UpdateOrderAsync(Order order)
+        {
+            try
+            {
+                _context.Orders.Update(order);
+                await _context.SaveChangesAsync();
+                return order;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error updating order {OrderId}", order.Id);
+                throw;
+            }
+        }
+
         public async Task ClearCartAsync(Cart cart)
         {
             try
             {
-                // ? FIX: Only remove cart items, DON'T delete the cart itself
+                // Only remove cart items, DON'T delete the cart itself
                 // The cart is referenced by Customer.CartId foreign key
                 _context.CartItems.RemoveRange(cart.CartItems);
-                // DO NOT remove the cart entity - it's referenced by Customer table
-                // _context.Carts.Remove(cart); ? This causes FK constraint violation
                 
                 await _context.SaveChangesAsync();
                 

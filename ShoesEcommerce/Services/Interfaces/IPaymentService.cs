@@ -5,7 +5,7 @@ namespace ShoesEcommerce.Services.Interfaces
     public interface IPaymentService
     {
         /// <summary>
-        /// Create PayPal order with discount support
+        /// Create PayPal order with discount support and item details
         /// </summary>
         Task<CreateOrderResponse> CreatePayPalOrderAsync(
             int orderId, 
@@ -39,5 +39,20 @@ namespace ShoesEcommerce.Services.Interfaces
         /// Verify PayPal payment status
         /// </summary>
         Task<bool> VerifyPayPalPaymentAsync(string paypalOrderId);
+
+        /// <summary>
+        /// Complete payment and update invoice
+        /// </summary>
+        Task<bool> CompletePaymentAsync(int orderId, string transactionId, DateTime paidAt);
+
+        /// <summary>
+        /// Handle payment failure with proper rollback (cancels invoice, updates order status)
+        /// </summary>
+        Task<bool> HandlePaymentFailureAsync(int orderId, string reason);
+
+        /// <summary>
+        /// Handle user cancelled payment (cancels invoice, updates order status)
+        /// </summary>
+        Task<bool> HandlePaymentCancellationAsync(int orderId);
     }
 }

@@ -16,167 +16,167 @@ namespace ShoesEcommerce.Helpers
         {
             var map = new Dictionary<char, string>();
             
-            // Lowercase d with stroke (?) - U+0111
+            // Lowercase d with stroke - U+0111
             map['\u0111'] = "d";
             
             // Lowercase a with diacritics
-            map['\u00E0'] = "a"; // à
-            map['\u00E1'] = "a"; // á
-            map['\u1EA3'] = "a"; // ?
-            map['\u00E3'] = "a"; // ã
-            map['\u1EA1'] = "a"; // ?
-            map['\u0103'] = "a"; // ?
-            map['\u1EB1'] = "a"; // ?
-            map['\u1EAF'] = "a"; // ?
-            map['\u1EB3'] = "a"; // ?
-            map['\u1EB5'] = "a"; // ?
-            map['\u1EB7'] = "a"; // ?
-            map['\u00E2'] = "a"; // â
-            map['\u1EA7'] = "a"; // ?
-            map['\u1EA5'] = "a"; // ?
-            map['\u1EA9'] = "a"; // ?
-            map['\u1EAB'] = "a"; // ?
-            map['\u1EAD'] = "a"; // ?
+            map['\u00E0'] = "a";
+            map['\u00E1'] = "a";
+            map['\u1EA3'] = "a";
+            map['\u00E3'] = "a";
+            map['\u1EA1'] = "a";
+            map['\u0103'] = "a";
+            map['\u1EB1'] = "a";
+            map['\u1EAF'] = "a";
+            map['\u1EB3'] = "a";
+            map['\u1EB5'] = "a";
+            map['\u1EB7'] = "a";
+            map['\u00E2'] = "a";
+            map['\u1EA7'] = "a";
+            map['\u1EA5'] = "a";
+            map['\u1EA9'] = "a";
+            map['\u1EAB'] = "a";
+            map['\u1EAD'] = "a";
             
             // Lowercase e with diacritics
-            map['\u00E8'] = "e"; // è
-            map['\u00E9'] = "e"; // é
-            map['\u1EBB'] = "e"; // ?
-            map['\u1EBD'] = "e"; // ?
-            map['\u1EB9'] = "e"; // ?
-            map['\u00EA'] = "e"; // ê
-            map['\u1EC1'] = "e"; // ?
-            map['\u1EBF'] = "e"; // ?
-            map['\u1EC3'] = "e"; // ?
-            map['\u1EC5'] = "e"; // ?
-            map['\u1EC7'] = "e"; // ?
+            map['\u00E8'] = "e";
+            map['\u00E9'] = "e";
+            map['\u1EBB'] = "e";
+            map['\u1EBD'] = "e";
+            map['\u1EB9'] = "e";
+            map['\u00EA'] = "e";
+            map['\u1EC1'] = "e";
+            map['\u1EBF'] = "e";
+            map['\u1EC3'] = "e";
+            map['\u1EC5'] = "e";
+            map['\u1EC7'] = "e";
             
             // Lowercase i with diacritics
-            map['\u00EC'] = "i"; // ì
-            map['\u00ED'] = "i"; // í
-            map['\u1EC9'] = "i"; // ?
-            map['\u0129'] = "i"; // ?
-            map['\u1ECB'] = "i"; // ?
+            map['\u00EC'] = "i";
+            map['\u00ED'] = "i";
+            map['\u1EC9'] = "i";
+            map['\u0129'] = "i";
+            map['\u1ECB'] = "i";
             
             // Lowercase o with diacritics
-            map['\u00F2'] = "o"; // ò
-            map['\u00F3'] = "o"; // ó
-            map['\u1ECF'] = "o"; // ?
-            map['\u00F5'] = "o"; // õ
-            map['\u1ECD'] = "o"; // ?
-            map['\u00F4'] = "o"; // ô
-            map['\u1ED3'] = "o"; // ?
-            map['\u1ED1'] = "o"; // ?
-            map['\u1ED5'] = "o"; // ?
-            map['\u1ED7'] = "o"; // ?
-            map['\u1ED9'] = "o"; // ?
-            map['\u01A1'] = "o"; // ?
-            map['\u1EDD'] = "o"; // ?
-            map['\u1EDB'] = "o"; // ?
-            map['\u1EDF'] = "o"; // ?
-            map['\u1EE1'] = "o"; // ?
-            map['\u1EE3'] = "o"; // ?
+            map['\u00F2'] = "o";
+            map['\u00F3'] = "o";
+            map['\u1ECF'] = "o";
+            map['\u00F5'] = "o";
+            map['\u1ECD'] = "o";
+            map['\u00F4'] = "o";
+            map['\u1ED3'] = "o";
+            map['\u1ED1'] = "o";
+            map['\u1ED5'] = "o";
+            map['\u1ED7'] = "o";
+            map['\u1ED9'] = "o";
+            map['\u01A1'] = "o";
+            map['\u1EDD'] = "o";
+            map['\u1EDB'] = "o";
+            map['\u1EDF'] = "o";
+            map['\u1EE1'] = "o";
+            map['\u1EE3'] = "o";
             
             // Lowercase u with diacritics
-            map['\u00F9'] = "u"; // ù
-            map['\u00FA'] = "u"; // ú
-            map['\u1EE7'] = "u"; // ?
-            map['\u0169'] = "u"; // ?
-            map['\u1EE5'] = "u"; // ?
-            map['\u01B0'] = "u"; // ?
-            map['\u1EEB'] = "u"; // ?
-            map['\u1EE9'] = "u"; // ?
-            map['\u1EED'] = "u"; // ?
-            map['\u1EEF'] = "u"; // ?
-            map['\u1EF1'] = "u"; // ?
+            map['\u00F9'] = "u";
+            map['\u00FA'] = "u";
+            map['\u1EE7'] = "u";
+            map['\u0169'] = "u";
+            map['\u1EE5'] = "u";
+            map['\u01B0'] = "u";
+            map['\u1EEB'] = "u";
+            map['\u1EE9'] = "u";
+            map['\u1EED'] = "u";
+            map['\u1EEF'] = "u";
+            map['\u1EF1'] = "u";
             
             // Lowercase y with diacritics
-            map['\u1EF3'] = "y"; // ?
-            map['\u00FD'] = "y"; // ý
-            map['\u1EF7'] = "y"; // ?
-            map['\u1EF9'] = "y"; // ?
-            map['\u1EF5'] = "y"; // ?
+            map['\u1EF3'] = "y";
+            map['\u00FD'] = "y";
+            map['\u1EF7'] = "y";
+            map['\u1EF9'] = "y";
+            map['\u1EF5'] = "y";
             
-            // Uppercase D with stroke (?) - U+0110
+            // Uppercase D with stroke - U+0110
             map['\u0110'] = "d";
             
             // Uppercase A with diacritics
-            map['\u00C0'] = "a"; // À
-            map['\u00C1'] = "a"; // Á
-            map['\u1EA2'] = "a"; // ?
-            map['\u00C3'] = "a"; // Ã
-            map['\u1EA0'] = "a"; // ?
-            map['\u0102'] = "a"; // ?
-            map['\u1EB0'] = "a"; // ?
-            map['\u1EAE'] = "a"; // ?
-            map['\u1EB2'] = "a"; // ?
-            map['\u1EB4'] = "a"; // ?
-            map['\u1EB6'] = "a"; // ?
-            map['\u00C2'] = "a"; // Â
-            map['\u1EA6'] = "a"; // ?
-            map['\u1EA4'] = "a"; // ?
-            map['\u1EA8'] = "a"; // ?
-            map['\u1EAA'] = "a"; // ?
-            map['\u1EAC'] = "a"; // ?
+            map['\u00C0'] = "a";
+            map['\u00C1'] = "a";
+            map['\u1EA2'] = "a";
+            map['\u00C3'] = "a";
+            map['\u1EA0'] = "a";
+            map['\u0102'] = "a";
+            map['\u1EB0'] = "a";
+            map['\u1EAE'] = "a";
+            map['\u1EB2'] = "a";
+            map['\u1EB4'] = "a";
+            map['\u1EB6'] = "a";
+            map['\u00C2'] = "a";
+            map['\u1EA6'] = "a";
+            map['\u1EA4'] = "a";
+            map['\u1EA8'] = "a";
+            map['\u1EAA'] = "a";
+            map['\u1EAC'] = "a";
             
             // Uppercase E with diacritics
-            map['\u00C8'] = "e"; // È
-            map['\u00C9'] = "e"; // É
-            map['\u1EBA'] = "e"; // ?
-            map['\u1EBC'] = "e"; // ?
-            map['\u1EB8'] = "e"; // ?
-            map['\u00CA'] = "e"; // Ê
-            map['\u1EC0'] = "e"; // ?
-            map['\u1EBE'] = "e"; // ?
-            map['\u1EC2'] = "e"; // ?
-            map['\u1EC4'] = "e"; // ?
-            map['\u1EC6'] = "e"; // ?
+            map['\u00C8'] = "e";
+            map['\u00C9'] = "e";
+            map['\u1EBA'] = "e";
+            map['\u1EBC'] = "e";
+            map['\u1EB8'] = "e";
+            map['\u00CA'] = "e";
+            map['\u1EC0'] = "e";
+            map['\u1EBE'] = "e";
+            map['\u1EC2'] = "e";
+            map['\u1EC4'] = "e";
+            map['\u1EC6'] = "e";
             
             // Uppercase I with diacritics
-            map['\u00CC'] = "i"; // Ì
-            map['\u00CD'] = "i"; // Í
-            map['\u1EC8'] = "i"; // ?
-            map['\u0128'] = "i"; // ?
-            map['\u1ECA'] = "i"; // ?
+            map['\u00CC'] = "i";
+            map['\u00CD'] = "i";
+            map['\u1EC8'] = "i";
+            map['\u0128'] = "i";
+            map['\u1ECA'] = "i";
             
             // Uppercase O with diacritics
-            map['\u00D2'] = "o"; // Ò
-            map['\u00D3'] = "o"; // Ó
-            map['\u1ECE'] = "o"; // ?
-            map['\u00D5'] = "o"; // Õ
-            map['\u1ECC'] = "o"; // ?
-            map['\u00D4'] = "o"; // Ô
-            map['\u1ED2'] = "o"; // ?
-            map['\u1ED0'] = "o"; // ?
-            map['\u1ED4'] = "o"; // ?
-            map['\u1ED6'] = "o"; // ?
-            map['\u1ED8'] = "o"; // ?
-            map['\u01A0'] = "o"; // ?
-            map['\u1EDC'] = "o"; // ?
-            map['\u1EDA'] = "o"; // ?
-            map['\u1EDE'] = "o"; // ?
-            map['\u1EE0'] = "o"; // ?
-            map['\u1EE2'] = "o"; // ?
+            map['\u00D2'] = "o";
+            map['\u00D3'] = "o";
+            map['\u1ECE'] = "o";
+            map['\u00D5'] = "o";
+            map['\u1ECC'] = "o";
+            map['\u00D4'] = "o";
+            map['\u1ED2'] = "o";
+            map['\u1ED0'] = "o";
+            map['\u1ED4'] = "o";
+            map['\u1ED6'] = "o";
+            map['\u1ED8'] = "o";
+            map['\u01A0'] = "o";
+            map['\u1EDC'] = "o";
+            map['\u1EDA'] = "o";
+            map['\u1EDE'] = "o";
+            map['\u1EE0'] = "o";
+            map['\u1EE2'] = "o";
             
             // Uppercase U with diacritics
-            map['\u00D9'] = "u"; // Ù
-            map['\u00DA'] = "u"; // Ú
-            map['\u1EE6'] = "u"; // ?
-            map['\u0168'] = "u"; // ?
-            map['\u1EE4'] = "u"; // ?
-            map['\u01AF'] = "u"; // ?
-            map['\u1EEA'] = "u"; // ?
-            map['\u1EE8'] = "u"; // ?
-            map['\u1EEC'] = "u"; // ?
-            map['\u1EEE'] = "u"; // ?
-            map['\u1EF0'] = "u"; // ?
+            map['\u00D9'] = "u";
+            map['\u00DA'] = "u";
+            map['\u1EE6'] = "u";
+            map['\u0168'] = "u";
+            map['\u1EE4'] = "u";
+            map['\u01AF'] = "u";
+            map['\u1EEA'] = "u";
+            map['\u1EE8'] = "u";
+            map['\u1EEC'] = "u";
+            map['\u1EEE'] = "u";
+            map['\u1EF0'] = "u";
             
             // Uppercase Y with diacritics
-            map['\u1EF2'] = "y"; // ?
-            map['\u00DD'] = "y"; // Ý
-            map['\u1EF6'] = "y"; // ?
-            map['\u1EF8'] = "y"; // ?
-            map['\u1EF4'] = "y"; // ?
+            map['\u1EF2'] = "y";
+            map['\u00DD'] = "y";
+            map['\u1EF6'] = "y";
+            map['\u1EF8'] = "y";
+            map['\u1EF4'] = "y";
             
             return map;
         }
@@ -184,8 +184,6 @@ namespace ShoesEcommerce.Helpers
         /// <summary>
         /// Converts a string to a URL-friendly slug
         /// </summary>
-        /// <param name="title">The title to convert</param>
-        /// <returns>A lowercase, hyphen-separated URL-friendly string</returns>
         public static string ToSlug(this string title)
         {
             if (string.IsNullOrWhiteSpace(title))
@@ -226,7 +224,7 @@ namespace ShoesEcommerce.Helpers
             }
             title = sb.ToString().Normalize(NormalizationForm.FormC);
 
-            // Replace special characters with their equivalents
+            // Replace special characters
             title = title.Replace("&", "and")
                         .Replace("@", "at")
                         .Replace("#", "sharp")
@@ -258,9 +256,6 @@ namespace ShoesEcommerce.Helpers
         /// <summary>
         /// Generates a unique slug by appending an ID
         /// </summary>
-        /// <param name="title">The title to convert</param>
-        /// <param name="id">The unique identifier to append</param>
-        /// <returns>A URL-friendly slug with ID suffix</returns>
         public static string ToSlugWithId(this string title, int id)
         {
             var slug = title.ToSlug();
@@ -270,14 +265,12 @@ namespace ShoesEcommerce.Helpers
         /// <summary>
         /// Extracts the ID from a slug that ends with -id format
         /// </summary>
-        /// <param name="slugWithId">The slug containing an ID suffix</param>
-        /// <returns>The extracted ID, or 0 if not found</returns>
         public static int ExtractIdFromSlug(string slugWithId)
         {
             if (string.IsNullOrWhiteSpace(slugWithId))
                 return 0;
 
-            // Try to extract ID from the end of the slug (format: "product-name-123")
+            // Try to extract ID from the end of the slug
             var lastDashIndex = slugWithId.LastIndexOf('-');
             if (lastDashIndex > 0 && lastDashIndex < slugWithId.Length - 1)
             {
@@ -298,12 +291,72 @@ namespace ShoesEcommerce.Helpers
         }
 
         /// <summary>
-        /// Validates if a slug matches the expected format for a given title and ID
+        /// Validates if a slug matches the expected format
         /// </summary>
         public static bool ValidateSlug(string slug, string expectedTitle, int expectedId)
         {
             var expectedSlug = expectedTitle.ToSlugWithId(expectedId);
             return string.Equals(slug, expectedSlug, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Generates a product URL with optional variant parameters for social sharing
+        /// </summary>
+        public static string ToProductUrl(string baseUrl, string productName, int productId, string? color = null, string? size = null)
+        {
+            var slug = productName.ToSlugWithId(productId);
+            var url = $"{baseUrl.TrimEnd('/')}/san-pham/{slug}";
+            
+            var queryParams = new List<string>();
+            
+            if (!string.IsNullOrEmpty(color))
+            {
+                queryParams.Add($"color={Uri.EscapeDataString(color)}");
+            }
+            
+            if (!string.IsNullOrEmpty(size))
+            {
+                queryParams.Add($"size={Uri.EscapeDataString(size)}");
+            }
+            
+            if (queryParams.Count > 0)
+            {
+                url += "?" + string.Join("&", queryParams);
+            }
+            
+            return url;
+        }
+
+        /// <summary>
+        /// Generates a share-friendly title including variant info
+        /// </summary>
+        public static string ToShareTitle(string productName, string? brandName = null, string? color = null, string? size = null)
+        {
+            var parts = new List<string>();
+            
+            if (!string.IsNullOrEmpty(brandName))
+            {
+                parts.Add(brandName);
+            }
+            
+            parts.Add(productName);
+            
+            var variantParts = new List<string>();
+            if (!string.IsNullOrEmpty(color))
+            {
+                variantParts.Add(color);
+            }
+            if (!string.IsNullOrEmpty(size))
+            {
+                variantParts.Add($"Size {size}");
+            }
+            
+            if (variantParts.Count > 0)
+            {
+                parts.Add($"({string.Join(" - ", variantParts)})");
+            }
+            
+            return string.Join(" ", parts);
         }
     }
 }

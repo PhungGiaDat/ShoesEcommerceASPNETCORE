@@ -15,18 +15,18 @@ namespace ShoesEcommerce.Controllers
     {
         private readonly IPaymentService _paymentService;
         private readonly IPaymentRepository _paymentRepository;
-        private readonly IVnPayService _vnPayService; // <-- Đ? THÊM: Khai báo Service cho VNPay
+        private readonly IVnPayService _vnPayService;
         private readonly ILogger<PaymentController> _logger;
 
         public PaymentController(
             IPaymentService paymentService,
             IPaymentRepository paymentRepository,
-            IVnPayService vnPayService, // <-- Đ? THÊM: Tiêm IVnPayService vào constructor
+            IVnPayService vnPayService,
             ILogger<PaymentController> logger)
         {
             _paymentService = paymentService;
             _paymentRepository = paymentRepository;
-            _vnPayService = vnPayService; // <-- Đ? THÊM: Gán giá tr?
+            _vnPayService = vnPayService;
             this._logger = logger;
         }
 
@@ -178,8 +178,21 @@ namespace ShoesEcommerce.Controllers
                     "Capturing PayPal order: PayPalOrderId={PayPalOrderId}, LocalOrderId={LocalOrderId}",
                     orderId, orderIdLocal);
 
-                // ? Capture payment on PayPal via service
-                var response = await _paymentService.CapturePayPalOrderAsync(orderId);
+                // ✅ FIX: Capture payment on PayPal via service with proper error handling
+                CaptureOrderResponse response;
+                try
+                {
+                    response = await _paymentService.CapturePayPalOrderAsync(orderId);
+                }
+                catch (Exception captureEx)
+                {
+                    _logger.LogError(captureEx, "PayPal capture failed for order {PayPalOrderId}", orderId);
+                    
+                    // ✅ FIX: Rollback invoice and order status on capture failure
+                    await _paymentService.HandlePaymentFailureAsync(orderIdLocal, $"PayPal capture failed: {captureEx.Message}");
+                    
+                    return BadRequest(new { error = "Không thể xác nhận thanh toán PayPal. Vui lòng thử lại." });
+                }
 
                 // Check capture status
                 var capture = response.purchase_units?.FirstOrDefault()?.payments?.captures?.FirstOrDefault();
@@ -187,29 +200,52 @@ namespace ShoesEcommerce.Controllers
                 if (capture == null)
                 {
                     _logger.LogError("No capture information found for PayPal order {PayPalOrderId}", orderId);
-                    return BadRequest(new { error = "Không th? xác nh?n thanh toán" });
+                    
+                    // ✅ FIX: Rollback on missing capture info
+                    await _paymentService.HandlePaymentFailureAsync(orderIdLocal, "No capture information from PayPal");
+                    
+                    return BadRequest(new { error = "Không thể xác nhận thanh toán" });
                 }
 
                 var isSuccessful = capture.status == "COMPLETED";
                 var paidAt = capture.create_time;
                 var transactionId = capture.id;
 
-                // ? Update payment status via service
-                await _paymentService.UpdatePaymentStatusAsync(
-                    orderIdLocal,
-                    isSuccessful ? "Paid" : "Failed",
-                    paidAt,
-                    transactionId);
-
-                _logger.LogInformation(
-                    "PayPal payment captured successfully: PayPalOrderId={PayPalOrderId}, LocalOrderId={LocalOrderId}, Status={Status}",
-                    orderId, orderIdLocal, capture.status);
+                if (isSuccessful)
+                {
+                    // ✅ FIX: Complete payment properly (updates invoice to Paid status)
+                    await _paymentService.CompletePaymentAsync(orderIdLocal, transactionId!, paidAt);
+                    
+                    _logger.LogInformation(
+                        "PayPal payment captured successfully: PayPalOrderId={PayPalOrderId}, LocalOrderId={LocalOrderId}, TransactionId={TransactionId}",
+                        orderId, orderIdLocal, transactionId);
+                }
+                else
+                {
+                    // ✅ FIX: Handle failed capture
+                    await _paymentService.HandlePaymentFailureAsync(orderIdLocal, $"PayPal capture status: {capture.status}");
+                    
+                    _logger.LogWarning(
+                        "PayPal capture not completed: PayPalOrderId={PayPalOrderId}, Status={Status}",
+                        orderId, capture.status);
+                }
 
                 return Ok(response);
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error capturing PayPal order {PayPalOrderId}", orderId);
+                
+                // ✅ FIX: Ensure rollback on any error
+                try
+                {
+                    await _paymentService.HandlePaymentFailureAsync(orderIdLocal, $"Unexpected error: {ex.Message}");
+                }
+                catch (Exception rollbackEx)
+                {
+                    _logger.LogError(rollbackEx, "Failed to rollback payment for order {OrderId}", orderIdLocal);
+                }
+                
                 return BadRequest(new { error = ex.Message });
             }
         }
@@ -290,16 +326,16 @@ namespace ShoesEcommerce.Controllers
             {
                 _logger.LogInformation("PayPal payment cancelled for order {OrderId}", orderId);
 
-                // ? Update payment status via service
-                await _paymentService.UpdatePaymentStatusAsync(orderId, "Cancelled");
+                // ✅ FIX: Use new cancellation handler that properly cancels invoice
+                await _paymentService.HandlePaymentCancellationAsync(orderId);
 
-                // ? Get order via repository
+                // Get order via repository
                 var order = await _paymentRepository.GetOrderWithDetailsAsync(orderId);
 
                 if (order == null)
                 {
                     _logger.LogWarning("Order {OrderId} not found on PayPal cancel", orderId);
-                    TempData["Error"] = "Không t?m th?y đơn hàng.";
+                    TempData["Error"] = "Không tìm thấy đơn hàng.";
                     return RedirectToAction("Index", "Home");
                 }
 
@@ -311,7 +347,7 @@ namespace ShoesEcommerce.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error handling PayPal cancellation for order {OrderId}", orderId);
-                TempData["Warning"] = "Thanh toán đ? b? h?y.";
+                TempData["Warning"] = "Thanh toán đã bị hủy.";
                 return RedirectToAction("Index", "Cart");
             }
         }
@@ -349,8 +385,7 @@ namespace ShoesEcommerce.Controllers
 
         // =========================================================================
         // --- VNPAY ACTIONS ---
-        // =========================================================================
-
+        // ==========================================================================
         /// <summary>
         /// VNPay checkout page - hiển thị thông tin đơn hàng trước khi redirect sang VNPay
         /// </summary>

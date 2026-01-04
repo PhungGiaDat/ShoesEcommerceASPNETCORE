@@ -80,7 +80,7 @@ namespace ShoesEcommerce.Controllers
         [Route("san-pham/{slug}")]
         [Route("product/{slug}")]
         [Route("Product/Details/{id:int}")]
-        public async Task<IActionResult> Details(string? slug, int? id)
+        public async Task<IActionResult> Details(string? slug, int? id, string? color, string? size)
         {
             // Determine product ID from either route parameter or slug
             int productId;
@@ -132,6 +132,13 @@ namespace ShoesEcommerce.Controllers
                 {
                     // Build the SEO URL directly to avoid any routing issues
                     var seoUrl = $"/san-pham/{expectedSlug}";
+                    
+                    // Preserve variant query parameters if present
+                    var queryParams = new List<string>();
+                    if (!string.IsNullOrEmpty(color)) queryParams.Add($"color={Uri.EscapeDataString(color)}");
+                    if (!string.IsNullOrEmpty(size)) queryParams.Add($"size={Uri.EscapeDataString(size)}");
+                    if (queryParams.Count > 0) seoUrl += "?" + string.Join("&", queryParams);
+                    
                     return RedirectPermanent(seoUrl);
                 }
 
@@ -152,6 +159,10 @@ namespace ShoesEcommerce.Controllers
                 ViewBag.Comments = comments;
                 ViewBag.QAs = qas;
                 ViewBag.ProductSlug = expectedSlug;
+                
+                // Pass selected variant info for pre-selection and sharing
+                ViewBag.SelectedColor = color;
+                ViewBag.SelectedSize = size;
 
                 return View(product);
             }

@@ -523,7 +523,16 @@ namespace ShoesEcommerce.Controllers
         [AllowAnonymous]
         public IActionResult GoogleLogin(string returnUrl = "/")
         {
+            // Log request details for debugging OAuth issues
+            _logger.LogInformation("🔐 Google OAuth login initiated");
+            _logger.LogInformation("   - Request.Scheme: {Scheme}", Request.Scheme);
+            _logger.LogInformation("   - Request.Host: {Host}", Request.Host);
+            _logger.LogInformation("   - X-Forwarded-Proto: {Proto}", Request.Headers["X-Forwarded-Proto"].FirstOrDefault());
+            _logger.LogInformation("   - X-Forwarded-Host: {Host}", Request.Headers["X-Forwarded-Host"].FirstOrDefault());
+            
             var redirectUrl = Url.Action("GoogleCallback", "Account", new { returnUrl });
+            _logger.LogInformation("   - Generated redirect URL: {RedirectUrl}", redirectUrl);
+            
             var properties = new AuthenticationProperties 
             { 
                 RedirectUri = redirectUrl,

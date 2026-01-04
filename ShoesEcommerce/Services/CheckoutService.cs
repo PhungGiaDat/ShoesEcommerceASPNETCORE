@@ -171,8 +171,28 @@ namespace ShoesEcommerce.Services
                     Status = "Pending"
                 };
 
+                // ? FIX: Create Invoice with DRAFT status - only finalize after payment success
+                order.Invoice = new Invoice
+                {
+                    InvoiceNumber = $"INV-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}",
+                    Amount = totalAmount,
+                    IssuedAt = DateTime.UtcNow,
+                    CreatedAt = DateTime.UtcNow,
+                    Status = InvoiceStatus.Draft, // ? Draft until payment confirmed
+                    Currency = "VND"
+                };
+
+                _logger.LogInformation("Creating order with Draft Invoice: {InvoiceNumber}", order.Invoice.InvoiceNumber);
+
                 // Save order
                 order = await _repository.CreateOrderAsync(order);
+
+                // Update Invoice number with Order ID for better tracking
+                order.Invoice.InvoiceNumber = $"INV-{order.Id:D6}";
+                await _repository.UpdateOrderAsync(order);
+
+                _logger.LogInformation("Order {OrderId} created with Draft Invoice {InvoiceNumber}, Status={Status}", 
+                    order.Id, order.Invoice.InvoiceNumber, order.Invoice.Status);
 
                 // Record discount usage if applied
                 if (discountId.HasValue && discountAmount > 0)
@@ -193,7 +213,8 @@ namespace ShoesEcommerce.Services
                 // Clear cart
                 await _repository.ClearCartAsync(cart);
 
-                _logger.LogInformation("Order {OrderId} created successfully", order.Id);
+                _logger.LogInformation("Order {OrderId} created successfully with Draft Invoice {InvoiceNumber}", 
+                    order.Id, order.Invoice.InvoiceNumber);
                 return order;
             }
             catch (Exception ex)
@@ -208,7 +229,7 @@ namespace ShoesEcommerce.Services
         {
             try
             {
-                // ? Handle null cart
+                // Handle null cart
                 if (cart == null || !cart.CartItems.Any())
                 {
                     _logger.LogWarning("Cannot calculate totals: cart is null or empty");

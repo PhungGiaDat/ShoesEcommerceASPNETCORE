@@ -22,6 +22,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Migrations\SQL\" />
     <Folder Include="wwwroot\images\product-variants\" />
   </ItemGroup>
 

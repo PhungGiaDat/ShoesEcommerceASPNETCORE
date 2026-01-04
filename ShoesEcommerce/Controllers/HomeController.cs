@@ -93,15 +93,8 @@ namespace ShoesEcommerce.Controllers
         [HttpGet("/favicon.ico")]
         public IActionResult HandleFavicon()
         {
-            // Return 204 No Content for favicon requests
-            return NoContent();
-        }
-
-        [HttpGet("/robots.txt")]
-        public IActionResult HandleRobots()
-        {
-            // Return 204 No Content for robots.txt requests
-            return NoContent();
+            // Redirect to static file if exists
+            return PhysicalFile(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "favicon.ico"), "image/x-icon");
         }
 
         [HttpGet("/{filename}.map")]

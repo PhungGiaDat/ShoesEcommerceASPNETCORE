@@ -54,6 +54,28 @@ namespace ShoesEcommerce.Models.Payments.PayPal
         public Shipping? shipping { get; set; }
         public Payments? payments { get; set; }
         public string? description { get; set; }
+        public string? invoice_id { get; set; }
+        public string? custom_id { get; set; }
+        public List<Item>? items { get; set; }
+    }
+
+    /// <summary>
+    /// PayPal Item - represents a product in the order
+    /// </summary>
+    public sealed class Item
+    {
+        public string name { get; set; } = string.Empty;
+        public string quantity { get; set; } = "1";
+        public string? description { get; set; }
+        public string? sku { get; set; }
+        public UnitAmount unit_amount { get; set; } = new();
+        public string? category { get; set; } = "PHYSICAL_GOODS"; // PHYSICAL_GOODS, DIGITAL_GOODS, DONATION
+    }
+
+    public sealed class UnitAmount
+    {
+        public string currency_code { get; set; } = "USD";
+        public string value { get; set; } = "0.00";
     }
 
     public sealed class Amount

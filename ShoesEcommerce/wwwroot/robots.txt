@@ -1,6 +1,7 @@
-# robots.txt for NHTP ShoesEcommerce
+# robots.txt for SPORTS Vietnam Shoes Ecommerce
 # https://www.robotstxt.org/robotstxt.html
 
+# Allow all search engines and social media crawlers
 User-agent: *
 Allow: /
 Allow: /san-pham
@@ -8,8 +9,28 @@ Allow: /san-pham/
 Allow: /product
 Allow: /product/
 Allow: /khuyen-mai
-Allow: /khuyen-mai/"
+Allow: /khuyen-mai/
 
+# Explicitly allow social media crawlers for OG tag scraping
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: facebookexternalhit/1.1
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Pinterest
+Allow: /
+
+# Disallow admin and private sections
 Disallow: /Admin
 Disallow: /Admin/
 Disallow: /Account
@@ -22,6 +43,8 @@ Disallow: /Payment
 Disallow: /Payment/
 Disallow: /Checkout
 Disallow: /Checkout/
+Disallow: /Cart
+Disallow: /Cart/
 
 # Sitemap
-Sitemap: https://shoes-ecommerce.onrender.com/sitemap.xml
+Sitemap: https://shoesecommerceaspnetcore.onrender.com/sitemap.xml
