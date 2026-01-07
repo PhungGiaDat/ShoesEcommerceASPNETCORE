@@ -146,7 +146,7 @@ namespace ShoesEcommerce.Services.Payment
             var vnp_SecureHash = HmacSHA512(vnp_HashSecret, hashData);
 
             // Build final URL
-            var paymentUrl = $"{vnp_Url}?{query}&vnp_SecureHash={vnp_SecureHash}";
+            var paymentUrl = $"{vnp_Url}?{query}&vnp_SecureHashType=HMACSHA512&vnp_SecureHash={vnp_SecureHash}";
 
             _logger.LogInformation("VNPay payment URL created successfully for order {OrderId}", orderId);
             _logger.LogDebug("VNPay URL: {Url}", paymentUrl);
