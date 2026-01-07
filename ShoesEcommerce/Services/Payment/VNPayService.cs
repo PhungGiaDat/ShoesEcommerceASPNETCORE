@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Web;
 
 namespace ShoesEcommerce.Services.Payment
 {
@@ -66,6 +67,11 @@ namespace ShoesEcommerce.Services.Payment
             return "127.0.0.1";
         }
 
+        private static string VnPayEncode(string input)
+        {
+            return HttpUtility.UrlEncode(input ?? string.Empty, Encoding.UTF8) ?? string.Empty;
+        }
+
         public string CreatePaymentUrl(int orderId, decimal amount, HttpContext context)
         {
             var vnp_TmnCode = Require(_options.TmnCode, "TmnCode");
@@ -116,16 +122,19 @@ namespace ShoesEcommerce.Services.Payment
 
             foreach (var kv in vnp_Params.Where(kv => !string.IsNullOrEmpty(kv.Value)))
             {
+                var key = VnPayEncode(kv.Key);
+                var value = VnPayEncode(kv.Value);
+
                 // Query string uses URL encoding
-                queryBuilder.Append(WebUtility.UrlEncode(kv.Key));
+                queryBuilder.Append(key);
                 queryBuilder.Append("=");
-                queryBuilder.Append(WebUtility.UrlEncode(kv.Value));
+                queryBuilder.Append(value);
                 queryBuilder.Append("&");
 
-                // Hash data uses URL encoding too (VNPay requirement)
-                hashDataBuilder.Append(WebUtility.UrlEncode(kv.Key));
+                // Hash data uses the same encoding
+                hashDataBuilder.Append(key);
                 hashDataBuilder.Append("=");
-                hashDataBuilder.Append(WebUtility.UrlEncode(kv.Value));
+                hashDataBuilder.Append(value);
                 hashDataBuilder.Append("&");
             }
 
@@ -178,9 +187,12 @@ namespace ShoesEcommerce.Services.Payment
             var hashDataBuilder = new StringBuilder();
             foreach (var kv in vnp_Params)
             {
-                hashDataBuilder.Append(WebUtility.UrlEncode(kv.Key));
+                var key = VnPayEncode(kv.Key);
+                var value = VnPayEncode(kv.Value);
+
+                hashDataBuilder.Append(key);
                 hashDataBuilder.Append("=");
-                hashDataBuilder.Append(WebUtility.UrlEncode(kv.Value));
+                hashDataBuilder.Append(value);
                 hashDataBuilder.Append("&");
             }
             var hashData = hashDataBuilder.ToString().TrimEnd('&');
