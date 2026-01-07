@@ -5,6 +5,7 @@ using ShoesEcommerce.Models.Payments.PayPal;
 using ShoesEcommerce.Services.Interfaces;
 using ShoesEcommerce.Services.Payment;
 using ShoesEcommerce.Repositories.Interfaces;
+using PaymentModel = ShoesEcommerce.Models.Orders.Payment;
 
 namespace ShoesEcommerce.Services
 {
@@ -376,12 +377,12 @@ namespace ShoesEcommerce.Services
             var payment = await _paymentRepository.GetByOrderIdAsync(orderId);
             if (payment == null)
             {
-                payment = new Payment
-                {
-                    OrderId = orderId,
-                    Method = "VNPay",
-                    Status = "Pending"
-                };
+                payment = new PaymentModel
+                 {
+                     OrderId = orderId,
+                     Method = "VNPay",
+                     Status = "Pending"
+                 };
                 await _paymentRepository.CreateAsync(payment);
             }
             else
