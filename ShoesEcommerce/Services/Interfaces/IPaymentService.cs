@@ -1,4 +1,5 @@
 using ShoesEcommerce.Models.Payments.PayPal;
+using ShoesEcommerce.Models.Orders;
 
 namespace ShoesEcommerce.Services.Interfaces
 {
@@ -54,5 +55,10 @@ namespace ShoesEcommerce.Services.Interfaces
         /// Handle user cancelled payment (cancels invoice, updates order status)
         /// </summary>
         Task<bool> HandlePaymentCancellationAsync(int orderId);
+
+        /// <summary>
+        /// Prepare VNPay payment: ensure invoice/payment records exist and set to pending
+        /// </summary>
+        Task<Order> PrepareVnPayPaymentAsync(int orderId);
     }
 }

@@ -408,30 +408,63 @@ namespace ShoesEcommerce.Controllers
         /// VNPay checkout - Redirect to VNPay payment gate
         /// </summary>
         [HttpPost]
-        public IActionResult VnPayCheckout(int orderId, decimal amount)
+        public async Task<IActionResult> VnPayCheckout(int orderId, decimal amount)
         {
             try
             {
                 _logger.LogInformation("Initiating VNPay checkout for order {OrderId} with amount {Amount}", orderId, amount);
 
-                var paymentUrl = _vnPayService.CreatePaymentUrl(orderId, amount, HttpContext);
+                var customerId = GetCurrentCustomerId();
+                var order = await _paymentRepository.GetOrderWithDetailsAsync(orderId);
 
-                if (string.IsNullOrEmpty(paymentUrl))
+                if (order == null || (customerId != 0 && order.CustomerId != customerId))
                 {
-                    _logger.LogError("Failed to create VNPay payment URL for order {OrderId}", orderId);
-                    TempData["Error"] = "Lỗi tạo liên kết thanh toán VNPay.";
-                    return RedirectToAction("Index", "Checkout");
+                    _logger.LogWarning("VNPay checkout blocked. Order {OrderId} not found or unauthorized for customer {CustomerId}", orderId, customerId);
+                    TempData["Error"] = "Không tìm thấy đơn hàng hoặc bạn không có quyền.";
+                    return RedirectToAction("Index", "Cart");
                 }
 
-                return Redirect(paymentUrl);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error during VNPay checkout for order {OrderId}", orderId);
-                TempData["Error"] = "Có lỗi xảy ra khi chuyển hướng thanh toán VNPay.";
-                return RedirectToAction("Index", "Checkout");
-            }
-        }
+                if (order.OrderDetails == null || !order.OrderDetails.Any())
+                {
+                    _logger.LogWarning("Order {OrderId} has no details. Cannot proceed VNPay checkout.", orderId);
+                    TempData["Error"] = "Đơn hàng không có sản phẩm.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                // Prepare invoice/payment records and use server-side amount
+                var preparedOrder = await _paymentService.PrepareVnPayPaymentAsync(orderId);
+                var actualAmount = preparedOrder.TotalAmount;
+
+                if (actualAmount <= 0)
+                {
+                    _logger.LogError("Order {OrderId} has invalid total amount {Amount} for VNPay", orderId, actualAmount);
+                    TempData["Error"] = "Số tiền thanh toán không hợp lệ.";
+                    return RedirectToAction("Index", "Cart");
+                }
+
+                if (amount != actualAmount)
+                {
+                    _logger.LogWarning("VNPay amount tampering detected for order {OrderId}. Client {ClientAmount} vs Actual {ActualAmount}", orderId, amount, actualAmount);
+                }
+
+                var paymentUrl = _vnPayService.CreatePaymentUrl(orderId, actualAmount, HttpContext);
+ 
+                 if (string.IsNullOrEmpty(paymentUrl))
+                 {
+                     _logger.LogError("Failed to create VNPay payment URL for order {OrderId}", orderId);
+                     TempData["Error"] = "Lỗi tạo liên kết thanh toán VNPay.";
+                     return RedirectToAction("Index", "Checkout");
+                 }
+ 
+                 return Redirect(paymentUrl);
+             }
+             catch (Exception ex)
+             {
+                 _logger.LogError(ex, "Error during VNPay checkout for order {OrderId}", orderId);
+                 TempData["Error"] = "Có lỗi xảy ra khi chuyển hướng thanh toán VNPay.";
+                 return RedirectToAction("Index", "Checkout");
+             }
+         }
 
         /// <summary>
         /// VNPay return handler - VNPay calls this after payment

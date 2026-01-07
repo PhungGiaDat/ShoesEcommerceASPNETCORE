@@ -233,6 +233,35 @@ builder.Services.AddScoped<ISubizChatService, SubizChatService>();
 // Register Social Chat Options (Facebook, Zalo)
 builder.Services.Configure<SocialChatOptions>(builder.Configuration.GetSection(SocialChatOptions.SectionName));
 
+// Register VNPay Options
+builder.Services.Configure<VnPayOptions>(options =>
+{
+    // Bind from configuration
+    builder.Configuration.GetSection(VnPayOptions.SectionName).Bind(options);
+
+    // Environment overrides
+    var envTmnCode = Environment.GetEnvironmentVariable("VNPAY_TMNCODE");
+    var envHashSecret = Environment.GetEnvironmentVariable("VNPAY_HASHSECRET");
+    var envUrl = Environment.GetEnvironmentVariable("VNPAY_URL");
+    var envReturnUrl = Environment.GetEnvironmentVariable("VNPAY_RETURNURL");
+
+    if (!string.IsNullOrEmpty(envTmnCode)) options.TmnCode = envTmnCode;
+    if (!string.IsNullOrEmpty(envHashSecret)) options.HashSecret = envHashSecret;
+    if (!string.IsNullOrEmpty(envUrl)) options.Url = envUrl;
+    if (!string.IsNullOrEmpty(envReturnUrl)) options.ReturnUrl = envReturnUrl;
+
+    // Defaults
+    if (string.IsNullOrEmpty(options.Url))
+    {
+        options.Url = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+    }
+
+    Console.WriteLine("💳 VNPay Configuration:");
+    Console.WriteLine($"   - TmnCode: {(string.IsNullOrEmpty(options.TmnCode) ? "❌ NOT SET" : options.TmnCode.Substring(0, Math.Min(4, options.TmnCode.Length)) + "***")}");
+    Console.WriteLine($"   - ReturnUrl: {(string.IsNullOrEmpty(options.ReturnUrl) ? "❌ NOT SET" : options.ReturnUrl)}");
+    Console.WriteLine($"   - Url: {options.Url}");
+});
+
 // Register Tawk.to Chat Options
 builder.Services.Configure<TawkToOptions>(builder.Configuration.GetSection(TawkToOptions.SectionName));
 
@@ -281,7 +310,6 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
 });
-
 
 // Configure authentication
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

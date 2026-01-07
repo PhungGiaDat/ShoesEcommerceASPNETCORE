@@ -359,5 +359,43 @@ namespace ShoesEcommerce.Services
                 throw;
             }
         }
+
+        public async Task<Order> PrepareVnPayPaymentAsync(int orderId)
+        {
+            _logger.LogInformation("Preparing VNPay payment for order {OrderId}", orderId);
+
+            var order = await _paymentRepository.GetOrderWithItemsForPaymentAsync(orderId)
+                ?? throw new InvalidOperationException($"Order {orderId} not found");
+
+            // Build invoice number and ensure invoice exists
+            var invoiceNumber = order.Invoice?.InvoiceNumber ?? $"INV-{orderId:D6}";
+            await _paymentRepository.CreateOrUpdateInvoiceAsync(orderId, invoiceNumber, order.TotalAmount);
+            await _paymentRepository.UpdateInvoiceStatusAsync(orderId, InvoiceStatus.Pending);
+
+            // Create or update payment record
+            var payment = await _paymentRepository.GetByOrderIdAsync(orderId);
+            if (payment == null)
+            {
+                payment = new Payment
+                {
+                    OrderId = orderId,
+                    Method = "VNPay",
+                    Status = "Pending"
+                };
+                await _paymentRepository.CreateAsync(payment);
+            }
+            else
+            {
+                payment.Method = "VNPay";
+                payment.Status = "Pending";
+                await _paymentRepository.UpdateAsync(payment);
+            }
+
+            // Move order to pending payment
+            await _paymentRepository.UpdateOrderStatusAsync(orderId, "PendingPayment");
+
+            _logger.LogInformation("VNPay payment prepared for order {OrderId}. Invoice {InvoiceNumber} set to Pending.", orderId, invoiceNumber);
+            return order;
+        }
     }
 }

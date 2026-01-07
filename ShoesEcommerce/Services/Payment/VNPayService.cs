@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Options;
+using ShoesEcommerce.Services.Options;
 using ShoesEcommerce.ViewModels.Payment;
 using System.Globalization;
 using System.Net;
@@ -10,39 +11,27 @@ namespace ShoesEcommerce.Services.Payment
 {
     public class VnPayService : IVnPayService
     {
-        private readonly IConfiguration _config;
+        private readonly VnPayOptions _options;
         private readonly ILogger<VnPayService> _logger;
 
-        public VnPayService(IConfiguration config, ILogger<VnPayService> logger)
+        public VnPayService(IOptions<VnPayOptions> options, ILogger<VnPayService> logger)
         {
-            _config = config;
+            _options = options.Value ?? throw new ArgumentNullException(nameof(options));
             _logger = logger;
         }
 
         /// <summary>
-        /// Gets VNPay configuration value from environment variable or appsettings
+        /// Ensure required option is present, otherwise throw with guidance
         /// </summary>
-        private string GetConfigValue(string key, string? defaultValue = null)
+        private string Require(string? value, string name)
         {
-            // Environment variable names: VNPAY_TMN_CODE, VNPAY_HASH_SECRET, VNPAY_URL, VNPAY_RETURN_URL
-            var envKey = $"VNPAY_{key.ToUpper()}";
-            var envValue = Environment.GetEnvironmentVariable(envKey);
-            
-            if (!string.IsNullOrEmpty(envValue))
+            if (string.IsNullOrWhiteSpace(value))
             {
-                _logger.LogDebug("VNPay config '{Key}' loaded from environment variable", key);
-                return envValue;
+                _logger.LogError("VNPay {Name} is missing", name);
+                throw new InvalidOperationException($"VNPay {name} is not configured. Please set VNPAY_{name.ToUpper()} environment variable or VNPay:{name} in appsettings.");
             }
-            
-            var configValue = _config[$"VNPay:{key}"];
-            if (!string.IsNullOrEmpty(configValue))
-            {
-                _logger.LogDebug("VNPay config '{Key}' loaded from appsettings", key);
-                return configValue;
-            }
-            
-            _logger.LogWarning("VNPay config '{Key}' not found, using default: {Default}", key, defaultValue ?? "null");
-            return defaultValue ?? string.Empty;
+
+            return value;
         }
 
         /// <summary>
@@ -79,10 +68,12 @@ namespace ShoesEcommerce.Services.Payment
 
         public string CreatePaymentUrl(int orderId, decimal amount, HttpContext context)
         {
-            var vnp_TmnCode = GetConfigValue("TmnCode");
-            var vnp_HashSecret = GetConfigValue("HashSecret");
-            var vnp_Url = GetConfigValue("Url", "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html");
-            var vnp_ReturnUrl = GetConfigValue("ReturnUrl");
+            var vnp_TmnCode = Require(_options.TmnCode, "TmnCode");
+            var vnp_HashSecret = Require(_options.HashSecret, "HashSecret");
+            var vnp_Url = string.IsNullOrEmpty(_options.Url)
+                ? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
+                : _options.Url;
+            var vnp_ReturnUrl = Require(_options.ReturnUrl, "ReturnUrl");
 
             // Log configuration for debugging
             _logger.LogInformation("VNPay Config - TmnCode: {TmnCode}, Url: {Url}, ReturnUrl: {ReturnUrl}",
@@ -90,24 +81,7 @@ namespace ShoesEcommerce.Services.Payment
                 vnp_Url,
                 vnp_ReturnUrl);
 
-            // Validate required configuration
-            if (string.IsNullOrEmpty(vnp_TmnCode))
-            {
-                _logger.LogError("VNPay TmnCode is missing");
-                throw new InvalidOperationException("VNPay TmnCode is not configured. Please set VNPAY_TMNCODE environment variable or VNPay:TmnCode in appsettings.");
-            }
-            
-            if (string.IsNullOrEmpty(vnp_HashSecret))
-            {
-                _logger.LogError("VNPay HashSecret is missing");
-                throw new InvalidOperationException("VNPay HashSecret is not configured. Please set VNPAY_HASHSECRET environment variable or VNPay:HashSecret in appsettings.");
-            }
-
-            if (string.IsNullOrEmpty(vnp_ReturnUrl))
-            {
-                _logger.LogError("VNPay ReturnUrl is missing");
-                throw new InvalidOperationException("VNPay ReturnUrl is not configured. Please set VNPAY_RETURNURL environment variable or VNPay:ReturnUrl in appsettings.");
-            }
+            // Validate required configuration already handled by Require
 
             var tick = DateTime.Now.Ticks.ToString();
             var ipAddr = GetIpAddress(context);
@@ -173,14 +147,8 @@ namespace ShoesEcommerce.Services.Payment
 
         public VnPayReturnModel ProcessReturn(IQueryCollection queryParams)
         {
-            var vnp_HashSecret = GetConfigValue("HashSecret");
-            
-            if (string.IsNullOrEmpty(vnp_HashSecret))
-            {
-                _logger.LogError("VNPay HashSecret is not configured");
-                throw new InvalidOperationException("VNPay HashSecret is not configured");
-            }
-            
+            var vnp_HashSecret = Require(_options.HashSecret, "HashSecret");
+
             var vnp_SecureHash = queryParams["vnp_SecureHash"].ToString();
 
             _logger.LogInformation("Processing VNPay return - SecureHash: {Hash}", 
@@ -254,7 +222,7 @@ namespace ShoesEcommerce.Services.Payment
             return hash.ToString();
         }
     }
-
+    
     /// <summary>
     /// Comparer for VNPay parameter sorting (ASCII order)
     /// </summary>
