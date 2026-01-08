@@ -42,6 +42,10 @@
         public string? PayPalOrderId { get; set; }
         public string? PayPalTransactionId { get; set; }
         public string? VnPayTransactionId { get; set; }
+        public string? VnPayTxnRef { get; set; }
+        public string? VnPayBankCode { get; set; }
+        public string? VnPayBankTranNo { get; set; }
+        public string? VnPayCardType { get; set; }
 
         // ✅ NEW: Audit fields
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -33,14 +33,15 @@ namespace ShoesEcommerce.Controllers
                 if (customerId != 0)
                 {
                     // Nếu đã đăng nhập, tìm Cart thông qua Customer.CartId
+                    // ✅ FIX: Remove invalid ternary operator in ThenInclude
                     var customer = await _context.Customers
                         .Include(c => c.Cart)
-                            .ThenInclude(cart => cart != null ? cart.CartItems : null)
+                            .ThenInclude(cart => cart.CartItems.Where(ci => !ci.IsDeleted))
                                 .ThenInclude(ci => ci.ProductVariant)
                                     .ThenInclude(pv => pv.Product)
                                         .ThenInclude(p => p.Brand)
                         .Include(c => c.Cart)
-                            .ThenInclude(cart => cart != null ? cart.CartItems : null)
+                            .ThenInclude(cart => cart.CartItems.Where(ci => !ci.IsDeleted))
                                 .ThenInclude(ci => ci.ProductVariant)
                                     .ThenInclude(pv => pv.CurrentStock)
                         .FirstOrDefaultAsync(c => c.Id == customerId);
@@ -72,17 +73,23 @@ namespace ShoesEcommerce.Controllers
                 {
                     // Nếu chưa đăng nhập, tìm Cart theo SessionId
                     cart = await _context.Carts
-                        .Include(c => c.CartItems)
+                        .Include(c => c.CartItems.Where(ci => !ci.IsDeleted))
                             .ThenInclude(ci => ci.ProductVariant)
                                 .ThenInclude(pv => pv.Product)
                                     .ThenInclude(p => p.Brand)
-                        .Include(c => c.CartItems)
+                        .Include(c => c.CartItems.Where(ci => !ci.IsDeleted))
                             .ThenInclude(ci => ci.ProductVariant)
                                 .ThenInclude(pv => pv.CurrentStock)
                         .FirstOrDefaultAsync(c => c.SessionId == sessionId);
                 }
 
-                var cartItemVMs = cart?.CartItems?.Select(ci => new CartItemViewModel
+                // ✅ Filter only non-deleted cart items
+                var activeCartItems = cart?.CartItems?.Where(ci => !ci.IsDeleted).ToList() ?? new List<CartItem>();
+                
+                _logger.LogInformation("Cart found: {CartId}, Total items in collection: {TotalItems}, Active items: {ActiveItems}", 
+                    cart?.Id, cart?.CartItems?.Count ?? 0, activeCartItems.Count);
+                
+                var cartItemVMs = activeCartItems.Select(ci => new CartItemViewModel
                 {
                     Id = ci.Id,
                     ProductName = ci.ProductVariant?.Product?.Name ?? "Không có tên",
@@ -92,9 +99,9 @@ namespace ShoesEcommerce.Controllers
                     Brand = ci.ProductVariant?.Product?.Brand?.Name ?? "Chưa có",
                     Price = ci.ProductVariant?.Price ?? 0,
                     Quantity = ci.Quantity
-                }).ToList() ?? new List<CartItemViewModel>();
+                }).ToList();
 
-                _logger.LogInformation("Cart loaded successfully with {CartItemCount} items for customer {CustomerId} or session {SessionId}", 
+                _logger.LogInformation("Cart loaded successfully with {CartItemCount} active items for customer {CustomerId} or session {SessionId}", 
                     cartItemVMs.Count, customerId, sessionId);
 
                 ViewData["Title"] = "Giỏ hàng";
@@ -186,8 +193,9 @@ namespace ShoesEcommerce.Controllers
                     }
                 }
 
+                // ✅ Only look for non-deleted cart items when adding
                 var cartItem = await _context.CartItems
-                    .FirstOrDefaultAsync(ci => ci.CartId == cart.Id && ci.ProductVarientId == productVariantId);
+                    .FirstOrDefaultAsync(ci => ci.CartId == cart.Id && ci.ProductVarientId == productVariantId && !ci.IsDeleted);
 
                 if (cartItem != null)
                 {
@@ -196,6 +204,7 @@ namespace ShoesEcommerce.Controllers
                         return Json(new { success = false, message = $"Chỉ còn {productVariant.AvailableQuantity - cartItem.Quantity} sản phẩm có thể thêm." });
                     }
                     cartItem.Quantity += quantity;
+                    cartItem.UpdatedAt = DateTime.UtcNow;
                 }
                 else
                 {
@@ -203,7 +212,9 @@ namespace ShoesEcommerce.Controllers
                     {
                         CartId = cart.Id,
                         ProductVarientId = productVariantId,
-                        Quantity = quantity
+                        Quantity = quantity,
+                        CreatedAt = DateTime.UtcNow,
+                        PriceAtAddTime = productVariant.Price // ✅ Track price when added to cart
                     };
                     _context.CartItems.Add(cartItem);
                 }
@@ -240,7 +251,7 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
-        // GET: Cart/RemoveFromCart
+        // GET: Cart/RemoveFromCart - ✅ Soft delete for AI analytics
         [HttpGet]
         public async Task<IActionResult> RemoveFromCart(int id)
         {
@@ -249,24 +260,27 @@ namespace ShoesEcommerce.Controllers
                 _logger.LogInformation("Removing cart item {CartItemId}", id);
 
                 var cartItem = await _context.CartItems.FindAsync(id);
-                if (cartItem != null)
+                if (cartItem != null && !cartItem.IsDeleted)
                 {
+                    // ✅ Soft delete instead of hard delete for AI analytics
+                    cartItem.IsDeleted = true;
+                    cartItem.DeletedAt = DateTime.UtcNow;
+                    cartItem.DeletionReason = "Removed";
+                    cartItem.UpdatedAt = DateTime.UtcNow;
+                    
                     var cart = await _context.Carts.FindAsync(cartItem.CartId);
-                    _context.CartItems.Remove(cartItem);
-                    await _context.SaveChangesAsync();
-
                     if (cart != null)
                     {
                         cart.UpdatedAt = DateTime.UtcNow;
-                        await _context.SaveChangesAsync();
                     }
+                    await _context.SaveChangesAsync();
 
-                    _logger.LogInformation("Cart item {CartItemId} removed successfully", id);
+                    _logger.LogInformation("Cart item {CartItemId} soft-deleted successfully (Reason: Removed)", id);
                     TempData["Success"] = "Đã xóa sản phẩm khỏi giỏ hàng.";
                 }
                 else
                 {
-                    _logger.LogWarning("Cart item {CartItemId} not found for removal", id);
+                    _logger.LogWarning("Cart item {CartItemId} not found or already deleted", id);
                     TempData["Error"] = "Không tìm thấy sản phẩm trong giỏ hàng.";
                 }
 
@@ -298,7 +312,7 @@ namespace ShoesEcommerce.Controllers
                 var cartItem = await _context.CartItems
                     .Include(ci => ci.ProductVariant)
                         .ThenInclude(pv => pv.CurrentStock)
-                    .FirstOrDefaultAsync(ci => ci.Id == id);
+                    .FirstOrDefaultAsync(ci => ci.Id == id && !ci.IsDeleted); // ✅ Only update non-deleted items
 
                 if (cartItem != null)
                 {
@@ -312,6 +326,8 @@ namespace ShoesEcommerce.Controllers
                     }
 
                     cartItem.Quantity = quantity;
+                    cartItem.UpdatedAt = DateTime.UtcNow; // ✅ Track update time
+                    
                     var cart = await _context.Carts.FindAsync(cartItem.CartId);
                     if (cart != null)
                     {
@@ -324,7 +340,7 @@ namespace ShoesEcommerce.Controllers
                 }
                 else
                 {
-                    _logger.LogWarning("Cart item {CartItemId} not found for quantity update", id);
+                    _logger.LogWarning("Cart item {CartItemId} not found or already deleted for quantity update", id);
                     TempData["Error"] = "Không tìm thấy sản phẩm trong giỏ hàng.";
                 }
 
@@ -338,7 +354,7 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
-        // GET: Cart/ClearCart - Clear entire cart
+        // GET: Cart/ClearCart - Clear entire cart (soft delete for AI analytics)
         [HttpGet]
         public async Task<IActionResult> ClearCart()
         {
@@ -354,7 +370,7 @@ namespace ShoesEcommerce.Controllers
                 {
                     var customer = await _context.Customers
                         .Include(c => c.Cart)
-                            .ThenInclude(cart => cart.CartItems)
+                            .ThenInclude(cart => cart.CartItems.Where(ci => !ci.IsDeleted))
                         .FirstOrDefaultAsync(c => c.Id == customerId);
                     
                     cart = customer?.Cart;
@@ -362,16 +378,26 @@ namespace ShoesEcommerce.Controllers
                 else
                 {
                     cart = await _context.Carts
-                        .Include(c => c.CartItems)
+                        .Include(c => c.CartItems.Where(ci => !ci.IsDeleted))
                         .FirstOrDefaultAsync(c => c.SessionId == sessionId);
                 }
 
-                if (cart != null && cart.CartItems.Any())
+                var activeItems = cart?.CartItems?.Where(ci => !ci.IsDeleted).ToList();
+                if (activeItems != null && activeItems.Any())
                 {
-                    _context.CartItems.RemoveRange(cart.CartItems);
+                    // ✅ Soft delete all items instead of hard delete
+                    var now = DateTime.UtcNow;
+                    foreach (var item in activeItems)
+                    {
+                        item.IsDeleted = true;
+                        item.DeletedAt = now;
+                        item.DeletionReason = "CartCleared";
+                        item.UpdatedAt = now;
+                    }
                     await _context.SaveChangesAsync();
 
-                    _logger.LogInformation("Cart cleared successfully for customer {CustomerId} or session {SessionId}", customerId, sessionId);
+                    _logger.LogInformation("Cart soft-deleted {ItemCount} items for customer {CustomerId} or session {SessionId}", 
+                        activeItems.Count, customerId, sessionId);
                     TempData["Success"] = "Đã xóa tất cả sản phẩm khỏi giỏ hàng.";
                 }
                 else
@@ -404,7 +430,7 @@ namespace ShoesEcommerce.Controllers
                 {
                     var customer = await _context.Customers
                         .Include(c => c.Cart)
-                            .ThenInclude(cart => cart.CartItems)
+                            .ThenInclude(cart => cart.CartItems.Where(ci => !ci.IsDeleted))
                         .FirstOrDefaultAsync(c => c.Id == customerId);
                     
                     cart = customer?.Cart;
@@ -412,11 +438,12 @@ namespace ShoesEcommerce.Controllers
                 else
                 {
                     cart = await _context.Carts
-                        .Include(c => c.CartItems)
+                        .Include(c => c.CartItems.Where(ci => !ci.IsDeleted))
                         .FirstOrDefaultAsync(c => c.SessionId == sessionId);
                 }
 
-                var count = cart?.CartItems?.Sum(ci => ci.Quantity) ?? 0;
+                // ✅ Only count non-deleted items
+                var count = cart?.CartItems?.Where(ci => !ci.IsDeleted).Sum(ci => ci.Quantity) ?? 0;
                 return Json(new { count = count });
             }
             catch (Exception ex)

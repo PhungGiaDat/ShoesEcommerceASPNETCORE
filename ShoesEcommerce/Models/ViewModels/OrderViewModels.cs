@@ -65,6 +65,22 @@ namespace ShoesEcommerce.Models.ViewModels
         public string Status { get; set; }
         public DateTime? PaidAt { get; set; }
         public string? TransactionId { get; set; }
+        
+        // ✅ NEW: Invoice info
+        public string? InvoiceNumber { get; set; }
+        public DateTime? InvoiceIssuedAt { get; set; }
+        
+        // ✅ NEW: VNPay specific fields
+        public string? VnPayTxnRef { get; set; }
+        public string? VnPayBankCode { get; set; }
+        public string? VnPayBankTranNo { get; set; }
+        public string? VnPayCardType { get; set; }
+        
+        // ✅ NEW: PayPal specific fields
+        public string? PayPalOrderId { get; set; }
+        public string? PayPalTransactionId { get; set; }
+        public decimal? AmountInUSD { get; set; }
+        public decimal? ExchangeRate { get; set; }
     }
 
     // ViewModel cho sản phẩm variant

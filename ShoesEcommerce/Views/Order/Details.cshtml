@@ -74,6 +74,15 @@
         min-width: 250px;
     }
 
+    .order-label {
+        font-size: 0.813rem;
+        font-weight: 500;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.25rem;
+    }
+
     .order-number {
         font-size: 1.5rem;
         font-weight: 700;
@@ -121,6 +130,16 @@
         background: #f59e0b;
     }
 
+    .status-shipped {
+        background: #e0f2fe;
+        color: #0369a1;
+        border-color: #7dd3fc;
+    }
+
+    .status-shipped .badge-dot {
+        background: #0ea5e9;
+    }
+
     .status-delivered {
         background: #dcfce7;
         color: #166534;
@@ -129,6 +148,16 @@
 
     .status-delivered .badge-dot {
         background: #22c55e;
+    }
+
+    .status-cancelled {
+        background: #fee2e2;
+        color: #991b1b;
+        border-color: #fca5a5;
+    }
+
+    .status-cancelled .badge-dot {
+        background: #ef4444;
     }
 
     .payment-paid {
@@ -470,6 +499,7 @@
     <div class="order-header">
         <div class="order-title-row">
             <div class="order-title-group">
+                <div class="order-label">Mã đơn hàng</div>
                 <div class="order-number">#@Model.OrderNumber</div>
                 <div class="order-date">Đặt hàng lúc: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
             </div>
@@ -479,7 +509,10 @@
                     {
                         "pending" => ("status-pending", "Chờ xử lý"),
                         "processing" => ("status-pending", "Đang xử lý"),
+                        "shipped" => ("status-shipped", "Đang giao"),
                         "delivered" => ("status-delivered", "Đã giao"),
+                        "cancelled" => ("status-cancelled", "Đã hủy"),
+                        "paymentfailed" => ("status-cancelled", "Thanh toán thất bại"),
                         _ => ("status-pending", Model.Status)
                     };
 
@@ -578,18 +611,37 @@
             <div class="info-card">
                 <div class="info-card-header">
                     <div class="info-card-title">
-                        <i class="fas fa-credit-card"></i>
-                        Thông tin thanh toán
+                        @if (Model.Payment.Method == "VNPay")
+                        {
+                            <img src="https://vnpay.vn/s1/statics.vnpay.vn/2023/9/06ncktiwd6dc1694418196384.png" alt="VNPay" style="height: 20px; margin-right: 8px;" />
+                            <span>VNPay</span>
+                        }
+                        else if (Model.Payment.Method == "PayPal")
+                        {
+                            <i class="fab fa-paypal" style="color: #003087;"></i>
+                            <span>PayPal</span>
+                        }
+                        else
+                        {
+                            <i class="fas fa-credit-card"></i>
+                            <span>Thông tin thanh toán</span>
+                        }
                     </div>
                 </div>
                 <div class="info-card-body">
-                    <div class="info-row">
-                        <i class="fas fa-wallet info-icon"></i>
-                        <div class="info-content">
-                            <div class="info-label">Phương thức</div>
-                            @Model.Payment.Method
+                    <!-- Invoice Number -->
+                    @if (!string.IsNullOrEmpty(Model.Payment.InvoiceNumber))
+                    {
+                        <div class="info-row">
+                            <i class="fas fa-file-invoice info-icon"></i>
+                            <div class="info-content">
+                                <div class="info-label">Số hóa đơn</div>
+                                <span style="font-family: monospace; font-weight: 600; color: #1e40af;">@Model.Payment.InvoiceNumber</span>
+                            </div>
                         </div>
-                    </div>
+                    }
+
+                    <!-- Payment Status -->
                     <div class="info-row">
                         <i class="fas fa-check-circle info-icon"></i>
                         <div class="info-content">
@@ -597,15 +649,156 @@
                             @(Model.Payment.Status == "Paid" ? "Đã thanh toán" : "Chưa thanh toán")
                         </div>
                     </div>
+
+                    <!-- Paid At -->
                     @if (Model.Payment.PaidAt.HasValue)
                     {
                         <div class="info-row">
-                            <i class="fas fa-calendar info-icon"></i>
+                            <i class="fas fa-calendar-check info-icon"></i>
                             <div class="info-content">
                                 <div class="info-label">Thanh toán lúc</div>
                                 @Model.Payment.PaidAt.Value.ToString("dd/MM/yyyy HH:mm")
                             </div>
                         </div>
+                    }
+
+                    @* ==================== VNPAY SPECIFIC ==================== *@
+                    @if (Model.Payment.Method == "VNPay")
+                    {
+                        <!-- Transaction ID -->
+                        @if (!string.IsNullOrEmpty(Model.Payment.TransactionId))
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-receipt info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Mã giao dịch VNPay</div>
+                                    <span style="font-family: monospace;">@Model.Payment.TransactionId</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Bank Code -->
+                        @if (!string.IsNullOrEmpty(Model.Payment.VnPayBankCode))
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-university info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Ngân hàng</div>
+                                    @Model.Payment.VnPayBankCode
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Bank Transaction No -->
+                        @if (!string.IsNullOrEmpty(Model.Payment.VnPayBankTranNo))
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-hashtag info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Số trace ngân hàng</div>
+                                    <span style="font-family: monospace;">@Model.Payment.VnPayBankTranNo</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Card Type -->
+                        @if (!string.IsNullOrEmpty(Model.Payment.VnPayCardType))
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-credit-card info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Loại thẻ</div>
+                                    @Model.Payment.VnPayCardType
+                                </div>
+                            </div>
+                        }
+
+                        <!-- TxnRef -->
+                        @if (!string.IsNullOrEmpty(Model.Payment.VnPayTxnRef))
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-barcode info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Mã tham chiếu</div>
+                                    <span style="font-family: monospace; font-size: 0.8rem;">@Model.Payment.VnPayTxnRef</span>
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @* ==================== PAYPAL SPECIFIC ==================== *@
+                    @if (Model.Payment.Method == "PayPal")
+                    {
+                        <!-- PayPal Transaction ID -->
+                        @if (!string.IsNullOrEmpty(Model.Payment.PayPalTransactionId) || !string.IsNullOrEmpty(Model.Payment.TransactionId))
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-receipt info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Transaction ID</div>
+                                    <span style="font-family: monospace;">@(Model.Payment.PayPalTransactionId ?? Model.Payment.TransactionId)</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- PayPal Order ID -->
+                        @if (!string.IsNullOrEmpty(Model.Payment.PayPalOrderId))
+                        {
+                            <div class="info-row">
+                                <i class="fab fa-paypal info-icon" style="color: #003087;"></i>
+                                <div class="info-content">
+                                    <div class="info-label">PayPal Order ID</div>
+                                    <span style="font-family: monospace; font-size: 0.8rem;">@Model.Payment.PayPalOrderId</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Amount in USD -->
+                        @if (Model.Payment.AmountInUSD.HasValue && Model.Payment.AmountInUSD > 0)
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-dollar-sign info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Số tiền USD</div>
+                                    <span style="font-weight: 600; color: #059669;">$@Model.Payment.AmountInUSD.Value.ToString("N2")</span>
+                                </div>
+                            </div>
+                        }
+
+                        <!-- Exchange Rate -->
+                        @if (Model.Payment.ExchangeRate.HasValue && Model.Payment.ExchangeRate > 0)
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-exchange-alt info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Tỷ giá</div>
+                                    1 USD = @Model.Payment.ExchangeRate.Value.ToString("N0") VND
+                                </div>
+                            </div>
+                        }
+                    }
+
+                    @* ==================== COD / DEFAULT ==================== *@
+                    @if (Model.Payment.Method != "VNPay" && Model.Payment.Method != "PayPal")
+                    {
+                        <div class="info-row">
+                            <i class="fas fa-wallet info-icon"></i>
+                            <div class="info-content">
+                                <div class="info-label">Phương thức</div>
+                                @(Model.Payment.Method == "COD" ? "Thanh toán khi nhận hàng" : Model.Payment.Method)
+                            </div>
+                        </div>
+                        
+                        @if (!string.IsNullOrEmpty(Model.Payment.TransactionId))
+                        {
+                            <div class="info-row">
+                                <i class="fas fa-receipt info-icon"></i>
+                                <div class="info-content">
+                                    <div class="info-label">Mã giao dịch</div>
+                                    <span style="font-family: monospace;">@Model.Payment.TransactionId</span>
+                                </div>
+                            </div>
+                        }
                     }
                 </div>
             </div>

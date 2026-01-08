@@ -33,6 +33,7 @@ namespace ShoesEcommerce.Services
                         .Include(o => o.Customer)
                         .Include(o => o.ShippingAddress)
                         .Include(o => o.Payment)
+                        .Include(o => o.Invoice) // ✅ NEW: Include Invoice
                         .Include(o => o.OrderDetails)
                             .ThenInclude(od => od.ProductVariant)
                                 .ThenInclude(pv => pv.Product)
@@ -45,6 +46,7 @@ namespace ShoesEcommerce.Services
                         .Include(o => o.Customer)
                         .Include(o => o.ShippingAddress)
                         .Include(o => o.Payment)
+                        .Include(o => o.Invoice) // ✅ NEW: Include Invoice
                         .Include(o => o.OrderDetails)
                             .ThenInclude(od => od.ProductVariant)
                                 .ThenInclude(pv => pv.Product)
@@ -108,7 +110,23 @@ namespace ShoesEcommerce.Services
                         Method = order.Payment?.Method ?? "",
                         Status = order.Payment?.Status ?? "",
                         PaidAt = order.Payment?.PaidAt,
-                        TransactionId = order.Payment?.TransactionId // ✅ ADD: Map TransactionId
+                        TransactionId = order.Payment?.TransactionId,
+                        
+                        // ✅ NEW: Invoice data
+                        InvoiceNumber = order.Invoice?.InvoiceNumber,
+                        InvoiceIssuedAt = order.Invoice?.IssuedAt,
+                        
+                        // ✅ NEW: VNPay specific fields
+                        VnPayTxnRef = order.Invoice?.VnPayTxnRef,
+                        VnPayBankCode = order.Invoice?.VnPayBankCode,
+                        VnPayBankTranNo = order.Invoice?.VnPayBankTranNo,
+                        VnPayCardType = order.Invoice?.VnPayCardType,
+                        
+                        // ✅ NEW: PayPal specific fields
+                        PayPalOrderId = order.Invoice?.PayPalOrderId,
+                        PayPalTransactionId = order.Invoice?.PayPalTransactionId,
+                        AmountInUSD = order.Invoice?.AmountInUSD,
+                        ExchangeRate = order.Invoice?.ExchangeRate
                     },
                     CustomerName = order.Customer != null ? order.Customer.FirstName + " " + order.Customer.LastName : "",
                     CustomerId = order.CustomerId,
@@ -211,42 +229,43 @@ namespace ShoesEcommerce.Services
                 // Lấy thông tin giỏ hàng thông qua Customer.CartId
                 var customer = await _context.Customers
                     .Include(c => c.Cart)
-                        .ThenInclude(cart => cart.CartItems)
+                        .ThenInclude(cart => cart.CartItems.Where(ci => !ci.IsDeleted)) // Only get non-deleted items
                             .ThenInclude(ci => ci.ProductVariant)
                                 .ThenInclude(pv => pv.Product)
                     .FirstOrDefaultAsync(c => c.Id == customerId);
                 
                 var cart = customer?.Cart;
+                var activeCartItems = cart?.CartItems?.Where(ci => !ci.IsDeleted).ToList();
 
-                if (cart?.CartItems == null || !cart.CartItems.Any())
+                if (activeCartItems == null || !activeCartItems.Any())
                 {
                     _logger.LogWarning("Empty cart for customer {CustomerId} during order creation", customerId);
                     throw new InvalidOperationException("Giỏ hàng trống");
                 }
 
-                _logger.LogInformation("Cart found with {CartItemCount} items for customer {CustomerId}", cart.CartItems.Count, customerId);
+                _logger.LogInformation("Cart found with {CartItemCount} items for customer {CustomerId}", activeCartItems.Count, customerId);
 
                 // Tạo đơn hàng
-                var totalAmount = cart.CartItems.Sum(ci => ci.Quantity * ci.ProductVariant.Price); // ✅ FIXED: Use ProductVariant.Price
+                var totalAmount = activeCartItems.Sum(ci => ci.Quantity * ci.ProductVariant.Price);
                 var order = new Order
                 {
                     CustomerId = customerId,
                     ShippingAddressId = model.ShippingAddressId,
                     CreatedAt = DateTime.UtcNow,
                     TotalAmount = totalAmount,
-                    Status = "Pending", // Ensure Status is set
+                    Status = "Pending",
                     OrderDetails = new List<OrderDetail>()
                 };
 
                 // Tạo chi tiết đơn hàng
-                foreach (var cartItem in cart.CartItems)
+                foreach (var cartItem in activeCartItems)
                 {
                     order.OrderDetails.Add(new OrderDetail
                     {
                         ProductVariantId = cartItem.ProductVarientId,
                         Quantity = cartItem.Quantity,
-                        UnitPrice = cartItem.ProductVariant.Price, // ✅ FIXED: Use ProductVariant.Price
-                        Status = "Pending" // Ensure Status is set
+                        UnitPrice = cartItem.ProductVariant.Price,
+                        Status = "Pending"
                     });
                 }
 
@@ -258,34 +277,51 @@ namespace ShoesEcommerce.Services
                     OrderId = order.Id
                 };
 
-                // Tạo hóa đơn
-                order.Invoice = new Invoice
-                {
-                    InvoiceNumber = await GenerateOrderNumberAsync(),
-                    IssuedAt = DateTime.UtcNow,
-                    Amount = order.TotalAmount,
-                    OrderId = order.Id
-                };
-
                 _context.Orders.Add(order);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Order {OrderId} created successfully for customer {CustomerId} with total amount {TotalAmount}", order.Id, customerId, totalAmount);
+                // ✅ FIX: Create Invoice AFTER order is saved so orderId is available
+                order.Invoice = new Invoice
+                {
+                    OrderId = order.Id,
+                    InvoiceNumber = GenerateInvoiceNumber(order.Id),
+                    IssuedAt = DateTime.UtcNow,
+                    Amount = order.TotalAmount,
+                    Status = InvoiceStatus.Draft,
+                    Currency = "VND",
+                    CreatedAt = DateTime.UtcNow
+                };
 
-                // Xóa giỏ hàng sau khi tạo đơn hàng thành công
-                _context.CartItems.RemoveRange(cart.CartItems);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Order {OrderId} created successfully for customer {CustomerId} with total amount {TotalAmount}, Invoice: {InvoiceNumber}", 
+                    order.Id, customerId, totalAmount, order.Invoice.InvoiceNumber);
+
+                // ✅ IMPROVED: Soft delete cart items instead of hard delete for AI analytics
+                // This preserves purchase history for: recommendation systems, behavior analysis, purchase patterns
+                var now = DateTime.UtcNow;
+                foreach (var cartItem in activeCartItems)
+                {
+                    cartItem.IsDeleted = true;
+                    cartItem.DeletedAt = now;
+                    cartItem.PurchasedAt = now;
+                    cartItem.OrderId = order.Id;
+                    cartItem.DeletionReason = "Purchased";
+                    cartItem.UpdatedAt = now;
+                }
                 await _context.SaveChangesAsync();
 
                 await transaction.CommitAsync();
 
-                _logger.LogInformation("Cart cleared successfully for customer {CustomerId} after order creation", customerId);
+                _logger.LogInformation("Cart items soft-deleted and linked to Order {OrderId} for customer {CustomerId}. {ItemCount} items preserved for analytics.", 
+                    order.Id, customerId, activeCartItems.Count);
 
                 return order;
             }
             catch (InvalidOperationException)
             {
                 await transaction.RollbackAsync();
-                throw; // Re-throw business logic exceptions
+                throw;
             }
             catch (Exception ex)
             {
@@ -501,6 +537,17 @@ namespace ShoesEcommerce.Services
                 _logger.LogWarning("Using fallback order number: {OrderNumber}", fallbackNumber);
                 return fallbackNumber;
             }
+        }
+
+        /// <summary>
+        /// Generate invoice number with format: INV-{orderId}-{yyyyMMdd}
+        /// Example: INV-57-20250604
+        /// </summary>
+        public string GenerateInvoiceNumber(int orderId)
+        {
+            var invoiceNumber = $"INV-{orderId}-{DateTime.UtcNow:yyyyMMdd}";
+            _logger.LogInformation("Generated invoice number: {InvoiceNumber} for order {OrderId}", invoiceNumber, orderId);
+            return invoiceNumber;
         }
 
         public async Task<decimal> CalculateShippingFeeAsync(string city, string district)

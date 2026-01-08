@@ -10,6 +10,11 @@ namespace ShoesEcommerce.Repositories
     /// </summary>
     public class PaymentRepository : IPaymentRepository
     {
+        private static DateTime EnsureUtc(DateTime value)
+        {
+            return value.Kind == DateTimeKind.Utc ? value : value.ToUniversalTime();
+        }
+
         private readonly AppDbContext _context;
         private readonly ILogger<PaymentRepository> _logger;
 
@@ -94,7 +99,7 @@ namespace ShoesEcommerce.Repositories
                 
                 if (paidAt.HasValue)
                 {
-                    payment.PaidAt = paidAt.Value;
+                    payment.PaidAt = EnsureUtc(paidAt.Value);
                 }
 
                 if (!string.IsNullOrEmpty(transactionId))
@@ -254,12 +259,16 @@ namespace ShoesEcommerce.Repositories
                         return false;
                     }
                     
+                    // ✅ FIX: Use correct invoice number format: INV-{orderId}-{yyyyMMdd}
                     invoice = new Invoice
                     {
                         OrderId = orderId,
-                        InvoiceNumber = $"INV-{orderId:D6}-{paidAt:yyyyMMdd}",
+                        InvoiceNumber = $"INV-{orderId}-{paidAt:yyyyMMdd}",
                         Amount = order.TotalAmount,
-                        IssuedAt = paidAt
+                        IssuedAt = EnsureUtc(paidAt),
+                        CreatedAt = DateTime.UtcNow,
+                        Status = InvoiceStatus.Draft,
+                        Currency = "VND"
                     };
                     
                     _context.Invoices.Add(invoice);
@@ -272,7 +281,7 @@ namespace ShoesEcommerce.Repositories
                 else
                 {
                     // Update existing invoice
-                    invoice.IssuedAt = paidAt;
+                    invoice.IssuedAt = EnsureUtc(paidAt);
                     invoice.UpdatedAt = DateTime.UtcNow;
                     await _context.SaveChangesAsync();
                     
@@ -382,7 +391,7 @@ namespace ShoesEcommerce.Repositories
 
                 invoice.Status = InvoiceStatus.Paid;
                 invoice.PayPalTransactionId = transactionId;
-                invoice.PaidAt = paidAt;
+                invoice.PaidAt = EnsureUtc(paidAt);
                 invoice.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
 
@@ -433,6 +442,101 @@ namespace ShoesEcommerce.Repositories
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error getting invoice by PayPal Order ID {PayPalOrderId}", paypalOrderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> SetInvoiceVnPayTransactionIdAsync(int orderId, string vnpayTransactionId)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice not found for order {OrderId} when setting VNPay Transaction ID", orderId);
+                    return false;
+                }
+
+                invoice.VnPayTransactionId = vnpayTransactionId;
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("VNPay Transaction ID set for invoice, Order {OrderId}: {VnPayTransactionId}", orderId, vnpayTransactionId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error setting VNPay Transaction ID for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> FinalizeVnPayInvoiceAsync(int orderId, string transactionId, string? bankCode, DateTime paidAt)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice not found for order {OrderId} when finalizing VNPay payment", orderId);
+                    return false;
+                }
+
+                invoice.Status = InvoiceStatus.Paid;
+                invoice.VnPayTransactionId = transactionId;
+                invoice.VnPayBankCode = bankCode;
+                invoice.PaidAt = EnsureUtc(paidAt);
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "VNPay Invoice finalized for order {OrderId}: TransactionId={TransactionId}, BankCode={BankCode}, PaidAt={PaidAt}",
+                    orderId, transactionId, bankCode, paidAt);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error finalizing VNPay invoice for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> FinalizeVnPayInvoiceFullAsync(
+            int orderId, 
+            string transactionId, 
+            string? txnRef,
+            string? bankCode, 
+            string? bankTranNo,
+            string? cardType,
+            DateTime paidAt)
+        {
+            try
+            {
+                var invoice = await GetInvoiceByOrderIdAsync(orderId);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice not found for order {OrderId} when finalizing VNPay payment", orderId);
+                    return false;
+                }
+
+                invoice.Status = InvoiceStatus.Paid;
+                invoice.VnPayTransactionId = transactionId;
+                invoice.VnPayTxnRef = txnRef;
+                invoice.VnPayBankCode = bankCode;
+                invoice.VnPayBankTranNo = bankTranNo;
+                invoice.VnPayCardType = cardType;
+                invoice.PaidAt = EnsureUtc(paidAt);
+                invoice.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation(
+                    "VNPay Invoice fully finalized for order {OrderId}: TransactionId={TransactionId}, TxnRef={TxnRef}, BankCode={BankCode}, BankTranNo={BankTranNo}, CardType={CardType}",
+                    orderId, transactionId, txnRef, bankCode, bankTranNo, cardType);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error finalizing VNPay invoice for order {OrderId}", orderId);
                 throw;
             }
         }

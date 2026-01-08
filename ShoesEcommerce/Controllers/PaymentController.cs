@@ -8,6 +8,9 @@ using System.Security.Claims;
 using ShoesEcommerce.Services.Payment;
 using System.Net;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
+using ShoesEcommerce.ViewModels.Payment;
 
 namespace ShoesEcommerce.Controllers
 {
@@ -298,13 +301,65 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index", "Order");
                 }
 
-                // ✅ NEW: Log successful access
-                _logger.LogInformation(
-                    "PayPalSuccess page loaded: OrderId={OrderId}, CustomerId={CustomerId}, PaymentStatus={Status}",
-                    orderId, order.CustomerId, order.Payment?.Status ?? "Unknown");
+                // ✅ NEW: Build comprehensive ViewModel like VNPay
+                var subtotal = order.OrderDetails.Sum(od => od.UnitPrice * od.Quantity);
+                var discountAmount = subtotal - order.TotalAmount;
 
-                ViewBag.PayPalToken = token;
-                return View(order);
+                var viewModel = new PayPalSuccessViewModel
+                {
+                    OrderId = order.Id,
+                    OrderCreatedAt = order.CreatedAt,
+                    OrderStatus = order.Status,
+                    TotalAmount = order.TotalAmount,
+                    Subtotal = subtotal,
+                    DiscountAmount = discountAmount > 0 ? discountAmount : 0,
+
+                    TransactionId = order.Payment?.TransactionId ?? "",
+                    PaymentMethod = "PayPal",
+                    PaymentStatus = order.Payment?.Status ?? "Paid",
+                    PaidAt = order.Payment?.PaidAt,
+
+                    // Invoice info
+                    InvoiceNumber = order.Invoice?.InvoiceNumber ?? $"INV-{order.Id}-{DateTime.UtcNow:yyyyMMdd}",
+                    InvoiceIssuedAt = order.Invoice?.IssuedAt,
+                    InvoiceStatus = order.Invoice?.Status ?? Models.Orders.InvoiceStatus.Paid,
+
+                    // PayPal specific
+                    PayPalOrderId = order.Invoice?.PayPalOrderId ?? "",
+                    PayPalTransactionId = order.Invoice?.PayPalTransactionId ?? order.Payment?.TransactionId ?? "",
+                    AmountInUSD = order.Invoice?.AmountInUSD,
+                    ExchangeRate = order.Invoice?.ExchangeRate,
+                    PayPalToken = token ?? "",
+
+                    // Customer info
+                    CustomerName = order.Customer != null ? $"{order.Customer.FirstName} {order.Customer.LastName}" : "",
+                    CustomerEmail = order.Customer?.Email ?? "",
+                    CustomerPhone = order.Customer?.PhoneNumber ?? "",
+
+                    // Shipping address
+                    ShippingFullName = order.ShippingAddress?.FullName ?? "",
+                    ShippingPhone = order.ShippingAddress?.PhoneNumber ?? "",
+                    ShippingAddress = order.ShippingAddress?.Address ?? "",
+                    ShippingDistrict = order.ShippingAddress?.District ?? "",
+                    ShippingCity = order.ShippingAddress?.City ?? "",
+
+                    // Order items
+                    Items = order.OrderDetails.Select(od => new OrderItemViewModel
+                    {
+                        ProductName = od.ProductVariant?.Product?.Name ?? "Sản phẩm",
+                        VariantColor = od.ProductVariant?.Color ?? "",
+                        VariantSize = od.ProductVariant?.Size ?? "",
+                        ImageUrl = od.ProductVariant?.ImageUrl ?? "/images/no-image.svg",
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice
+                    }).ToList()
+                };
+
+                _logger.LogInformation(
+                    "PayPalSuccess page loaded: OrderId={OrderId}, TransactionId={TxnId}, Invoice={Invoice}, CustomerId={CustomerId}, PaymentStatus={Status}",
+                    orderId, viewModel.TransactionId, viewModel.InvoiceNumber, order.CustomerId, viewModel.PaymentStatus);
+
+                return View(viewModel);
             }
             catch (Exception ex)
             {
@@ -467,6 +522,17 @@ namespace ShoesEcommerce.Controllers
          }
 
         /// <summary>
+        /// Generate secure token from orderId and transactionId
+        /// </summary>
+        private static string GenerateSecureToken(int orderId, string? transactionId)
+        {
+            var data = $"{orderId}_{transactionId ?? ""}_{DateTime.UtcNow:yyyyMMdd}";
+            using var sha256 = SHA256.Create();
+            var hash = sha256.ComputeHash(Encoding.UTF8.GetBytes(data));
+            return Convert.ToBase64String(hash).Replace("+", "-").Replace("/", "_").Replace("=", "")[..16];
+        }
+
+        /// <summary>
         /// VNPay return handler - VNPay calls this after payment
         /// </summary>
         [HttpGet]
@@ -485,34 +551,82 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index", "Home");
                 }
 
-                var orderId = response.Vnp_TxnRef?.Split('_').FirstOrDefault();
-                if (!int.TryParse(orderId, out int localOrderId))
+                // ✅ UPDATED: Parse OrderId from new TxnRef format: INV-{OrderId}-{Date}-{UniqueCode}
+                // Example: INV-63-20260108-A1B2 -> OrderId = 63
+                var txnRef = response.Vnp_TxnRef ?? "";
+                int localOrderId = 0;
+                
+                if (txnRef.StartsWith("INV-"))
                 {
-                    _logger.LogError("Could not parse OrderId from VnPay TxnRef: {TxnRef}", response.Vnp_TxnRef);
+                    // New format: INV-{OrderId}-{Date}-{UniqueCode}
+                    var parts = txnRef.Split('-');
+                    if (parts.Length >= 2 && int.TryParse(parts[1], out int parsedId))
+                    {
+                        localOrderId = parsedId;
+                    }
+                }
+                else if (txnRef.Contains("_"))
+                {
+                    // Legacy format: {OrderId}_{tick}
+                    var orderId = txnRef.Split('_').FirstOrDefault();
+                    int.TryParse(orderId, out localOrderId);
+                }
+                
+                if (localOrderId <= 0)
+                {
+                    _logger.LogError("Could not parse OrderId from VnPay TxnRef: {TxnRef}", txnRef);
                     TempData["Error"] = "Lỗi xử lý đơn hàng: Không tìm thấy ID đơn hàng.";
                     return RedirectToAction("Index", "Home");
                 }
 
                 var isSuccessful = response.Vnp_ResponseCode == "00";
-                var paymentStatus = isSuccessful ? "Paid" : "Failed";
-                var transactionId = response.Vnp_TransactionNo;
-
-                await _paymentService.UpdatePaymentStatusAsync(
-                    localOrderId,
-                    paymentStatus,
-                    DateTime.Now,
-                    transactionId);
-
-                _logger.LogInformation(
-                    "VNPay payment result: OrderId={OrderId}, Status={Status}, TxnNo={TxnNo}",
-                    localOrderId, paymentStatus, transactionId);
+                var transactionId = response.Vnp_TransactionNo ?? "";
+                
+                // Extract ALL VNPay response data for full mapping
+                var bankCode = Request.Query["vnp_BankCode"].ToString();
+                var bankTranNo = Request.Query["vnp_BankTranNo"].ToString();
+                var cardType = Request.Query["vnp_CardType"].ToString();
+                var vnpAmount = Request.Query["vnp_Amount"].ToString();
+                var vnpPayDate = Request.Query["vnp_PayDate"].ToString();
+                var vnpOrderInfo = response.Vnp_OrderInfo ?? "";
 
                 if (isSuccessful)
                 {
-                    return RedirectToAction("VnPaySuccess", "Payment", new { orderId = localOrderId });
+                    // Use service to complete VNPay payment with ALL data mapping to Invoice
+                    await _paymentService.CompleteVnPayPaymentFullAsync(
+                        localOrderId,
+                        transactionId,
+                        txnRef,
+                        bankCode,
+                        bankTranNo,
+                        cardType,
+                        DateTime.UtcNow);
+                    
+                    // Store ALL data in TempData for success page display
+                    TempData["VnPay_TxnRef"] = txnRef;
+                    TempData["VnPay_TransactionNo"] = transactionId;
+                    TempData["VnPay_BankCode"] = bankCode;
+                    TempData["VnPay_BankTranNo"] = bankTranNo;
+                    TempData["VnPay_CardType"] = cardType;
+                    TempData["VnPay_Amount"] = vnpAmount;
+                    TempData["VnPay_PayDate"] = vnpPayDate;
+                    TempData["VnPay_ResponseCode"] = response.Vnp_ResponseCode;
+                    TempData["VnPay_OrderInfo"] = vnpOrderInfo;
+                    
+                    // Generate secure token
+                    var token = GenerateSecureToken(localOrderId, transactionId);
+                    
+                    _logger.LogInformation(
+                        "VNPay payment successful: OrderId={OrderId}, TxnRef={TxnRef}, TxnNo={TxnNo}, Bank={Bank}, BankTranNo={BankTranNo}",
+                        localOrderId, txnRef, transactionId, bankCode, bankTranNo);
+
+                    return RedirectToAction("VnPaySuccess", "Payment", new { token });
                 }
                 else
                 {
+                    // Handle payment failure via service
+                    await _paymentService.HandlePaymentFailureAsync(localOrderId, $"VNPay response code: {response.Vnp_ResponseCode}");
+                    
                     TempData["Warning"] = $"Thanh toán VNPay không thành công. Mã lỗi: {response.Vnp_ResponseCode}";
                     return RedirectToAction("Index", "Cart");
                 }
@@ -527,22 +641,53 @@ namespace ShoesEcommerce.Controllers
 
         /// <summary>
         /// VNPay success redirect page
-        /// ✅ FIXED: Allow anonymous access since VNPay verified payment
+        /// Uses secure token instead of exposing orderId
         /// </summary>
         [HttpGet]
-        [AllowAnonymous]  // ✅ NEW: Allow access without authentication
-        public async Task<IActionResult> VnPaySuccess(int orderId)
+        [AllowAnonymous]
+        public async Task<IActionResult> VnPaySuccess(string? token)
         {
             try
             {
-                _logger.LogInformation("VNPay success redirect for order {OrderId}", orderId);
+                _logger.LogInformation("VNPay success page accessed with token: {Token}", token?[..Math.Min(8, token?.Length ?? 0)] + "...");
 
-                // ✅ NEW: Validate orderId
+                // Get VNPay data from TempData
+                var txnRef = TempData["VnPay_TxnRef"]?.ToString();
+                var transactionNo = TempData["VnPay_TransactionNo"]?.ToString();
+                var bankCode = TempData["VnPay_BankCode"]?.ToString();
+                var bankTranNo = TempData["VnPay_BankTranNo"]?.ToString();
+                var cardType = TempData["VnPay_CardType"]?.ToString();
+                var vnpAmount = TempData["VnPay_Amount"]?.ToString();
+                var vnpPayDate = TempData["VnPay_PayDate"]?.ToString();
+                var responseCode = TempData["VnPay_ResponseCode"]?.ToString();
+                var orderInfo = TempData["VnPay_OrderInfo"]?.ToString();
+
+                // ✅ UPDATED: Parse orderId from new TxnRef format: INV-{OrderId}-{Date}-{UniqueCode}
+                int orderId = 0;
+                if (!string.IsNullOrEmpty(txnRef))
+                {
+                    if (txnRef.StartsWith("INV-"))
+                    {
+                        // New format: INV-{OrderId}-{Date}-{UniqueCode}
+                        var parts = txnRef.Split('-');
+                        if (parts.Length >= 2)
+                        {
+                            int.TryParse(parts[1], out orderId);
+                        }
+                    }
+                    else if (txnRef.Contains("_"))
+                    {
+                        // Legacy format: {OrderId}_{tick}
+                        var orderIdStr = txnRef.Split('_').FirstOrDefault();
+                        int.TryParse(orderIdStr, out orderId);
+                    }
+                }
+                
                 if (orderId <= 0)
                 {
-                    _logger.LogWarning("Invalid orderId: {OrderId}", orderId);
-                    TempData["Error"] = "Mã đơn hàng không hợp lệ.";
-                    return RedirectToAction("Index", "Home");
+                    _logger.LogWarning("VnPaySuccess: Invalid or missing TxnRef in TempData. User may have refreshed page.");
+                    TempData["Info"] = "Thanh toán đã hoàn tất. Vui lòng kiểm tra đơn hàng của bạn.";
+                    return RedirectToAction("Index", "Order");
                 }
 
                 var order = await _paymentRepository.GetOrderWithDetailsAsync(orderId);
@@ -554,10 +699,6 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index", "Home");
                 }
 
-                // ✅ REMOVED: Authentication check
-                // VNPay has already verified the payment
-
-                // ✅ NEW: Verify order has required data
                 if (order.OrderDetails == null || !order.OrderDetails.Any())
                 {
                     _logger.LogWarning("Order {OrderId} has no order details", orderId);
@@ -565,17 +706,83 @@ namespace ShoesEcommerce.Controllers
                     return RedirectToAction("Index", "Home");
                 }
 
-                // ✅ NEW: Log successful access
-                _logger.LogInformation(
-                    "VnPaySuccess page loaded: OrderId={OrderId}, CustomerId={CustomerId}, PaymentStatus={Status}",
-                    orderId, order.CustomerId, order.Payment?.Status ?? "Unknown");
+                // Build ViewModel
+                var subtotal = order.OrderDetails.Sum(od => od.UnitPrice * od.Quantity);
+                var discountAmount = subtotal - order.TotalAmount;
 
-                return View(order);
+                // ✅ Extract invoice number from TxnRef (remove unique code suffix)
+                // INV-63-20260108-A1B2 -> INV-63-20260108
+                var invoiceFromTxn = txnRef ?? "";
+                if (invoiceFromTxn.StartsWith("INV-"))
+                {
+                    var parts = invoiceFromTxn.Split('-');
+                    if (parts.Length >= 3)
+                    {
+                        invoiceFromTxn = $"{parts[0]}-{parts[1]}-{parts[2]}"; // INV-{OrderId}-{Date}
+                    }
+                }
+
+                var viewModel = new VnPaySuccessViewModel
+                {
+                    OrderId = order.Id,
+                    OrderCreatedAt = order.CreatedAt,
+                    OrderStatus = order.Status,
+                    TotalAmount = order.TotalAmount,
+                    Subtotal = subtotal,
+                    DiscountAmount = discountAmount > 0 ? discountAmount : 0,
+
+                    TransactionId = transactionNo ?? order.Payment?.TransactionId ?? "",
+                    PaymentMethod = "VNPay",
+                    PaymentStatus = order.Payment?.Status ?? "Paid",
+                    PaidAt = order.Payment?.PaidAt,
+
+                    // ✅ Use clean invoice number format
+                    InvoiceNumber = order.Invoice?.InvoiceNumber ?? invoiceFromTxn,
+                    InvoiceIssuedAt = order.Invoice?.IssuedAt,
+                    InvoiceStatus = order.Invoice?.Status ?? Models.Orders.InvoiceStatus.Paid,
+
+                    // VNPay specific - Basic
+                    VnPayTxnRef = txnRef ?? order.Invoice?.VnPayTxnRef ?? "",
+                    VnPayBankCode = bankCode ?? order.Invoice?.VnPayBankCode ?? "",
+                    VnPayResponseCode = responseCode ?? "00",
+
+                    // VNPay specific - Extended mapping
+                    VnPayTransactionNo = transactionNo ?? order.Invoice?.VnPayTransactionId ?? "",
+                    VnPayBankTranNo = bankTranNo ?? order.Invoice?.VnPayBankTranNo ?? "",
+                    VnPayCardType = cardType ?? order.Invoice?.VnPayCardType ?? "",
+                    VnPayAmount = vnpAmount ?? "",
+                    VnPayPayDate = vnpPayDate ?? "",
+                    VnPayOrderInfo = orderInfo ?? $"Thanh toan don hang {order.Id}",
+
+                    ShippingFullName = order.ShippingAddress?.FullName ?? "",
+                    ShippingPhone = order.ShippingAddress?.PhoneNumber ?? "",
+                    ShippingAddress = order.ShippingAddress?.Address ?? "",
+                    ShippingDistrict = order.ShippingAddress?.District ?? "",
+                    ShippingCity = order.ShippingAddress?.City ?? "",
+
+                    SecureToken = token ?? "",
+
+                    Items = order.OrderDetails.Select(od => new OrderItemViewModel
+                    {
+                        ProductName = od.ProductVariant?.Product?.Name ?? "Sản phẩm",
+                        VariantColor = od.ProductVariant?.Color ?? "",
+                        VariantSize = od.ProductVariant?.Size ?? "",
+                        ImageUrl = od.ProductVariant?.ImageUrl ?? "/images/no-image.svg",
+                        Quantity = od.Quantity,
+                        UnitPrice = od.UnitPrice
+                    }).ToList()
+                };
+
+                _logger.LogInformation(
+                    "VnPaySuccess page loaded: OrderId={OrderId}, TxnRef={TxnRef}, Invoice={Invoice}, BankTranNo={BankTranNo}",
+                    orderId, viewModel.VnPayTxnRef, viewModel.InvoiceNumber, viewModel.VnPayBankTranNo);
+
+                return View(viewModel);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error loading VNPay success page for order {OrderId}", orderId);
-                TempData["Error"] = "Có lỗi xảy ra khi hiển thị trang xác nhận. Đơn hàng của bạn đã được xử lý thành công.";
+                _logger.LogError(ex, "Error loading VNPay success page");
+                TempData["Info"] = "Đơn hàng của bạn đã được xử lý. Vui lòng kiểm tra danh sách đơn hàng.";
                 return RedirectToAction("Index", "Order");
             }
         }

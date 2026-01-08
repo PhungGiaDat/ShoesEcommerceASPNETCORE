@@ -26,16 +26,18 @@ namespace ShoesEcommerce.Repositories
             {
                 if (customerId != 0)
                 {
+                    // ? FIX: Filter only non-deleted cart items
                     return await _context.Carts
-                        .Include(c => c.CartItems)
+                        .Include(c => c.CartItems.Where(ci => !ci.IsDeleted))
                             .ThenInclude(ci => ci.ProductVariant)
                                 .ThenInclude(pv => pv.Product)
                         .FirstOrDefaultAsync(c => c.Customer != null && c.Customer.Id == customerId);
                 }
                 else
                 {
+                    // ? FIX: Filter only non-deleted cart items
                     return await _context.Carts
-                        .Include(c => c.CartItems)
+                        .Include(c => c.CartItems.Where(ci => !ci.IsDeleted))
                             .ThenInclude(ci => ci.ProductVariant)
                                 .ThenInclude(pv => pv.Product)
                         .FirstOrDefaultAsync(c => c.SessionId == sessionId);
@@ -109,18 +111,29 @@ namespace ShoesEcommerce.Repositories
             }
         }
 
-        public async Task ClearCartAsync(Cart cart)
+        public async Task ClearCartAsync(Cart cart, int? orderId = null)
         {
             try
             {
-                // Only remove cart items, DON'T delete the cart itself
-                // The cart is referenced by Customer.CartId foreign key
-                _context.CartItems.RemoveRange(cart.CartItems);
+                // ? SOFT DELETE instead of hard delete for AI analytics
+                // This preserves purchase history for: recommendation systems, behavior analysis, purchase patterns
+                var now = DateTime.UtcNow;
+                var activeItems = cart.CartItems.Where(ci => !ci.IsDeleted).ToList();
+                
+                foreach (var item in activeItems)
+                {
+                    item.IsDeleted = true;
+                    item.DeletedAt = now;
+                    item.UpdatedAt = now;
+                    item.PurchasedAt = orderId.HasValue ? now : null;
+                    item.OrderId = orderId;
+                    item.DeletionReason = orderId.HasValue ? "Purchased" : "CheckoutCleared";
+                }
                 
                 await _context.SaveChangesAsync();
                 
-                _logger.LogInformation("Cart cleared successfully: {CartId}, removed {ItemCount} items", 
-                    cart.Id, cart.CartItems.Count);
+                _logger.LogInformation("Cart soft-deleted successfully: CartId={CartId}, Items={ItemCount}, OrderId={OrderId}", 
+                    cart.Id, activeItems.Count, orderId?.ToString() ?? "None");
             }
             catch (Exception ex)
             {

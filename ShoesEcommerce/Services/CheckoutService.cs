@@ -1,4 +1,4 @@
-using ShoesEcommerce.Models.Carts;
+﻿using ShoesEcommerce.Models.Carts;
 using ShoesEcommerce.Models.Orders;
 using ShoesEcommerce.Repositories;
 using ShoesEcommerce.Services.Interfaces;
@@ -123,8 +123,16 @@ namespace ShoesEcommerce.Services
                     return null;
                 }
 
+                // ✅ FIX: Only get non-deleted cart items
+                var activeCartItems = cart.CartItems.Where(ci => !ci.IsDeleted).ToList();
+                if (!activeCartItems.Any())
+                {
+                    _logger.LogWarning("No active cart items during order placement");
+                    return null;
+                }
+
                 // Calculate totals
-                decimal subtotal = cart.CartItems.Sum(ci => ci.ProductVariant.Price * ci.Quantity);
+                decimal subtotal = activeCartItems.Sum(ci => ci.ProductVariant.Price * ci.Quantity);
                 decimal discountAmount = 0;
                 int? discountId = null;
                 decimal totalAmount = subtotal;
@@ -155,7 +163,7 @@ namespace ShoesEcommerce.Services
                     CreatedAt = DateTime.UtcNow,
                     TotalAmount = totalAmount,
                     Status = "Pending",
-                    OrderDetails = cart.CartItems.Select(ci => new OrderDetail
+                    OrderDetails = activeCartItems.Select(ci => new OrderDetail
                     {
                         ProductVariantId = ci.ProductVarientId,
                         Quantity = ci.Quantity,
@@ -171,14 +179,14 @@ namespace ShoesEcommerce.Services
                     Status = "Pending"
                 };
 
-                // ? FIX: Create Invoice with DRAFT status - only finalize after payment success
+                // ✅ FIX: Create Invoice with DRAFT status - only finalize after payment success
                 order.Invoice = new Invoice
                 {
                     InvoiceNumber = $"INV-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N").Substring(0, 6).ToUpper()}",
                     Amount = totalAmount,
                     IssuedAt = DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
-                    Status = InvoiceStatus.Draft, // ? Draft until payment confirmed
+                    Status = InvoiceStatus.Draft, // ✅ Draft until payment confirmed
                     Currency = "VND"
                 };
 
@@ -188,7 +196,7 @@ namespace ShoesEcommerce.Services
                 order = await _repository.CreateOrderAsync(order);
 
                 // Update Invoice number with Order ID for better tracking
-                order.Invoice.InvoiceNumber = $"INV-{order.Id:D6}";
+                order.Invoice.InvoiceNumber = $"INV-{order.Id}-{DateTime.UtcNow:yyyyMMdd}";
                 await _repository.UpdateOrderAsync(order);
 
                 _logger.LogInformation("Order {OrderId} created with Draft Invoice {InvoiceNumber}, Status={Status}", 
@@ -210,10 +218,10 @@ namespace ShoesEcommerce.Services
                     }
                 }
 
-                // Clear cart
-                await _repository.ClearCartAsync(cart);
+                // ✅ FIX: Clear cart with soft delete and link to order
+                await _repository.ClearCartAsync(cart, order.Id);
 
-                _logger.LogInformation("Order {OrderId} created successfully with Draft Invoice {InvoiceNumber}", 
+                _logger.LogInformation("Order {OrderId} created successfully with Draft Invoice {InvoiceNumber}, CartItems soft-deleted", 
                     order.Id, order.Invoice.InvoiceNumber);
                 return order;
             }
@@ -269,7 +277,7 @@ namespace ShoesEcommerce.Services
 
                 if (cart == null || !cart.CartItems.Any())
                 {
-                    return (false, "Gi? h�ng c?a b?n ?ang tr?ng.");
+                    return (false, "Giỏ hàng của bạn đang trống.");
                 }
 
                 // Validate product variants exist
@@ -277,7 +285,7 @@ namespace ShoesEcommerce.Services
                 {
                     if (item.ProductVariant == null)
                     {
-                        return (false, "C� s?n ph?m trong gi? h�ng kh�ng t?n t?i.");
+                        return (false, "Có s?n ph?m trong gi? hàng không t?n t?i.");
                     }
                 }
 
@@ -286,7 +294,7 @@ namespace ShoesEcommerce.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error validating checkout");
-                return (false, "C� l?i x?y ra khi ki?m tra gi? h�ng.");
+                return (false, "Có l?i x?y ra khi ki?m tra gi? hàng.");
             }
         }
     }

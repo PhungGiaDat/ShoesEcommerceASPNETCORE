@@ -47,8 +47,8 @@ namespace ShoesEcommerce.Services
                     throw new InvalidOperationException($"Order {orderId} not found");
                 }
 
-                // Create or get invoice number
-                var invoiceNumber = order.Invoice?.InvoiceNumber ?? $"INV-{orderId:D6}";
+                // ✅ FIX: Create or get invoice number with correct format: INV-{orderId}-{yyyyMMdd}
+                var invoiceNumber = order.Invoice?.InvoiceNumber ?? $"INV-{orderId}-{DateTime.UtcNow:yyyyMMdd}";
                 
                 // If invoice doesn't exist, create it with Draft status
                 if (order.Invoice == null)
@@ -86,11 +86,37 @@ namespace ShoesEcommerce.Services
 
                 _logger.LogInformation("Building PayPal order with {ItemCount} items for Order #{OrderId}", items.Count, orderId);
 
+                // ✅ NEW: Build shipping address from order
+                Shipping? shippingAddress = null;
+                if (order.ShippingAddress != null)
+                {
+                    shippingAddress = new Shipping
+                    {
+                        name = new Name
+                        {
+                            full_name = order.ShippingAddress.FullName ?? ""
+                        },
+                        address = new Address
+                        {
+                            address_line_1 = order.ShippingAddress.Address ?? "",
+                            address_line_2 = order.ShippingAddress.District ?? "",
+                            admin_area_2 = order.ShippingAddress.City ?? "", // City/District
+                            admin_area_1 = order.ShippingAddress.City ?? "", // State/Province
+                            postal_code = "100000", // Default Vietnam postal code
+                            country_code = "VN"
+                        }
+                    };
+                    _logger.LogInformation("Shipping address prepared for PayPal: {Name}, {Address}, {City}",
+                        shippingAddress.name.full_name,
+                        shippingAddress.address.address_line_1,
+                        shippingAddress.address.admin_area_2);
+                }
+
                 // Create reference ID
                 var referenceId = $"ORD-{orderId}";
                 var description = $"SPORTS Vietnam - Đơn hàng #{orderId}";
 
-                // Create PayPal order with items and invoice ID
+                // ✅ UPDATED: Create PayPal order with items, invoice ID, and shipping address
                 var paypalOrder = await _paypalClient.CreateOrderAsync(
                     subtotal,
                     discountAmount,
@@ -100,7 +126,8 @@ namespace ShoesEcommerce.Services
                     cancelUrl,
                     description,
                     invoiceNumber, // Pass invoice ID to PayPal
-                    items);
+                    items,
+                    shippingAddress); // ✅ NEW: Pass shipping address
 
                 // ✅ FIX: Store PayPal Order ID in invoice for tracking
                 await _paymentRepository.SetInvoicePayPalOrderIdAsync(orderId, paypalOrder.id);
@@ -126,8 +153,8 @@ namespace ShoesEcommerce.Services
                 }
 
                 _logger.LogInformation(
-                    "PayPal order created successfully: PayPalOrderId={PayPalOrderId}, OrderId={OrderId}, InvoiceId={InvoiceId}",
-                    paypalOrder.id, orderId, invoiceNumber);
+                    "PayPal order created successfully: PayPalOrderId={PayPalOrderId}, OrderId={OrderId}, InvoiceId={InvoiceId}, HasShipping={HasShipping}",
+                    paypalOrder.id, orderId, invoiceNumber, shippingAddress != null);
 
                 return paypalOrder;
             }
@@ -173,13 +200,17 @@ namespace ShoesEcommerce.Services
 
         public async Task<bool> UpdatePaymentStatusAsync(int orderId, string status, DateTime? paidAt = null, string? transactionId = null)
         {
-            try
+            if (paidAt.HasValue)
             {
-                _logger.LogInformation(
-                    "Updating payment status for order {OrderId}: Status={Status}, PaidAt={PaidAt}, TransactionId={TransactionId}",
-                    orderId, status, paidAt, transactionId);
+                paidAt = paidAt.Value.Kind == DateTimeKind.Utc ? paidAt.Value : paidAt.Value.ToUniversalTime();
+            }
+             try
+             {
+                 _logger.LogInformation(
+                     "Updating payment status for order {OrderId}: Status={Status}, PaidAt={PaidAt}, TransactionId={TransactionId}",
+                     orderId, status, paidAt, transactionId);
 
-                var result = await _paymentRepository.UpdateStatusAsync(orderId, status, paidAt, transactionId);
+                 var result = await _paymentRepository.UpdateStatusAsync(orderId, status, paidAt, transactionId);
 
                 if (result)
                 {
@@ -238,11 +269,12 @@ namespace ShoesEcommerce.Services
 
         public async Task<bool> CompletePaymentAsync(int orderId, string transactionId, DateTime paidAt)
         {
-            try
-            {
-                _logger.LogInformation(
-                    "Completing payment for order {OrderId}: TransactionId={TransactionId}, PaidAt={PaidAt}",
-                    orderId, transactionId, paidAt);
+            paidAt = paidAt.Kind == DateTimeKind.Utc ? paidAt : paidAt.ToUniversalTime();
+             try
+             {
+                 _logger.LogInformation(
+                     "Completing payment for order {OrderId}: TransactionId={TransactionId}, PaidAt={PaidAt}",
+                     orderId, transactionId, paidAt);
 
                 // Update payment status
                 var paymentUpdated = await _paymentRepository.UpdateStatusAsync(orderId, "Paid", paidAt, transactionId);
@@ -368,8 +400,8 @@ namespace ShoesEcommerce.Services
             var order = await _paymentRepository.GetOrderWithItemsForPaymentAsync(orderId)
                 ?? throw new InvalidOperationException($"Order {orderId} not found");
 
-            // Build invoice number and ensure invoice exists
-            var invoiceNumber = order.Invoice?.InvoiceNumber ?? $"INV-{orderId:D6}";
+            // ✅ FIX: Build invoice number with correct format: INV-{orderId}-{yyyyMMdd}
+            var invoiceNumber = order.Invoice?.InvoiceNumber ?? $"INV-{orderId}-{DateTime.UtcNow:yyyyMMdd}";
             await _paymentRepository.CreateOrUpdateInvoiceAsync(orderId, invoiceNumber, order.TotalAmount);
             await _paymentRepository.UpdateInvoiceStatusAsync(orderId, InvoiceStatus.Pending);
 
@@ -397,6 +429,99 @@ namespace ShoesEcommerce.Services
 
             _logger.LogInformation("VNPay payment prepared for order {OrderId}. Invoice {InvoiceNumber} set to Pending.", orderId, invoiceNumber);
             return order;
+        }
+
+        public async Task<bool> CompleteVnPayPaymentAsync(int orderId, string transactionId, string? bankCode, DateTime paidAt)
+        {
+            paidAt = paidAt.Kind == DateTimeKind.Utc ? paidAt : paidAt.ToUniversalTime();
+            try
+            {
+                _logger.LogInformation(
+                    "Completing VNPay payment for order {OrderId}: TransactionId={TransactionId}, BankCode={BankCode}, PaidAt={PaidAt}",
+                    orderId, transactionId, bankCode, paidAt);
+
+                // Update payment status
+                var paymentUpdated = await _paymentRepository.UpdateStatusAsync(orderId, "Paid", paidAt, transactionId);
+                
+                if (!paymentUpdated)
+                {
+                    _logger.LogWarning("Failed to update payment status for order {OrderId}", orderId);
+                    return false;
+                }
+
+                // Finalize invoice with VNPay-specific data
+                var invoiceUpdated = await _paymentRepository.FinalizeVnPayInvoiceAsync(orderId, transactionId, bankCode, paidAt);
+                
+                if (!invoiceUpdated)
+                {
+                    _logger.LogWarning("Failed to finalize VNPay invoice for order {OrderId}", orderId);
+                    // Don't fail the whole operation if invoice update fails
+                }
+
+                // Update order status to Paid/Processing
+                await _paymentRepository.UpdateOrderStatusAsync(orderId, "Processing");
+
+                _logger.LogInformation("VNPay payment completed successfully for order {OrderId}, Invoice finalized", orderId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error completing VNPay payment for order {OrderId}", orderId);
+                throw;
+            }
+        }
+
+        public async Task<bool> CompleteVnPayPaymentFullAsync(
+            int orderId, 
+            string transactionId, 
+            string? txnRef,
+            string? bankCode, 
+            string? bankTranNo,
+            string? cardType,
+            DateTime paidAt)
+        {
+            paidAt = paidAt.Kind == DateTimeKind.Utc ? paidAt : paidAt.ToUniversalTime();
+            try
+            {
+                _logger.LogInformation(
+                    "Completing VNPay payment (full) for order {OrderId}: TransactionId={TransactionId}, TxnRef={TxnRef}, BankCode={BankCode}, BankTranNo={BankTranNo}, CardType={CardType}",
+                    orderId, transactionId, txnRef, bankCode, bankTranNo, cardType);
+
+                // Update payment status
+                var paymentUpdated = await _paymentRepository.UpdateStatusAsync(orderId, "Paid", paidAt, transactionId);
+                
+                if (!paymentUpdated)
+                {
+                    _logger.LogWarning("Failed to update payment status for order {OrderId}", orderId);
+                    return false;
+                }
+
+                // Finalize invoice with all VNPay-specific data
+                var invoiceUpdated = await _paymentRepository.FinalizeVnPayInvoiceFullAsync(
+                    orderId, 
+                    transactionId, 
+                    txnRef,
+                    bankCode, 
+                    bankTranNo,
+                    cardType,
+                    paidAt);
+                
+                if (!invoiceUpdated)
+                {
+                    _logger.LogWarning("Failed to finalize VNPay invoice (full) for order {OrderId}", orderId);
+                }
+
+                // Update order status to Processing
+                await _paymentRepository.UpdateOrderStatusAsync(orderId, "Processing");
+
+                _logger.LogInformation("VNPay payment (full) completed successfully for order {OrderId}", orderId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error completing VNPay payment (full) for order {OrderId}", orderId);
+                throw;
+            }
         }
     }
 }

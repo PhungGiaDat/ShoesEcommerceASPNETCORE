@@ -8,13 +8,40 @@
         enableConsoleLog: true,
         maxStackTraceLength: 2000,
         maxErrorsPerSession: 50,
-        errorCountKey: 'jsErrorCount'
+        errorCountKey: 'jsErrorCount',
+        // ? NEW: Ignore patterns for development tools
+        ignorePatterns: [
+            'browserLink',
+            'browserLinkSignalR',
+            '_vs/browserLink',
+            'aspnetcore-browser-refresh',
+            '_framework/aspnetcore-browser-refresh'
+        ]
     };
 
     let errorCount = parseInt(sessionStorage.getItem(CONFIG.errorCountKey) || '0');
 
+    // ? NEW: Check if error should be ignored (development tools)
+    function shouldIgnoreError(source, message) {
+        const sourceStr = (source || '').toLowerCase();
+        const messageStr = (message || '').toLowerCase();
+        
+        return CONFIG.ignorePatterns.some(pattern => 
+            sourceStr.includes(pattern.toLowerCase()) || 
+            messageStr.includes(pattern.toLowerCase())
+        );
+    }
+
     // Function to send error to server
     function sendErrorToServer(errorData) {
+        // ? NEW: Skip ignored errors
+        if (shouldIgnoreError(errorData.source, errorData.message)) {
+            if (CONFIG.enableConsoleLog) {
+                console.debug('Ignoring development tool error:', errorData.source);
+            }
+            return;
+        }
+
         if (errorCount >= CONFIG.maxErrorsPerSession) {
             console.warn('Maximum JavaScript errors per session reached');
             return;

@@ -96,5 +96,27 @@ namespace ShoesEcommerce.Repositories.Interfaces
         /// Get invoice by PayPal Order ID
         /// </summary>
         Task<Invoice?> GetInvoiceByPayPalOrderIdAsync(string paypalOrderId);
+
+        /// <summary>
+        /// Set VNPay Transaction ID on invoice for tracking
+        /// </summary>
+        Task<bool> SetInvoiceVnPayTransactionIdAsync(int orderId, string vnpayTransactionId);
+
+        /// <summary>
+        /// Finalize VNPay payment - update invoice with VNPay-specific data
+        /// </summary>
+        Task<bool> FinalizeVnPayInvoiceAsync(int orderId, string transactionId, string? bankCode, DateTime paidAt);
+
+        /// <summary>
+        /// Finalize VNPay payment with full data - update invoice with all VNPay response fields
+        /// </summary>
+        Task<bool> FinalizeVnPayInvoiceFullAsync(
+            int orderId,
+            string transactionId,
+            string? txnRef,
+            string? bankCode,
+            string? bankTranNo,
+            string? cardType,
+            DateTime paidAt);
     }
 }

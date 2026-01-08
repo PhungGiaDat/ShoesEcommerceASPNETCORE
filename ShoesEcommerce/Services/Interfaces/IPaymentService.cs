@@ -60,5 +60,22 @@ namespace ShoesEcommerce.Services.Interfaces
         /// Prepare VNPay payment: ensure invoice/payment records exist and set to pending
         /// </summary>
         Task<Order> PrepareVnPayPaymentAsync(int orderId);
+
+        /// <summary>
+        /// Complete VNPay payment - update payment status and finalize invoice with VNPay data
+        /// </summary>
+        Task<bool> CompleteVnPayPaymentAsync(int orderId, string transactionId, string? bankCode, DateTime paidAt);
+
+        /// <summary>
+        /// Complete VNPay payment with full data - update payment status and finalize invoice with all VNPay response fields
+        /// </summary>
+        Task<bool> CompleteVnPayPaymentFullAsync(
+            int orderId, 
+            string transactionId, 
+            string? txnRef,
+            string? bankCode, 
+            string? bankTranNo,
+            string? cardType,
+            DateTime paidAt);
     }
 }

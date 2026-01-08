@@ -69,7 +69,7 @@ namespace ShoesEcommerce.Services.Payment
 
         private static string VnPayEncode(string input)
         {
-            return HttpUtility.UrlEncode(input ?? string.Empty, Encoding.UTF8) ?? string.Empty;
+            return WebUtility.UrlEncode(input ?? string.Empty) ?? string.Empty;
         }
 
         public string CreatePaymentUrl(int orderId, decimal amount, HttpContext context)
@@ -87,19 +87,25 @@ namespace ShoesEcommerce.Services.Payment
                 vnp_Url,
                 vnp_ReturnUrl);
 
-            // Validate required configuration already handled by Require
-
-            var tick = DateTime.Now.Ticks.ToString();
             var ipAddr = GetIpAddress(context);
             
             // Convert amount to VND (multiply by 100 as VNPay requires)
             var vnpAmount = ((long)(amount * 100)).ToString();
             var createDate = DateTime.Now.ToString("yyyyMMddHHmmss");
-            var txnRef = $"{orderId}_{tick}";
-            var orderInfo = $"Thanh toan don hang {orderId}";
+            
+            // ✅ IMPROVED: Use cleaner TxnRef format that maps to Invoice Number
+            // Format: INV-{OrderId}-{Date}-{UniqueCode}
+            // This makes "Số hóa đơn" on VNPay dashboard display nicely
+            var dateStr = DateTime.UtcNow.ToString("yyyyMMdd");
+            var uniqueCode = GenerateShortUniqueCode(); // 4 character alphanumeric
+            var invoiceNumber = $"INV-{orderId}-{dateStr}";
+            var txnRef = $"{invoiceNumber}-{uniqueCode}"; // Example: INV-63-20260108-A1B2
+            
+            // ✅ ENHANCED: Include descriptive order info for VNPay portal
+            var orderInfo = $"SPORTS Vietnam - Don hang #{orderId} - {invoiceNumber}";
 
-            _logger.LogInformation("Creating VNPay URL - OrderId: {OrderId}, Amount: {Amount} VND, TxnRef: {TxnRef}, IP: {IP}",
-                orderId, amount, txnRef, ipAddr);
+            _logger.LogInformation("Creating VNPay URL - OrderId: {OrderId}, Amount: {Amount} VND, TxnRef: {TxnRef}, Invoice: {Invoice}, IP: {IP}",
+                orderId, amount, txnRef, invoiceNumber, ipAddr);
 
             // Build query parameters in sorted order
             var vnp_Params = new SortedList<string, string>(new VnPayCompare());
@@ -112,9 +118,11 @@ namespace ShoesEcommerce.Services.Payment
             vnp_Params.Add("vnp_IpAddr", ipAddr);
             vnp_Params.Add("vnp_Locale", "vn");
             vnp_Params.Add("vnp_OrderInfo", orderInfo);
-            vnp_Params.Add("vnp_OrderType", "other");
+            vnp_Params.Add("vnp_OrderType", "billpayment");
             vnp_Params.Add("vnp_ReturnUrl", vnp_ReturnUrl);
             vnp_Params.Add("vnp_TxnRef", txnRef);
+            // ✅ Add expire date (15 minutes from now)
+            vnp_Params.Add("vnp_ExpireDate", DateTime.Now.AddMinutes(15).ToString("yyyyMMddHHmmss"));
 
             // Build query string and hash data
             var queryBuilder = new StringBuilder();
@@ -148,7 +156,7 @@ namespace ShoesEcommerce.Services.Payment
             // Build final URL
             var paymentUrl = $"{vnp_Url}?{query}&vnp_SecureHashType=HMACSHA512&vnp_SecureHash={vnp_SecureHash}";
 
-            _logger.LogInformation("VNPay payment URL created successfully for order {OrderId}", orderId);
+            _logger.LogInformation("VNPay payment URL created successfully for order {OrderId}, TxnRef: {TxnRef}", orderId, txnRef);
             _logger.LogDebug("VNPay URL: {Url}", paymentUrl);
 
             return paymentUrl;
@@ -232,6 +240,17 @@ namespace ShoesEcommerce.Services.Payment
             }
             
             return hash.ToString();
+        }
+
+        /// <summary>
+        /// Generate a short unique alphanumeric code (4 characters) for TxnRef uniqueness
+        /// </summary>
+        private static string GenerateShortUniqueCode()
+        {
+            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            var random = new Random();
+            return new string(Enumerable.Repeat(chars, 4)
+                .Select(s => s[random.Next(s.Length)]).ToArray());
         }
     }
     

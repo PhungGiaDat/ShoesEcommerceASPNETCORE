@@ -88,7 +88,7 @@ namespace ShoesEcommerce.Services.Payment
         }
 
         /// <summary>
-        /// Create a PayPal order with item details, invoice ID, and amount breakdown
+        /// Create a PayPal order with item details, invoice ID, shipping address, and amount breakdown
         /// </summary>
         public async Task<CreateOrderResponse> CreateOrderAsync(
             decimal subtotal,
@@ -99,13 +99,14 @@ namespace ShoesEcommerce.Services.Payment
             string cancelUrl,
             string? description = null,
             string? invoiceId = null,
-            List<Item>? items = null)
+            List<Item>? items = null,
+            Shipping? shippingAddress = null)
         {
             try
             {
                 _logger.LogInformation(
-                    "Creating PayPal order - Subtotal: {Subtotal} VND, Discount: {Discount} VND, Total: {Total} VND, Reference: {Reference}, InvoiceId: {InvoiceId}",
-                    subtotal, discountAmount, totalAmount, referenceId, invoiceId);
+                    "Creating PayPal order - Subtotal: {Subtotal} VND, Discount: {Discount} VND, Total: {Total} VND, Reference: {Reference}, InvoiceId: {InvoiceId}, HasShipping: {HasShipping}",
+                    subtotal, discountAmount, totalAmount, referenceId, invoiceId, shippingAddress != null);
 
                 var auth = await AuthenticateAsync();
 
@@ -140,7 +141,7 @@ namespace ShoesEcommerce.Services.Payment
                         }
                     }).ToList();
 
-                    // ? FIX: Calculate item_total from converted items to avoid rounding mismatch
+                    // Calculate item_total from converted items to avoid rounding mismatch
                     itemTotalUsd = itemsInUsd.Sum(i => 
                         decimal.Parse(i.unit_amount.value, System.Globalization.CultureInfo.InvariantCulture) * 
                         int.Parse(i.quantity));
@@ -155,7 +156,7 @@ namespace ShoesEcommerce.Services.Payment
                     itemTotalUsd = subtotalInUsd;
                 }
 
-                // ? FIX: Calculate final amount from item_total and discount to ensure they match
+                // Calculate final amount from item_total and discount to ensure they match
                 decimal calculatedTotalUsd;
                 if (discountInUsd > 0)
                 {
@@ -182,8 +183,7 @@ namespace ShoesEcommerce.Services.Payment
                     value = calculatedTotalUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture)
                 };
 
-                // ? FIX: Only add breakdown if we have items OR discount
-                // PayPal requires: amount.value = item_total + tax + shipping + handling + insurance - shipping_discount - discount
+                // Only add breakdown if we have items OR discount
                 if (itemsInUsd != null && itemsInUsd.Any())
                 {
                     if (discountInUsd > 0)
@@ -214,11 +214,10 @@ namespace ShoesEcommerce.Services.Payment
                             }
                         };
                         
-                        // ? FIX: Ensure amount.value equals item_total when no discount
+                        // Ensure amount.value equals item_total when no discount
                         amount.value = itemTotalUsd.ToString("F2", System.Globalization.CultureInfo.InvariantCulture);
                     }
                 }
-                // If no items, don't include breakdown at all - simpler structure
 
                 _logger.LogInformation(
                     "Final PayPal amounts - Value: ${Value}, ItemTotal: ${ItemTotal}, Discount: ${Discount}",
@@ -233,8 +232,18 @@ namespace ShoesEcommerce.Services.Payment
                     invoice_id = invoiceId,
                     custom_id = referenceId,
                     amount = amount,
-                    items = itemsInUsd
+                    items = itemsInUsd,
+                    shipping = shippingAddress // ? NEW: Add shipping address
                 };
+
+                // ? Log shipping if provided
+                if (shippingAddress != null)
+                {
+                    _logger.LogInformation("PayPal order includes shipping: Name={Name}, Address={Address}, City={City}",
+                        shippingAddress.name?.full_name,
+                        shippingAddress.address?.address_line_1,
+                        shippingAddress.address?.admin_area_2);
+                }
 
                 var request = new CreateOrderRequest
                 {
