@@ -76,13 +76,14 @@ $RECYCLE.BIN/
 # ==================
 # Sensitive Configuration Files - IMPORTANT!
 # ==================
+# Environment-specific configs - NEVER commit
 appsettings.Development.json
 appsettings.Local.json
 appsettings.Production.json
 secrets.json
 *.secrets.json
 
-# Keep template files
+# Keep base config and template
 !appsettings.json
 !appsettings.template.json
 

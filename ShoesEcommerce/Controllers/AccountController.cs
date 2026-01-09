@@ -302,8 +302,8 @@ namespace ShoesEcommerce.Controllers
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [Authorize]
-        public async Task<IActionResult> LogoutConfirmed()
+        [ActionName("Logout")]
+        public async Task<IActionResult> LogoutPost()
         {
             try
             {

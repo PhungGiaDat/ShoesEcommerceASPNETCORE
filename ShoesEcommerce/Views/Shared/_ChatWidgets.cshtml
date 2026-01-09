@@ -14,13 +14,14 @@
     @* Tawk.to Chat Widget - Main support chat *@
     @if (tawkTo.Enabled && !string.IsNullOrEmpty(tawkTo.PropertyId) && !string.IsNullOrEmpty(tawkTo.WidgetId))
     {
+        var tawkEmbedUrl = $"https://embed.tawk.to/{tawkTo.PropertyId}/{tawkTo.WidgetId}";
         <!--Start of Tawk.to Script-->
         <script type="text/javascript">
             var Tawk_API = Tawk_API || {}, Tawk_LoadStart = new Date();
             (function(){
                 var s1 = document.createElement("script"), s0 = document.getElementsByTagName("script")[0];
                 s1.async = true;
-                s1.src = 'https://embed.tawk.to/@tawkTo.PropertyId/@tawkTo.WidgetId';
+                s1.src = '@Html.Raw(tawkEmbedUrl)';
                 s1.charset = 'UTF-8';
                 s1.setAttribute('crossorigin', '*');
                 s0.parentNode.insertBefore(s1, s0);
@@ -59,7 +60,7 @@
            rel="noopener noreferrer"
            class="fb-messenger-btn"
            title="@social.Facebook.ButtonText"
-           aria-label="Chat v?i chúng tôi qua Facebook Messenger">
+           aria-label="Chat voi chung toi qua Facebook Messenger">
             <svg class="fb-messenger-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M14 2.5C7.096 2.5 1.5 7.643 1.5 14.008C1.5 17.386 3.086 20.401 5.619 22.438V26.5L9.501 24.352C10.912 24.745 12.42 24.958 14 24.958C20.904 24.958 26.5 19.815 26.5 13.992C26.5 7.643 20.904 2.5 14 2.5Z" fill="white"/>
                 <path d="M15.5 17.5L12 13.5L5.5 17.5L12.5 10L16 14L22.5 10L15.5 17.5Z" fill="#0084FF"/>
@@ -69,6 +70,10 @@
     }
 
 </div>
+
+<!-- Debug info for troubleshooting (only visible in page source) -->
+<!-- TawkTo Enabled: @tawkTo.Enabled, PropertyId: @(string.IsNullOrEmpty(tawkTo.PropertyId) ? "EMPTY" : "SET"), WidgetId: @(string.IsNullOrEmpty(tawkTo.WidgetId) ? "EMPTY" : "SET") -->
+<!-- Facebook Enabled: @social.Facebook.Enabled, PageId: @(string.IsNullOrEmpty(social.Facebook.PageId) ? "EMPTY" : "SET") -->
 
 <!-- Chat Widget Styles -->
 <style>

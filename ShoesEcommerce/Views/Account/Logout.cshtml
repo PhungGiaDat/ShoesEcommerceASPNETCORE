@@ -12,7 +12,7 @@
         <p style="color: #6b7280;">Vui long doi trong giay lat.</p>
         
         <noscript>
-            <form asp-controller="Account" asp-action="LogoutConfirmed" method="post" style="margin-top: 20px;">
+            <form asp-controller="Account" asp-action="Logout" method="post" style="margin-top: 20px;">
                 @Html.AntiForgeryToken()
                 <button type="submit" class="btn btn-primary">Click de dang xuat</button>
             </form>
@@ -20,7 +20,7 @@
     </div>
 </div>
 
-<form id="logoutForm" asp-controller="Account" asp-action="LogoutConfirmed" method="post" style="display: none;">
+<form id="logoutForm" asp-controller="Account" asp-action="Logout" method="post" style="display: none;">
     @Html.AntiForgeryToken()
 </form>
 
