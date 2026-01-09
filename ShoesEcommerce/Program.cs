@@ -233,6 +233,67 @@ builder.Services.AddScoped<ISubizChatService, SubizChatService>();
 // Register Social Chat Options (Facebook, Zalo)
 builder.Services.Configure<SocialChatOptions>(builder.Configuration.GetSection(SocialChatOptions.SectionName));
 
+// ✅ Register Email Service
+builder.Services.Configure<EmailSettings>(options =>
+{
+    // Bind from configuration
+    builder.Configuration.GetSection(EmailSettings.SectionName).Bind(options);
+
+    // Environment overrides
+    var envProvider = Environment.GetEnvironmentVariable("EMAIL_PROVIDER");
+    var envMailchimpKey = Environment.GetEnvironmentVariable("MAILCHIMP_API_KEY");
+    var envMailchimpServer = Environment.GetEnvironmentVariable("MAILCHIMP_SERVER_PREFIX");
+    var envMailchimpAudience = Environment.GetEnvironmentVariable("MAILCHIMP_AUDIENCE_ID");
+    var envSmtpHost = Environment.GetEnvironmentVariable("EMAIL_SMTP_HOST");
+    var envSmtpPort = Environment.GetEnvironmentVariable("EMAIL_SMTP_PORT");
+    var envSenderEmail = Environment.GetEnvironmentVariable("EMAIL_SENDER_EMAIL");
+    var envSenderName = Environment.GetEnvironmentVariable("EMAIL_SENDER_NAME");
+    var envUsername = Environment.GetEnvironmentVariable("EMAIL_USERNAME");
+    var envPassword = Environment.GetEnvironmentVariable("EMAIL_PASSWORD");
+    var envWebsiteUrl = Environment.GetEnvironmentVariable("EMAIL_WEBSITE_URL");
+
+    if (!string.IsNullOrEmpty(envProvider)) options.Provider = envProvider;
+    if (!string.IsNullOrEmpty(envMailchimpKey)) options.MailchimpApiKey = envMailchimpKey;
+    if (!string.IsNullOrEmpty(envMailchimpServer)) options.MailchimpServerPrefix = envMailchimpServer;
+    if (!string.IsNullOrEmpty(envMailchimpAudience)) options.MailchimpAudienceId = envMailchimpAudience;
+    if (!string.IsNullOrEmpty(envSmtpHost)) options.SmtpHost = envSmtpHost;
+    if (!string.IsNullOrEmpty(envSmtpPort) && int.TryParse(envSmtpPort, out int port)) options.SmtpPort = port;
+    if (!string.IsNullOrEmpty(envSenderEmail)) options.SenderEmail = envSenderEmail;
+    if (!string.IsNullOrEmpty(envSenderName)) options.SenderName = envSenderName;
+    if (!string.IsNullOrEmpty(envUsername)) options.Username = envUsername;
+    if (!string.IsNullOrEmpty(envPassword)) options.Password = envPassword;
+    if (!string.IsNullOrEmpty(envWebsiteUrl)) options.WebsiteUrl = envWebsiteUrl;
+
+    Console.WriteLine("📧 Email Service Configuration:");
+    Console.WriteLine($"   - Provider: {options.Provider}");
+    Console.WriteLine($"   - Sender: {(string.IsNullOrEmpty(options.SenderEmail) ? "❌ NOT SET" : options.SenderEmail)}");
+    
+    if (options.Provider.ToLower() == "mailchimp")
+    {
+        Console.WriteLine($"   - Mailchimp API Key: {(string.IsNullOrEmpty(options.MailchimpApiKey) ? "❌ NOT SET" : "✅ SET")}");
+        Console.WriteLine($"   - Mailchimp Server: {(string.IsNullOrEmpty(options.MailchimpServerPrefix) ? "❌ NOT SET" : options.MailchimpServerPrefix)}");
+        Console.WriteLine($"   - Mailchimp Audience: {(string.IsNullOrEmpty(options.MailchimpAudienceId) ? "❌ NOT SET" : options.MailchimpAudienceId)}");
+    }
+    else
+    {
+        Console.WriteLine($"   - SMTP Host: {options.SmtpHost}:{options.SmtpPort}");
+        Console.WriteLine($"   - SMTP Password: {(string.IsNullOrEmpty(options.Password) ? "❌ NOT SET" : "✅ SET")}");
+    }
+    
+    Console.WriteLine($"   - Enabled: {options.Enabled}");
+
+    if (!string.IsNullOrEmpty(options.SenderEmail) && 
+        (!string.IsNullOrEmpty(options.MailchimpApiKey) || !string.IsNullOrEmpty(options.Password)))
+    {
+        Console.WriteLine("✅ Email Service configured successfully!");
+    }
+    else
+    {
+        Console.WriteLine("⚠️ Email Service not fully configured. Email notifications will be disabled.");
+    }
+});
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 // Register VNPay Options
 builder.Services.Configure<VnPayOptions>(options =>
 {

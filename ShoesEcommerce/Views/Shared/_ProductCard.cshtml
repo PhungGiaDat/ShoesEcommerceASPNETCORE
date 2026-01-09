@@ -1,15 +1,23 @@
-﻿@model ShoesEcommerce.ViewModels.Product.ProductVariantDisplayInfo
+﻿@using ShoesEcommerce.Helpers
+@model ShoesEcommerce.ViewModels.Product.ProductVariantDisplayInfo
 
 @{
     // Display name format: "ProductName - Color" for variant display
     var displayName = !string.IsNullOrEmpty(Model.Color) 
         ? $"{Model.ProductName} - {Model.Color}" 
         : Model.ProductName;
+    
+    // Generate SEO-friendly URL: /category-slug/product-slug-id
+    var categorySlug = !string.IsNullOrEmpty(Model.CategoryName) 
+        ? Model.CategoryName.ToSlug() 
+        : "san-pham";
+    var productSlug = $"{Model.ProductName.ToSlug()}-{Model.ProductId}";
+    var productUrl = $"/{categorySlug}/{productSlug}";
 }
 
 <div class="col-6 col-md-3">
     <article class="product-card">
-        <a href="/san-pham/@(Model.ProductName?.ToLower().Replace(" ", "-"))-@Model.ProductId" class="product-link">
+        <a href="@productUrl" class="product-link">
             <div class="product-image">
                 @if (!string.IsNullOrEmpty(Model.ImageUrl))
                 {

@@ -13,15 +13,18 @@ namespace ShoesEcommerce.Services
     {
         private readonly IPaymentRepository _paymentRepository;
         private readonly PayPalClient _paypalClient;
+        private readonly IEmailService _emailService;
         private readonly ILogger<PaymentService> _logger;
 
         public PaymentService(
             IPaymentRepository paymentRepository,
             PayPalClient paypalClient,
+            IEmailService emailService,
             ILogger<PaymentService> logger)
         {
             _paymentRepository = paymentRepository;
             _paypalClient = paypalClient;
+            _emailService = emailService;
             _logger = logger;
         }
 
@@ -285,14 +288,16 @@ namespace ShoesEcommerce.Services
                     return false;
                 }
 
-                // ✅ FIX: Update invoice with transaction ID and status
+                // Update invoice with transaction ID and status
                 var invoiceUpdated = await _paymentRepository.FinalizeInvoiceAsync(orderId, transactionId, paidAt);
                 
                 if (!invoiceUpdated)
                 {
                     _logger.LogWarning("Failed to finalize invoice for order {OrderId}", orderId);
-                    // Don't fail the whole operation if invoice update fails
                 }
+
+                // ✅ NEW: Send order confirmation email
+                await SendOrderConfirmationEmailAsync(orderId);
 
                 _logger.LogInformation("Payment completed successfully for order {OrderId}, Invoice finalized", orderId);
                 return true;
@@ -514,6 +519,9 @@ namespace ShoesEcommerce.Services
                 // Update order status to Processing
                 await _paymentRepository.UpdateOrderStatusAsync(orderId, "Processing");
 
+                // ✅ NEW: Send order confirmation email
+                await SendOrderConfirmationEmailAsync(orderId);
+
                 _logger.LogInformation("VNPay payment (full) completed successfully for order {OrderId}", orderId);
                 return true;
             }
@@ -521,6 +529,38 @@ namespace ShoesEcommerce.Services
             {
                 _logger.LogError(ex, "Error completing VNPay payment (full) for order {OrderId}", orderId);
                 throw;
+            }
+        }
+
+        /// <summary>
+        /// ✅ NEW: Send order confirmation email after successful payment
+        /// </summary>
+        private async Task SendOrderConfirmationEmailAsync(int orderId)
+        {
+            try
+            {
+                // Get full order with all details for email
+                var order = await _paymentRepository.GetOrderWithItemsForPaymentAsync(orderId);
+                if (order == null)
+                {
+                    _logger.LogWarning("Cannot send confirmation email - order {OrderId} not found", orderId);
+                    return;
+                }
+
+                var emailSent = await _emailService.SendOrderConfirmationAsync(order);
+                if (emailSent)
+                {
+                    _logger.LogInformation("Order confirmation email sent for order {OrderId}", orderId);
+                }
+                else
+                {
+                    _logger.LogWarning("Failed to send order confirmation email for order {OrderId}", orderId);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Don't fail the payment process if email fails
+                _logger.LogError(ex, "Error sending order confirmation email for order {OrderId}", orderId);
             }
         }
     }

@@ -4,7 +4,7 @@ namespace ShoesEcommerce.Middleware
 {
     /// <summary>
     /// Middleware to allow social media crawlers (Facebook, Twitter, etc.) 
-    /// to access pages for Open Graph tag scraping without authentication
+    /// to access pages for Open Graph tag scraping without authentication or redirects
     /// </summary>
     public class SocialCrawlerMiddleware
     {
@@ -43,36 +43,59 @@ namespace ShoesEcommerce.Middleware
 
             if (isSocialCrawler)
             {
-                _logger.LogInformation(
-                    "Social crawler detected: {UserAgent}, Path: {Path}",
-                    userAgent, context.Request.Path);
-
-                // Set a flag to indicate this is a social crawler request
-                context.Items["IsSocialCrawler"] = true;
-
-                // Skip authentication for social crawlers on public pages
-                var path = context.Request.Path.Value?.ToLowerInvariant() ?? "";
+                var path = context.Request.Path.Value ?? "";
+                var queryString = context.Request.QueryString.Value ?? "";
                 
-                // Allow crawlers on public product pages
-                if (path.StartsWith("/san-pham") || 
-                    path.StartsWith("/product") ||
-                    path.StartsWith("/khuyen-mai") ||
+                _logger.LogInformation(
+                    "?? Social crawler detected: {UserAgent}, Path: {Path}{Query}",
+                    userAgent.Length > 50 ? userAgent.Substring(0, 50) + "..." : userAgent, 
+                    path,
+                    queryString);
+
+                // Set flags to indicate this is a social crawler request
+                context.Items["IsSocialCrawler"] = true;
+                context.Items["AllowAnonymous"] = true;
+                
+                // IMPORTANT: Skip redirect for social crawlers on product pages
+                // This prevents redirect loops that cause 403 errors
+                if (path.StartsWith("/san-pham", StringComparison.OrdinalIgnoreCase) || 
+                    path.StartsWith("/product", StringComparison.OrdinalIgnoreCase) ||
+                    path.StartsWith("/khuyen-mai", StringComparison.OrdinalIgnoreCase) ||
+                    path.StartsWith("/giay-", StringComparison.OrdinalIgnoreCase) || // Category-based URLs
                     path == "/" ||
-                    path.StartsWith("/home"))
+                    path.StartsWith("/home", StringComparison.OrdinalIgnoreCase))
                 {
-                    // Mark as anonymous request to bypass auth checks
-                    context.Items["AllowAnonymous"] = true;
+                    context.Items["SkipCanonicalRedirect"] = true;
                 }
             }
 
             await _next(context);
 
             // Log if we returned an error to a social crawler
-            if (isSocialCrawler && context.Response.StatusCode >= 400)
+            if (isSocialCrawler)
             {
-                _logger.LogWarning(
-                    "Social crawler received error response: {StatusCode}, UserAgent: {UserAgent}, Path: {Path}",
-                    context.Response.StatusCode, userAgent, context.Request.Path);
+                var statusCode = context.Response.StatusCode;
+                if (statusCode >= 400)
+                {
+                    _logger.LogWarning(
+                        "?? Social crawler received error: {StatusCode}, UserAgent: {UserAgent}, Path: {Path}",
+                        statusCode, 
+                        userAgent.Length > 30 ? userAgent.Substring(0, 30) + "..." : userAgent, 
+                        context.Request.Path);
+                }
+                else if (statusCode >= 300 && statusCode < 400)
+                {
+                    var location = context.Response.Headers.Location.FirstOrDefault();
+                    _logger.LogInformation(
+                        "?? Social crawler redirected: {StatusCode} ? {Location}",
+                        statusCode, location);
+                }
+                else
+                {
+                    _logger.LogInformation(
+                        "? Social crawler served successfully: {StatusCode}, Path: {Path}",
+                        statusCode, context.Request.Path);
+                }
             }
         }
     }

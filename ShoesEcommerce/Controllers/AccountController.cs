@@ -284,11 +284,26 @@ namespace ShoesEcommerce.Controllers
             return View(model);
         }
 
+        // GET: /Account/Logout - Redirect to POST form or auto-submit
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult Logout()
+        {
+            // If user is not authenticated, just redirect to home
+            if (User.Identity?.IsAuthenticated != true)
+            {
+                return RedirectToAction("Index", "Home");
+            }
+
+            // Return a view that auto-submits the logout form
+            return View();
+        }
+
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
         [Authorize]
-        public async Task<IActionResult> Logout()
+        public async Task<IActionResult> LogoutConfirmed()
         {
             try
             {
@@ -297,7 +312,7 @@ namespace ShoesEcommerce.Controllers
 
                 _logger.LogInformation("User {Email} logged out", userEmail);
 
-                TempData["InfoMessage"] = "Bạn đã đăng xuất thành công.";
+                TempData["InfoMessage"] = "Ban da dang xuat thanh cong.";
             }
             catch (Exception ex)
             {

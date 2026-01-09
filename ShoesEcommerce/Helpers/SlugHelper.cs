@@ -9,211 +9,23 @@ namespace ShoesEcommerce.Helpers
     /// </summary>
     public static class SlugHelper
     {
-        // Build the Vietnamese character map using Unicode code points to avoid encoding issues
-        private static readonly Dictionary<char, string> VietnameseCharMap = BuildVietnameseCharMap();
-
-        private static Dictionary<char, string> BuildVietnameseCharMap()
-        {
-            var map = new Dictionary<char, string>();
-            
-            // Lowercase d with stroke - U+0111
-            map['\u0111'] = "d";
-            
-            // Lowercase a with diacritics
-            map['\u00E0'] = "a";
-            map['\u00E1'] = "a";
-            map['\u1EA3'] = "a";
-            map['\u00E3'] = "a";
-            map['\u1EA1'] = "a";
-            map['\u0103'] = "a";
-            map['\u1EB1'] = "a";
-            map['\u1EAF'] = "a";
-            map['\u1EB3'] = "a";
-            map['\u1EB5'] = "a";
-            map['\u1EB7'] = "a";
-            map['\u00E2'] = "a";
-            map['\u1EA7'] = "a";
-            map['\u1EA5'] = "a";
-            map['\u1EA9'] = "a";
-            map['\u1EAB'] = "a";
-            map['\u1EAD'] = "a";
-            
-            // Lowercase e with diacritics
-            map['\u00E8'] = "e";
-            map['\u00E9'] = "e";
-            map['\u1EBB'] = "e";
-            map['\u1EBD'] = "e";
-            map['\u1EB9'] = "e";
-            map['\u00EA'] = "e";
-            map['\u1EC1'] = "e";
-            map['\u1EBF'] = "e";
-            map['\u1EC3'] = "e";
-            map['\u1EC5'] = "e";
-            map['\u1EC7'] = "e";
-            
-            // Lowercase i with diacritics
-            map['\u00EC'] = "i";
-            map['\u00ED'] = "i";
-            map['\u1EC9'] = "i";
-            map['\u0129'] = "i";
-            map['\u1ECB'] = "i";
-            
-            // Lowercase o with diacritics
-            map['\u00F2'] = "o";
-            map['\u00F3'] = "o";
-            map['\u1ECF'] = "o";
-            map['\u00F5'] = "o";
-            map['\u1ECD'] = "o";
-            map['\u00F4'] = "o";
-            map['\u1ED3'] = "o";
-            map['\u1ED1'] = "o";
-            map['\u1ED5'] = "o";
-            map['\u1ED7'] = "o";
-            map['\u1ED9'] = "o";
-            map['\u01A1'] = "o";
-            map['\u1EDD'] = "o";
-            map['\u1EDB'] = "o";
-            map['\u1EDF'] = "o";
-            map['\u1EE1'] = "o";
-            map['\u1EE3'] = "o";
-            
-            // Lowercase u with diacritics
-            map['\u00F9'] = "u";
-            map['\u00FA'] = "u";
-            map['\u1EE7'] = "u";
-            map['\u0169'] = "u";
-            map['\u1EE5'] = "u";
-            map['\u01B0'] = "u";
-            map['\u1EEB'] = "u";
-            map['\u1EE9'] = "u";
-            map['\u1EED'] = "u";
-            map['\u1EEF'] = "u";
-            map['\u1EF1'] = "u";
-            
-            // Lowercase y with diacritics
-            map['\u1EF3'] = "y";
-            map['\u00FD'] = "y";
-            map['\u1EF7'] = "y";
-            map['\u1EF9'] = "y";
-            map['\u1EF5'] = "y";
-            
-            // Uppercase D with stroke - U+0110
-            map['\u0110'] = "d";
-            
-            // Uppercase A with diacritics
-            map['\u00C0'] = "a";
-            map['\u00C1'] = "a";
-            map['\u1EA2'] = "a";
-            map['\u00C3'] = "a";
-            map['\u1EA0'] = "a";
-            map['\u0102'] = "a";
-            map['\u1EB0'] = "a";
-            map['\u1EAE'] = "a";
-            map['\u1EB2'] = "a";
-            map['\u1EB4'] = "a";
-            map['\u1EB6'] = "a";
-            map['\u00C2'] = "a";
-            map['\u1EA6'] = "a";
-            map['\u1EA4'] = "a";
-            map['\u1EA8'] = "a";
-            map['\u1EAA'] = "a";
-            map['\u1EAC'] = "a";
-            
-            // Uppercase E with diacritics
-            map['\u00C8'] = "e";
-            map['\u00C9'] = "e";
-            map['\u1EBA'] = "e";
-            map['\u1EBC'] = "e";
-            map['\u1EB8'] = "e";
-            map['\u00CA'] = "e";
-            map['\u1EC0'] = "e";
-            map['\u1EBE'] = "e";
-            map['\u1EC2'] = "e";
-            map['\u1EC4'] = "e";
-            map['\u1EC6'] = "e";
-            
-            // Uppercase I with diacritics
-            map['\u00CC'] = "i";
-            map['\u00CD'] = "i";
-            map['\u1EC8'] = "i";
-            map['\u0128'] = "i";
-            map['\u1ECA'] = "i";
-            
-            // Uppercase O with diacritics
-            map['\u00D2'] = "o";
-            map['\u00D3'] = "o";
-            map['\u1ECE'] = "o";
-            map['\u00D5'] = "o";
-            map['\u1ECC'] = "o";
-            map['\u00D4'] = "o";
-            map['\u1ED2'] = "o";
-            map['\u1ED0'] = "o";
-            map['\u1ED4'] = "o";
-            map['\u1ED6'] = "o";
-            map['\u1ED8'] = "o";
-            map['\u01A0'] = "o";
-            map['\u1EDC'] = "o";
-            map['\u1EDA'] = "o";
-            map['\u1EDE'] = "o";
-            map['\u1EE0'] = "o";
-            map['\u1EE2'] = "o";
-            
-            // Uppercase U with diacritics
-            map['\u00D9'] = "u";
-            map['\u00DA'] = "u";
-            map['\u1EE6'] = "u";
-            map['\u0168'] = "u";
-            map['\u1EE4'] = "u";
-            map['\u01AF'] = "u";
-            map['\u1EEA'] = "u";
-            map['\u1EE8'] = "u";
-            map['\u1EEC'] = "u";
-            map['\u1EEE'] = "u";
-            map['\u1EF0'] = "u";
-            
-            // Uppercase Y with diacritics
-            map['\u1EF2'] = "y";
-            map['\u00DD'] = "y";
-            map['\u1EF6'] = "y";
-            map['\u1EF8'] = "y";
-            map['\u1EF4'] = "y";
-            
-            return map;
-        }
-
         /// <summary>
         /// Converts a string to a URL-friendly slug
         /// </summary>
         public static string ToSlug(this string title)
         {
             if (string.IsNullOrWhiteSpace(title))
-            {
                 return string.Empty;
-            }
 
-            // Convert Vietnamese characters first
-            var sb = new StringBuilder(title.Length);
-            foreach (var c in title)
-            {
-                if (VietnameseCharMap.TryGetValue(c, out var replacement))
-                {
-                    sb.Append(replacement);
-                }
-                else
-                {
-                    sb.Append(c);
-                }
-            }
-            title = sb.ToString();
-
-            // Convert to lowercase
+            // Convert to lowercase first
             title = title.ToLowerInvariant();
 
-            // Normalize the string (decompose characters)
+            // Replace Vietnamese characters
+            title = ReplaceVietnameseChars(title);
+
+            // Remove diacritical marks
             title = title.Normalize(NormalizationForm.FormD);
-            
-            // Remove diacritical marks (accents)
-            sb.Clear();
+            var sb = new StringBuilder();
             foreach (var c in title)
             {
                 var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
@@ -228,9 +40,7 @@ namespace ShoesEcommerce.Helpers
             title = title.Replace("&", "and")
                         .Replace("@", "at")
                         .Replace("#", "sharp")
-                        .Replace("+", "plus")
-                        .Replace("$", "dollar")
-                        .Replace("%", "percent");
+                        .Replace("+", "plus");
 
             // Remove any characters that are not alphanumeric, spaces, or hyphens
             title = Regex.Replace(title, @"[^a-z0-9\s-]", "");
@@ -238,19 +48,36 @@ namespace ShoesEcommerce.Helpers
             // Replace multiple spaces with single space
             title = Regex.Replace(title, @"\s+", " ");
 
-            // Trim leading/trailing spaces
-            title = title.Trim();
-
-            // Replace spaces with hyphens
-            title = title.Replace(' ', '-');
+            // Trim and replace spaces with hyphens
+            title = title.Trim().Replace(' ', '-');
 
             // Remove duplicate hyphens
             title = Regex.Replace(title, @"-+", "-");
 
             // Trim leading/trailing hyphens
-            title = title.Trim('-');
+            return title.Trim('-');
+        }
 
-            return title;
+        /// <summary>
+        /// Replace Vietnamese characters with ASCII equivalents
+        /// </summary>
+        private static string ReplaceVietnameseChars(string str)
+        {
+            str = Regex.Replace(str, "[àá??ãâ???????????]", "a");
+            str = Regex.Replace(str, "[èé???ê?????]", "e");
+            str = Regex.Replace(str, "[ìí???]", "i");
+            str = Regex.Replace(str, "[òó??õô???????????]", "o");
+            str = Regex.Replace(str, "[ùú?????????]", "u");
+            str = Regex.Replace(str, "[?ý???]", "y");
+            str = Regex.Replace(str, "[?]", "d");
+            str = Regex.Replace(str, "[ÀÁ??ÃÂ???????????]", "a");
+            str = Regex.Replace(str, "[ÈÉ???Ê?????]", "e");
+            str = Regex.Replace(str, "[ÌÍ???]", "i");
+            str = Regex.Replace(str, "[ÒÓ??ÕÔ???????????]", "o");
+            str = Regex.Replace(str, "[ÙÚ?????????]", "u");
+            str = Regex.Replace(str, "[?Ý???]", "y");
+            str = Regex.Replace(str, "[?]", "d");
+            return str;
         }
 
         /// <summary>
@@ -260,6 +87,23 @@ namespace ShoesEcommerce.Helpers
         {
             var slug = title.ToSlug();
             return string.IsNullOrEmpty(slug) ? id.ToString() : $"{slug}-{id}";
+        }
+
+        /// <summary>
+        /// Generates full SEO-friendly URL path with category
+        /// Example: /giay-da-bong/nike-mercurial-vapor-15-28
+        /// </summary>
+        public static string ToFullProductUrl(string productName, string? categoryName, string? color, int productId)
+        {
+            var categorySlug = !string.IsNullOrEmpty(categoryName) ? categoryName.ToSlug() : "san-pham";
+            var productSlug = productName.ToSlug();
+            
+            // Optionally include color in slug
+            var slug = !string.IsNullOrEmpty(color) 
+                ? $"{productSlug}-{color.ToSlug()}-{productId}"
+                : $"{productSlug}-{productId}";
+            
+            return $"/{categorySlug}/{slug}";
         }
 
         /// <summary>

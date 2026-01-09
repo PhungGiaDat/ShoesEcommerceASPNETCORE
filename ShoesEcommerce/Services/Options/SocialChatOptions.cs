@@ -11,7 +11,8 @@
         public const string SectionName = "SocialChat";
 
         /// <summary>
-        /// Facebook Messenger Chat Plugin configuration
+        /// Facebook Messenger Click-to-Chat configuration (2025 standard)
+        /// Note: Customer Chat Plugin deprecated by Meta, using m.me links instead
         /// </summary>
         public FacebookMessengerOptions Facebook { get; set; } = new();
 
@@ -22,39 +23,41 @@
     }
 
     /// <summary>
-    /// Facebook Messenger Chat Plugin options
+    /// Facebook Messenger options (Click-to-Messenger - 2025 standard)
+    /// Meta deprecated Customer Chat Plugin, use m.me links instead
     /// </summary>
     public class FacebookMessengerOptions
     {
         /// <summary>
-        /// Whether Facebook Messenger chat is enabled
+        /// Whether Facebook Messenger button is enabled
         /// </summary>
         public bool Enabled { get; set; } = false;
 
         /// <summary>
-        /// Facebook Page ID for the chat plugin
+        /// Facebook Page ID or Page Username for m.me link
+        /// Example: "937477202779723" or "YourPageName"
         /// </summary>
         public string PageId { get; set; } = string.Empty;
 
         /// <summary>
-        /// Facebook App ID (optional, for advanced features)
+        /// Facebook App ID (optional, for analytics)
         /// </summary>
         public string AppId { get; set; } = string.Empty;
 
         /// <summary>
-        /// Theme color for the chat plugin (hex color without #)
+        /// Theme color for the chat button (hex color without #)
         /// </summary>
         public string ThemeColor { get; set; } = "0084FF";
 
         /// <summary>
-        /// Logged in greeting message
+        /// Button text displayed
         /// </summary>
-        public string LoggedInGreeting { get; set; } = "Xin chào! Chúng tôi có thể giúp gì cho bạn?";
+        public string ButtonText { get; set; } = "Chat Facebook";
 
         /// <summary>
-        /// Logged out greeting message
+        /// Default ref parameter for tracking (optional)
         /// </summary>
-        public string LoggedOutGreeting { get; set; } = "Xin chào! Đăng nhập Facebook để chat với chúng tôi!";
+        public string DefaultRef { get; set; } = "website_chat";
     }
 
     /// <summary>
@@ -75,7 +78,7 @@
         /// <summary>
         /// Welcome message when chat opens
         /// </summary>
-        public string WelcomeMessage { get; set; } = "Xin chào! Shoes Ecommerce có thể giúp gì cho bạn?";
+        public string WelcomeMessage { get; set; } = "Xin chào! SPORTS Vietnam có thể giúp gì cho bạn?";
 
         /// <summary>
         /// Auto popup delay in seconds (0 = disabled)

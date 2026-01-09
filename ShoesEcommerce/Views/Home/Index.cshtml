@@ -26,9 +26,9 @@
                             <div class="col-lg-7">
                                 <div class="hero-content">
                                     <span class="hero-badge">NEW ARRIVAL 2025</span>
-                                    <h1 class="hero-title">GIÀY ĐÁ BÓNG<br><span class="text-accent">CHÍNH HÃNG</span></h1>
-                                    <p class="hero-subtitle">Nike, Adidas, Puma, Mizuno - Cập nhật mẫu mới nhất</p>
-                                    <a href="/san-pham" class="btn-hero">XEM TẤT CẢ SẢN PHẨM</a>
+                                    <h1 class="hero-title">GIAY DA BONG<br><span class="text-accent">CHINH HANG</span></h1>
+                                    <p class="hero-subtitle">Nike, Adidas, Puma, Mizuno - Cap nhat mau moi nhat</p>
+                                    <a href="/san-pham" class="btn-hero">XEM TAT CA SAN PHAM</a>
                                 </div>
                             </div>
                             <div class="col-lg-5 d-none d-lg-flex justify-content-center">
@@ -41,16 +41,16 @@
                 </div>
             </div>
             
-            <!-- Slide 2: Sale Banner -->
+            <!-- Slide 2: Sale Banner - Use h2 instead of h1 -->
             <div class="carousel-item">
                 <div class="hero-slide hero-gradient-sale">
                     <div class="container">
                         <div class="row align-items-center min-vh-hero">
                             <div class="col-lg-7">
                                 <div class="hero-content">
-                                    <span class="hero-badge hot">🔥 HOT DEAL</span>
-                                    <h1 class="hero-title">GIẢM ĐẾN<br><span class="text-accent">50%</span></h1>
-                                    <p class="hero-subtitle">Chương trình khuyến mãi đặc biệt - Số lượng có hạn!</p>
+                                    <span class="hero-badge hot">HOT DEAL</span>
+                                    <p class="hero-title" aria-label="Giam den 50 phan tram">GIAM DEN<br><span class="text-accent">50%</span></p>
+                                    <p class="hero-subtitle">Chuong trinh khuyen mai dac biet - So luong co han!</p>
                                     <a href="/khuyen-mai" class="btn-hero btn-hot">XEM DEAL NGAY</a>
                                 </div>
                             </div>
@@ -238,6 +238,9 @@
         </div>
     </div>
 </section>
+
+<!-- Newsletter Subscribe Section -->
+@await Html.PartialAsync("_NewsletterSubscribe")
 
 @section Styles {
 <style>

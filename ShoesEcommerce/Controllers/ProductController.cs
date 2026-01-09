@@ -75,31 +75,29 @@ namespace ShoesEcommerce.Controllers
             }
         }
 
-        // GET: Product/Details/5 - Traditional route (for backward compatibility)
-        // GET: /san-pham/{slug} - SEO-friendly route
-        [Route("san-pham/{slug}")]
-        [Route("product/{slug}")]
-        [Route("Product/Details/{id:int}")]
-        public async Task<IActionResult> Details(string? slug, int? id, string? color, string? size)
+        // ==================== SEO-FRIENDLY PRODUCT DETAIL ROUTES ====================
+        
+        // NEW: Category-based SEO route: /{category-slug}/{product-slug}
+        // Example: /giay-da-bong/nike-mercurial-vapor-15-do-28
+        [Route("{categorySlug}/{productSlug}")]
+        public async Task<IActionResult> CategoryProduct(string categorySlug, string productSlug)
         {
-            // Determine product ID from either route parameter or slug
-            int productId;
-            
-            // Case 1: Direct ID access (e.g., /Product/Details/3 or /Product/Details/3?slug=xxx)
-            if (id.HasValue)
-            {
-                productId = id.Value;
-            }
-            // Case 2: SEO-friendly slug route (e.g., /san-pham/product-name-3)
-            else if (!string.IsNullOrEmpty(slug))
-            {
-                productId = SlugHelper.ExtractIdFromSlug(slug);
-            }
-            else
+            // Extract product ID from slug
+            var productId = SlugHelper.ExtractIdFromSlug(productSlug);
+            if (productId <= 0)
             {
                 return NotFound();
             }
 
+            return await RenderProductDetails(productId, categorySlug, productSlug);
+        }
+
+        // Legacy route: /san-pham/{slug} (keep for backward compatibility)
+        [Route("san-pham/{slug}")]
+        [Route("product/{slug}")]
+        public async Task<IActionResult> Details(string slug)
+        {
+            var productId = SlugHelper.ExtractIdFromSlug(slug);
             if (productId <= 0)
             {
                 return NotFound();
@@ -113,58 +111,130 @@ namespace ShoesEcommerce.Controllers
                     return NotFound("Sản phẩm không tồn tại.");
                 }
 
-                // Generate the canonical SEO-friendly slug
-                var expectedSlug = product.Name.ToSlugWithId(product.Id);
+                // Check if this is a social crawler - don't redirect, serve content directly
+                var isSocialCrawler = HttpContext.Items.ContainsKey("IsSocialCrawler") && 
+                                      (bool)HttpContext.Items["IsSocialCrawler"]!;
                 
-                // Check current path to determine if we need to redirect
-                var currentPath = Request.Path.Value?.ToLowerInvariant() ?? "";
-                
-                // Only redirect if:
-                // 1. Accessed via /Product/Details/{id} route (legacy URL)
-                // 2. OR accessed via SEO route but with wrong slug
-                var isLegacyRoute = currentPath.Contains("/product/details/");
-                var isSeoRouteWithWrongSlug = (currentPath.StartsWith("/san-pham/") || currentPath.StartsWith("/product/")) && 
-                                               !currentPath.Contains("/product/details/") &&
-                                               !string.IsNullOrEmpty(slug) && 
-                                               !slug.Equals(expectedSlug, StringComparison.OrdinalIgnoreCase);
-                
-                if (isLegacyRoute || isSeoRouteWithWrongSlug)
+                if (isSocialCrawler)
                 {
-                    // Build the SEO URL directly to avoid any routing issues
-                    var seoUrl = $"/san-pham/{expectedSlug}";
-                    
-                    // Preserve variant query parameters if present
-                    var queryParams = new List<string>();
-                    if (!string.IsNullOrEmpty(color)) queryParams.Add($"color={Uri.EscapeDataString(color)}");
-                    if (!string.IsNullOrEmpty(size)) queryParams.Add($"size={Uri.EscapeDataString(size)}");
-                    if (queryParams.Count > 0) seoUrl += "?" + string.Join("&", queryParams);
-                    
-                    return RedirectPermanent(seoUrl);
+                    // Serve content directly to social crawlers without redirect
+                    return await RenderProductDetailsForCrawler(product);
                 }
 
-                // At this point, we're on the correct SEO URL - render the view
+                // Redirect to new SEO-friendly URL with category for regular users
+                var categorySlug = product.Category?.Name?.ToSlug() ?? "san-pham";
+                var newSlug = $"{product.Name.ToSlug()}-{product.Id}";
+                var newUrl = $"/{categorySlug}/{newSlug}";
+
+                return RedirectPermanent(newUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error redirecting product: {ProductId}", productId);
+                return NotFound();
+            }
+        }
+
+        // Legacy route: /Product/Details/{id}
+        [Route("Product/Details/{id:int}")]
+        public async Task<IActionResult> DetailsById(int id)
+        {
+            try
+            {
+                var product = await _productService.GetProductByIdAsync(id);
+                if (product == null)
+                {
+                    return NotFound("Sản phẩm không tồn tại.");
+                }
+
+                // Redirect to new SEO-friendly URL with category
+                var categorySlug = product.Category?.Name?.ToSlug() ?? "san-pham";
+                var newSlug = $"{product.Name.ToSlug()}-{product.Id}";
+                var newUrl = $"/{categorySlug}/{newSlug}";
+
+                return RedirectPermanent(newUrl);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error redirecting product: {ProductId}", id);
+                return NotFound();
+            }
+        }
+
+        /// <summary>
+        /// Core method to render product details
+        /// </summary>
+        private async Task<IActionResult> RenderProductDetails(int productId, string? categorySlug = null, string? productSlug = null)
+        {
+            try
+            {
+                var product = await _productService.GetProductByIdAsync(productId);
+                if (product == null)
+                {
+                    return NotFound("Sản phẩm không tồn tại.");
+                }
+
+                // Generate canonical SEO URL (WITHOUT query string)
+                var expectedCategorySlug = product.Category?.Name?.ToSlug() ?? "san-pham";
+                var expectedProductSlug = $"{product.Name.ToSlug()}-{product.Id}";
+                var canonicalUrl = $"/{expectedCategorySlug}/{expectedProductSlug}";
+
+                // Check if this is a social crawler - skip redirect for crawlers
+                var isSocialCrawler = HttpContext.Items.ContainsKey("IsSocialCrawler") && 
+                                      (bool)HttpContext.Items["IsSocialCrawler"]!;
+
+                // Check if current URL matches canonical URL, redirect if not (but NOT for social crawlers)
+                var currentPath = Request.Path.Value?.ToLowerInvariant() ?? "";
+                if (!isSocialCrawler && !currentPath.Equals(canonicalUrl, StringComparison.OrdinalIgnoreCase))
+                {
+                    return RedirectPermanent(canonicalUrl);
+                }
+
+                // Load product data
                 var variants = await _productService.GetProductVariantsAsync(productId);
                 var discountInfo = await _discountService.GetProductDiscountInfoAsync(productId);
                 var comments = await _commentService.GetCommentsAsync(productId);
                 var qas = await _commentService.GetQAsAsync(productId);
 
-                ViewData["Title"] = product.Name ?? "Chi tiết sản phẩm";
+                // SEO Meta tags
+                var categoryName = product.Category?.Name ?? "Sản phẩm";
+                ViewData["Title"] = $"{product.Name} | {categoryName} - SPORTS Vietnam";
                 ViewData["MetaDescription"] = product.Description?.Length > 160 
                     ? product.Description.Substring(0, 157) + "..." 
-                    : product.Description;
-                ViewData["CanonicalUrl"] = $"{Request.Scheme}://{Request.Host}/san-pham/{expectedSlug}";
+                    : product.Description ?? $"{product.Name} chính hãng tại SPORTS Vietnam";
+                
+                // IMPORTANT: Canonical URL WITHOUT query string for OG tags
+                ViewData["CanonicalUrl"] = $"{Request.Scheme}://{Request.Host}{canonicalUrl}";
+                ViewData["OgType"] = "product";
+                
+                // Set product image for OG
+                if (variants.Any())
+                {
+                    var mainImage = variants.FirstOrDefault()?.ImageUrl;
+                    if (!string.IsNullOrEmpty(mainImage))
+                    {
+                        ViewData["OgImage"] = mainImage.StartsWith("http") 
+                            ? mainImage 
+                            : $"{Request.Scheme}://{Request.Host}{mainImage}";
+                    }
+                }
                 
                 ViewBag.Variants = variants;
                 ViewBag.DiscountInfo = discountInfo;
                 ViewBag.Comments = comments;
                 ViewBag.QAs = qas;
-                ViewBag.ProductSlug = expectedSlug;
-                
-                // Pass selected variant info for pre-selection and sharing
-                ViewBag.SelectedColor = color;
-                ViewBag.SelectedSize = size;
+                ViewBag.ProductSlug = expectedProductSlug;
+                ViewBag.CategorySlug = expectedCategorySlug;
+                ViewBag.CanonicalUrl = canonicalUrl;
+                ViewBag.IsSocialCrawler = isSocialCrawler;
 
-                return View(product);
+                if (isSocialCrawler)
+                {
+                    _logger.LogInformation("🤖 Serving product to social crawler: {ProductName} (ID: {ProductId})", 
+                        product.Name, product.Id);
+                }
+
+                return View("Details", product);
             }
             catch (Exception ex)
             {
@@ -189,7 +259,7 @@ namespace ShoesEcommerce.Controllers
             if (!User.Identity.IsAuthenticated)
             {
                 TempData["Error"] = "Bạn cần đăng nhập để bình luận.";
-                return RedirectToProductDetails(model.ProductId);
+                return await RedirectToProductDetailsAsync(model.ProductId);
             }
             
             var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -202,12 +272,12 @@ namespace ShoesEcommerce.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                return RedirectToProductDetails(model.ProductId);
+                return await RedirectToProductDetailsAsync(model.ProductId);
             }
             
             await _commentService.AddCommentAsync(model);
             TempData["Success"] = "Đã gửi bình luận thành công.";
-            return RedirectToProductDetails(model.ProductId);
+            return await RedirectToProductDetailsAsync(model.ProductId);
         }
 
         // GET: AddQA - Redirect to product index when accessed directly
@@ -225,7 +295,7 @@ namespace ShoesEcommerce.Controllers
             if (!User.Identity.IsAuthenticated)
             {
                 TempData["Error"] = "Bạn cần đăng nhập để gửi câu hỏi.";
-                return RedirectToProductDetails(model.ProductId);
+                return await RedirectToProductDetailsAsync(model.ProductId);
             }
             
             var customerIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -238,12 +308,12 @@ namespace ShoesEcommerce.Controllers
             if (!ModelState.IsValid)
             {
                 TempData["Error"] = string.Join(" ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
-                return RedirectToProductDetails(model.ProductId);
+                return await RedirectToProductDetailsAsync(model.ProductId);
             }
             
             await _commentService.AddQAAsync(model);
             TempData["Success"] = "Đã gửi câu hỏi thành công.";
-            return RedirectToProductDetails(model.ProductId);
+            return await RedirectToProductDetailsAsync(model.ProductId);
         }
 
         // GET: Product/DiscountedProducts - SEO-friendly URL
@@ -260,7 +330,6 @@ namespace ShoesEcommerce.Controllers
                 var discountedVariants = await _productService.GetDiscountedProductVariantsAsync(page, pageSize);
                 var featuredDiscounts = await _discountService.GetFeaturedDiscountsAsync();
                 
-                // Load categories and brands for sidebar filter
                 var categories = await _productService.GetCategoriesForDropdownAsync();
                 var brands = await _productService.GetBrandsForDropdownAsync();
                 
@@ -304,7 +373,10 @@ namespace ShoesEcommerce.Controllers
                     id = v.Id,
                     productId = v.ProductId,
                     name = v.DisplayName,
-                    slug = v.DisplayName.ToSlugWithId(v.ProductId),
+                    slug = v.ProductName.ToSlugWithId(v.ProductId),
+                    // NEW: Include category slug for SEO-friendly URL
+                    categorySlug = v.CategoryName.ToSlug(),
+                    url = SlugHelper.ToFullProductUrl(v.ProductName, v.CategoryName, null, v.ProductId),
                     price = v.Price,
                     discountedPrice = v.DiscountedPrice,
                     imageUrl = v.ImageUrl,
@@ -339,7 +411,7 @@ namespace ShoesEcommerce.Controllers
                     id = v.Id,
                     productId = v.ProductId,
                     name = v.DisplayName,
-                    slug = v.DisplayName.ToSlugWithId(v.ProductId),
+                    url = SlugHelper.ToFullProductUrl(v.ProductName, v.CategoryName, null, v.ProductId),
                     price = v.Price,
                     discountedPrice = v.DiscountedPrice,
                     imageUrl = v.ImageUrl,
@@ -373,7 +445,7 @@ namespace ShoesEcommerce.Controllers
                     id = v.Id,
                     productId = v.ProductId,
                     name = v.DisplayName,
-                    slug = v.DisplayName.ToSlugWithId(v.ProductId),
+                    url = SlugHelper.ToFullProductUrl(v.ProductName, v.CategoryName, null, v.ProductId),
                     price = v.Price,
                     discountedPrice = v.DiscountedPrice,
                     imageUrl = v.ImageUrl,
@@ -438,7 +510,7 @@ namespace ShoesEcommerce.Controllers
                     return Json(new { hasDiscount = false });
                 }
 
-                var result = new {
+                return Json(new {
                     hasDiscount = discountInfo.HasActiveDiscount,
                     discountName = discountInfo.ActiveDiscount?.Name,
                     discountCode = discountInfo.ActiveDiscount?.Code,
@@ -446,9 +518,7 @@ namespace ShoesEcommerce.Controllers
                     discountAmount = discountInfo.DiscountAmount,
                     originalPrice = discountInfo.OriginalPrice,
                     discountedPrice = discountInfo.DiscountedPrice
-                };
-
-                return Json(result);
+                });
             }
             catch (Exception ex)
             {
@@ -467,8 +537,9 @@ namespace ShoesEcommerce.Controllers
                 var product = await _productService.GetProductByIdAsync(productId);
                 if (product != null)
                 {
-                    var slug = product.Name.ToSlugWithId(product.Id);
-                    return RedirectPermanent($"/san-pham/{slug}");
+                    var categorySlug = product.Category?.Name?.ToSlug() ?? "san-pham";
+                    var productSlug = $"{product.Name.ToSlug()}-{product.Id}";
+                    return RedirectPermanent($"/{categorySlug}/{productSlug}");
                 }
             }
             catch (Exception ex)
@@ -476,17 +547,57 @@ namespace ShoesEcommerce.Controllers
                 _logger.LogError(ex, "Error getting product for redirect: {ProductId}", productId);
             }
             
-            // Fallback to old route if product not found
-            return RedirectToAction("Details", new { id = productId });
+            return RedirectToAction(nameof(Index));
         }
 
         /// <summary>
-        /// Synchronous version for simpler redirects
+        /// Render product details for social crawlers without redirect
         /// </summary>
-        private IActionResult RedirectToProductDetails(int productId)
+        private async Task<IActionResult> RenderProductDetailsForCrawler(ShoesEcommerce.Models.Products.Product product)
         {
-            // Use a simple redirect that will be handled by the Details action
-            return Redirect($"/Product/Details/{productId}");
+            try
+            {
+                // Generate canonical URL without query string
+                var categorySlug = product.Category?.Name?.ToSlug() ?? "san-pham";
+                var productSlug = $"{product.Name.ToSlug()}-{product.Id}";
+                var canonicalUrl = $"/{categorySlug}/{productSlug}";
+
+                // Load product data
+                var variants = await _productService.GetProductVariantsAsync(product.Id);
+                var discountInfo = await _discountService.GetProductDiscountInfoAsync(product.Id);
+                var comments = await _commentService.GetCommentsAsync(product.Id);
+                var qas = await _commentService.GetQAsAsync(product.Id);
+
+                // SEO Meta tags - CRITICAL for social sharing
+                var categoryName = product.Category?.Name ?? "Sản phẩm";
+                ViewData["Title"] = $"{product.Name} | {categoryName} - SPORTS Vietnam";
+                ViewData["MetaDescription"] = product.Description?.Length > 160 
+                    ? product.Description.Substring(0, 157) + "..." 
+                    : product.Description ?? $"{product.Name} chính hãng tại SPORTS Vietnam";
+                
+                // IMPORTANT: Canonical URL WITHOUT query string for OG tags
+                ViewData["CanonicalUrl"] = $"{Request.Scheme}://{Request.Host}{canonicalUrl}";
+                ViewData["OgType"] = "product";
+                
+                ViewBag.Variants = variants;
+                ViewBag.DiscountInfo = discountInfo;
+                ViewBag.Comments = comments;
+                ViewBag.QAs = qas;
+                ViewBag.ProductSlug = productSlug;
+                ViewBag.CategorySlug = categorySlug;
+                ViewBag.CanonicalUrl = canonicalUrl;
+                ViewBag.IsSocialCrawler = true;
+
+                _logger.LogInformation("🤖 Serving product to social crawler: {ProductName} (ID: {ProductId})", 
+                    product.Name, product.Id);
+
+                return View("Details", product);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error rendering product for crawler: {ProductId}", product.Id);
+                return NotFound();
+            }
         }
     }
 }

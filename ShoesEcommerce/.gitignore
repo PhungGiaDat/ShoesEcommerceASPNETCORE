@@ -76,17 +76,15 @@ $RECYCLE.BIN/
 # ==================
 # Sensitive Configuration Files - IMPORTANT!
 # ==================
-**/appsettings.Development.json
-**/appsettings.json
 appsettings.Development.json
 appsettings.Local.json
 appsettings.Production.json
-appsettings.*.json
-!appsettings.json
-
-# User secrets
 secrets.json
 *.secrets.json
+
+# Keep template files
+!appsettings.json
+!appsettings.template.json
 
 # ==================
 # Firebase/Credentials
