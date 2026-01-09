@@ -284,39 +284,43 @@ namespace ShoesEcommerce.Controllers
             return View(model);
         }
 
-        // GET: /Account/Logout - Redirect to POST form or auto-submit
+        // GET: /Account/Logout - Perform logout directly
         [HttpGet]
         [AllowAnonymous]
-        public IActionResult Logout()
+        public async Task<IActionResult> Logout()
         {
-            // If user is not authenticated, just redirect to home
-            if (User.Identity?.IsAuthenticated != true)
+            // If user is authenticated, sign them out
+            if (User.Identity?.IsAuthenticated == true)
             {
-                return RedirectToAction("Index", "Home");
+                try
+                {
+                    var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
+                    await _authService.SignOutAsync();
+                    _logger.LogInformation("User {Email} logged out via GET", userEmail);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error during GET logout");
+                }
             }
 
-            // Return a view that auto-submits the logout form
-            return View();
+            return RedirectToAction("Index", "Home");
         }
 
         // POST: /Account/Logout
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ActionName("Logout")]
         public async Task<IActionResult> LogoutPost()
         {
             try
             {
                 var userEmail = User.FindFirst(ClaimTypes.Email)?.Value;
                 await _authService.SignOutAsync();
-
-                _logger.LogInformation("User {Email} logged out", userEmail);
-
-                TempData["InfoMessage"] = "Ban da dang xuat thanh cong.";
+                _logger.LogInformation("User {Email} logged out via POST", userEmail);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during logout");
+                _logger.LogError(ex, "Error during POST logout");
             }
 
             return RedirectToAction("Index", "Home");
